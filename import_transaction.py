@@ -123,18 +123,18 @@ for row in result:
         # Title
         ##########################################################
         
-        simple_query = text(
+        task_attribute_query = text(
             "SELECT mt.newValue "
-            "FROM maniphest_transaction mt "
-            "WHERE mt.dateModified = (SELECT max(mt1.dateModified) "
-            "FROM maniphest_transaction mt1 "
-            "WHERE mt1.objectPHID = :taskid "
-            "AND mt1.transactionType = :transaction_type "
-            "AND mt1.dateModified <= UNIX_TIMESTAMP(:working_date)) "
-            "AND mt.transactionType = :transaction_type "
-            "AND mt.objectPHID = :taskid")
+              "FROM maniphest_transaction mt "
+             "WHERE mt.dateModified = (SELECT max(mt1.dateModified) "
+                                        "FROM maniphest_transaction mt1 "
+                                       "WHERE mt1.objectPHID = :taskid "
+                                         "AND mt1.transactionType = :transaction_type "
+                                         "AND mt1.dateModified <= UNIX_TIMESTAMP(:working_date)) "
+               "AND mt.transactionType = :transaction_type "
+               "AND mt.objectPHID = :taskid")
         
-        title = conn.execute(simple_query, taskid=taskid, working_date=working_date, transaction_type='title').first()
+        title = conn.execute(task_attribute_query, taskid=taskid, working_date=working_date, transaction_type='title').first()
         if title:
             pretty_title = title[0].decode('utf-8')
         else:
@@ -144,7 +144,7 @@ for row in result:
         # Status
         ##########################################################
 
-        status_raw = conn.execute(simple_query, taskid=taskid, working_date=working_date, transaction_type='status').first()
+        status_raw = conn.execute(task_attribute_query, taskid=taskid, working_date=working_date, transaction_type='status').first()
         if status_raw:
             pretty_status = status_raw[0].decode('utf-8')
         else:
@@ -158,7 +158,7 @@ for row in result:
         # in multiple projects, different column for each.  Probably the right thing to do
         # is to create a separate row for each different project?
 
-        pc_raw = conn.execute(simple_query, taskid=taskid, working_date=working_date, transaction_type='projectcolumn').fetchall()
+        pc_raw = conn.execute(task_attribute_query, taskid=taskid, working_date=working_date, transaction_type='projectcolumn').fetchall()
         
         pretty_column = ""
         pretty_project = ""
