@@ -77,11 +77,6 @@ for row in column_results.fetchall():
 phab_engine = create_engine('mysql+mysqlconnector://root@localhost/phabricator_maniphest?charset=utf8')
 conn = phab_engine.connect()
 
-task = Table('maniphest_task', metadata,
-             Column('phid', VARBINARY),
-             Column('title', String)
-)
- 
 trans = Table('maniphest_transaction', metadata,
               Column('transactionType', String),
               Column('objectPHID', None, ForeignKey('maniphest_task.phid')),
