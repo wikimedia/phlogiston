@@ -86,6 +86,7 @@ trans = Table('maniphest_transaction', metadata,
 
 
 # get a list of all days in the data
+# TODO: should get the oldest date, and then walk through all dates up to today (or date specified in command line) so that there are no gaps
 
 query = select([func.from_unixtime(trans.c.dateModified,"%Y%m%d").label('date')]).\
                group_by("date")
