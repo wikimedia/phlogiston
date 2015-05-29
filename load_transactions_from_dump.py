@@ -12,6 +12,7 @@ import time
 from pprint import pprint
 
 conn = psycopg2.connect("dbname=phab")
+conn.autocommit = True
 cur = conn.cursor()
 
 with open('../phabricator_public.dump') as dump_file:
@@ -19,63 +20,26 @@ with open('../phabricator_public.dump') as dump_file:
 
 # reload the database tables
 cur.execute(open("rebuild_working_tables.sql", "r").read())
-conn.commit()
 
 ######################################################################
 # Load project and project column data
 ######################################################################
     
-# ----------------------------------------------------------------------
-# Project data
-# 0 SELECT id,
-# 1        name
-# 2        phid
-# 3        dateCreated
-# 4        dateModified
-# 5        icon
-# 6        color
-#     FROM project
-
-project_query = (
-    """INSERT INTO phab_project (id, name, phid)
-            VALUES (%(id)s, %(name)s, %(phid)s)
-    """)
+project_query = ("""INSERT INTO phab_project (id, name, phid)
+            VALUES (%(id)s, %(name)s, %(phid)s)""")
 
 for row in data['project']['projects']:
     cur.execute(project_query, {'id':row[0] , 'name':row[1], 'phid':row[2] })
 
-conn.commit()
-
-# ----------------------------------------------------------------------
-# Column data
-# 0 SELECT id,
-# 1        phid,
-# 2        name,
-# 3        status,
-# 4        sequence,
-# 5        projectPHID,
-# 6        dateCreated,
-# 7        dateModified,
-# 8        properties
-#     FROM project_column"
-  
-column_query = (
-    """INSERT INTO phab_column (id, name, phid, project_phid)
-            VALUES (%(id)s, %(name)s, %(phid)s, %(project_phid)s)
-    """)
+column_query = ("""INSERT INTO phab_column (id, name, phid, project_phid)
+            VALUES (%(id)s, %(name)s, %(phid)s, %(project_phid)s)""")
 
 for row in data['project']['columns']:
     cur.execute(column_query, {'id':row[0] , 'name':row[2], 'phid':row[1], 'project_phid':row[5] })
 
-conn.commit()
-
-# ----------------------------------------------------------------------
-# tasks
-
-# DEBUGGING:
-# pprint(data['task']['94325'].keys())
-# print(data['task']['10000']['edge'][0][0])
-# pprint(data['task']['97069']['edge'])
+######################################################################
+# Load tasks and edges and transactions
+######################################################################
 
 task_query = (
     """INSERT INTO phab_task (id, phid)
@@ -85,7 +49,6 @@ task_query = (
 for task in data['task'].keys():
     # add the task
     try:
-        pass
         task_phid = data['task'][task]['edge'][0][0]
         cur.execute(task_query, {'id':task , 'phid':task_phid })
     except IndexError as e:
@@ -93,66 +56,38 @@ for task in data['task'].keys():
         # this task has no project.  Skip this task altogether
         # print("Index Error for task {task}: {e}".format(task=task, e=e))
 
-    # ------------------------------------------------------------
-    # add all of the edges
-    # edge data
-    # 0 SELECT src,
-    # 1        type,
-    # 2        dst,
-    # 3        dateCreated,
-    # 4        seq,
-    # 5        dataID
-    # 6  FROM edge
+    edge_query = ("""INSERT INTO phab_task_to_project (task_phid, project_phid)
+                VALUES (%(task_phid)s, %(project_phid)s)""")
 
-    # edge_query = (
-    #     """INSERT INTO phab_task_to_project (task_phid, project_phid)
-    #             VALUES (%(task_phid)s, %(project_phid)s)
-    #     """)
+    for edge in data['task'][task]['edge']:
+        try:
+            cur.execute(edge_query, {'task_phid':edge[0] , 'project_phid':edge[2] })
+        except psycopg2.IntegrityError as e:
+            pass
+            # this is a case where the task has the same project two or more times            
 
-    # for edge in data['task'][task]['edge']:
-    #     try:
-    #         cur.execute(edge_query, {'task_phid':edge[0] , 'project_phid':edge[2] })
-    #     except psycopg2.IntegrityError as e:
-    #         pass
-    #         # this is a case where the task has the same project two or more times            
-
-    # ------------------------------------------------------------
-    # add all of the transactions
-    # transaction data
-    # 0 SELECT id,
-    # 1        phid,
-    # 2        authorPHID,
-    # 3        objectPHID,
-    # 4        commentPHID,
-    # 5        commentVersion,
-    # 6        transactionType,
-    # 7        oldValue,
-    # 8        newValue,
-    # 9        metadata,
-    # 10       dateCreated,
-    # 11       dateModified
-    #     FROM maniphest_transaction 
-    
     transaction_query = (
         """INSERT INTO phab_transaction (id, phid, object_phid, transaction_type, new_value, date_modified)
-                VALUES (%(id)s, %(phid)s, %(object_phid)s, %(transaction_type)s, %(new_value)s, %(date_modified)s)
-        """)
+                VALUES (%(id)s, %(phid)s, %(object_phid)s, %(transaction_type)s, %(new_value)s, %(date_modified)s)""")
 
     for row in data['task'][task]['transactions'].keys():
         if data['task'][task]['transactions'][row]:
             for trans in data['task'][task]['transactions'][row]:
                 cur.execute(transaction_query, {'id':trans[0] , 'phid':trans[1], 'object_phid':trans[3], 'transaction_type':trans[6], 'new_value':trans[8], 'date_modified': time.strftime('%m/%d/%Y %H:%M:%S', time.gmtime(trans[11])) })
-                conn.commit()
 
-conn.commit()
-            
-# # get a list of all days in the data
+######################################################################
+# Generate denormalized data
+######################################################################
+
+# get the oldest date in the data a list of all days in the data
 # # TODO: should get the oldest date, and then walk through all dates up to today (or date specified in command line) so that there are no gaps
 
-# query = select([func.from_unixtime(trans.c.dateModified,"%Y%m%d").label('date')]).\
-#                group_by("date")
+#oldest_data_query = """
+#SELECT select([func.from_unixtime(trans.c.dateModified,"%Y%m%d").label('date')]).
+#
+#"""
 
-# result = conn.execute(query)
+#result = cur.execute(query)
 
 # csvwriter = csv.writer(open('test.csv', 'w'), delimiter=',')
 # csvwriter.writerow(["Date","ID", "Title", "Project", "Status", "Column", "Points"])
