@@ -10,103 +10,106 @@ import csv
 import json
 import time
 import datetime
-from pprint import pprint
 
 conn = psycopg2.connect("dbname=phab")
 conn.autocommit = True
 cur = conn.cursor()
 
-# with open('../phabricator_public.dump') as dump_file:
-#    data = json.load(dump_file)
+with open('../phabricator_public.dump') as dump_file:
+   data = json.load(dump_file)
 
-# # reload the database tables
-# cur.execute(open("rebuild_working_tables.sql", "r").read())
+# reload the database tables
+cur.execute(open("rebuild_working_tables.sql", "r").read())
 
-# ######################################################################
-# # Load project and project column data
-# ######################################################################
+######################################################################
+# Load project and project column data
+######################################################################
+project_query = ("""INSERT INTO phabricator_project (id, name, phid)
+            VALUES (%(id)s, %(name)s, %(phid)s)""")
+
+for row in data['project']['projects']:
+    cur.execute(project_query, {'id':row[0] , 'name':row[1], 'phid':row[2] })
+
+print("Loaded {count} projects".format(count=len(data['project']['projects'])))
+
+column_query = ("""INSERT INTO phabricator_column (id, name, phid, project_phid)
+            VALUES (%(id)s, %(name)s, %(phid)s, %(project_phid)s)""")
+
+for row in data['project']['columns']:
+    cur.execute(column_query, {'id':row[0] , 'name':row[2], 'phid':row[1], 'project_phid':row[5] })
+
+print("Loaded {count} projectcolumns".format(count=len(data['project']['columns'])))
     
-# project_query = ("""INSERT INTO phab_project (id, name, phid)
-#             VALUES (%(id)s, %(name)s, %(phid)s)""")
+######################################################################
+# Load tasks and edges and transactions
+######################################################################
 
-# for row in data['project']['projects']:
-#     cur.execute(project_query, {'id':row[0] , 'name':row[1], 'phid':row[2] })
+task_query = (
+    """INSERT INTO maniphest_task (id, phid)
+            VALUES (%(id)s, %(phid)s)
+    """)
 
-# column_query = ("""INSERT INTO phab_column (id, name, phid, project_phid)
-#             VALUES (%(id)s, %(name)s, %(phid)s, %(project_phid)s)""")
+for task in data['task'].keys():
+    # add the task
+    try:
+        task_phid = data['task'][task]['edge'][0][0]
+        cur.execute(task_query, {'id':task , 'phid':task_phid })
+    except IndexError as e:
+        break
+        # this task has no project.  Skip this task altogether
+        # print("Index Error for task {task}: {e}".format(task=task, e=e))
 
-# for row in data['project']['columns']:
-#     cur.execute(column_query, {'id':row[0] , 'name':row[2], 'phid':row[1], 'project_phid':row[5] })
+    edge_query = ("""INSERT INTO maniphest_task_to_project (task_phid, project_phid)
+                VALUES (%(task_phid)s, %(project_phid)s)""")
 
-# ######################################################################
-# # Load tasks and edges and transactions
-# ######################################################################
+    for edge in data['task'][task]['edge']:
+        try:
+            cur.execute(edge_query, {'task_phid':edge[0] , 'project_phid':edge[2] })
+        except psycopg2.IntegrityError as e:
+            pass
+            # this is a case where the task has the same project two or more times            
 
-# task_query = (
-#     """INSERT INTO phab_task (id, phid)
-#             VALUES (%(id)s, %(phid)s)
-#     """)
+    transaction_query = (
+        """INSERT INTO maniphest_transaction (id, phid, object_phid, transaction_type, new_value, date_modified)
+                VALUES (%(id)s, %(phid)s, %(object_phid)s, %(transaction_type)s, %(new_value)s, %(date_modified)s)""")
 
-# for task in data['task'].keys():
-#     # add the task
-#     try:
-#         task_phid = data['task'][task]['edge'][0][0]
-#         cur.execute(task_query, {'id':task , 'phid':task_phid })
-#     except IndexError as e:
-#         break
-#         # this task has no project.  Skip this task altogether
-#         # print("Index Error for task {task}: {e}".format(task=task, e=e))
+    for row in data['task'][task]['transactions'].keys():
+        if data['task'][task]['transactions'][row]:
+            for trans in data['task'][task]['transactions'][row]:
+                cur.execute(transaction_query, {'id':trans[0] , 'phid':trans[1], 'object_phid':trans[3], 'transaction_type':trans[6], 'new_value':trans[8], 'date_modified': time.strftime('%m/%d/%Y %H:%M:%S', time.gmtime(trans[11])) })
 
-#     edge_query = ("""INSERT INTO phab_task_to_project (task_phid, project_phid)
-#                 VALUES (%(task_phid)s, %(project_phid)s)""")
-
-#     for edge in data['task'][task]['edge']:
-#         try:
-#             cur.execute(edge_query, {'task_phid':edge[0] , 'project_phid':edge[2] })
-#         except psycopg2.IntegrityError as e:
-#             pass
-#             # this is a case where the task has the same project two or more times            
-
-#     transaction_query = (
-#         """INSERT INTO phab_transaction (id, phid, object_phid, transaction_type, new_value, date_modified)
-#                 VALUES (%(id)s, %(phid)s, %(object_phid)s, %(transaction_type)s, %(new_value)s, %(date_modified)s)""")
-
-#     for row in data['task'][task]['transactions'].keys():
-#         if data['task'][task]['transactions'][row]:
-#             for trans in data['task'][task]['transactions'][row]:
-#                 cur.execute(transaction_query, {'id':trans[0] , 'phid':trans[1], 'object_phid':trans[3], 'transaction_type':trans[6], 'new_value':trans[8], 'date_modified': time.strftime('%m/%d/%Y %H:%M:%S', time.gmtime(trans[11])) })
-
+print("Read {count} tasks.  (Not all tasks may have been imported.)".format(count=len(data['task'].keys())))
 ######################################################################
 # Generate denormalized data
 ######################################################################
 
 # get the oldest date in the data and walk forward day by day from there
 
-oldest_data_query = """SELECT date(min(date_modified)) from phab_transaction"""
+oldest_data_query = """SELECT date(min(date_modified)) from maniphest_transaction"""
 
 cur.execute(oldest_data_query)
 result=cur.fetchone()[0]
 working_date = result
 
-#csvwriter = csv.writer(open('test.csv', 'w'), delimiter=',')
-#csvwriter.writerow(["Date","ID", "Title", "Project", "Status", "Column", "Points"])
+csvwriter = csv.writer(open('test.csv', 'w'), delimiter=',')
+csvwriter.writerow(["Date","ID", "Title", "Project", "Status", "Column", "Points"])
 
 while working_date <= datetime.datetime.now().date():
     print(working_date)
-    working_date += datetime.timedelta(days=1)
-
-    task_on_day_query = """SELECT distinct(object_phid) FROM phab_transaction WHERE date(date_modified) = %(working_date)s """
+    # generate a list of all tasks that have been created by this date
+    # assumes that the transaction data includes the creation of all tasks, i.e.,
+    # goes back all the way
+    
+    task_on_day_query = """SELECT distinct(object_phid) FROM maniphest_transaction WHERE date(date_modified) <= %(working_date)s """
     cur.execute(task_on_day_query, {'working_date': working_date })
-    for task in cur.fetchall():
-        print(task)
-   
-#     for row in result:
-#         # for each task id, populate a row in output
-#         # for each relevant variable of the task, use the most recent value
-#         # that is no later than that day.  (So, if that variable didn't change that day,
-#         # use the last time it was changed.)
 
-#         taskid = row[0].decode('utf-8')
+#    for row in cur.fetchall():
+       # for each task id, populate a row in output
+       # for each relevant variable of the task, use the most recent value
+       # that is no later than that day.  (So, if that variable didn't change that day,
+       # use the last time it was changed.)
+
+#       taskid = row[0].decode('utf-8')
 
 #         ##########################################################
 #         # Title
@@ -174,6 +177,7 @@ while working_date <= datetime.datetime.now().date():
 #         pretty_points = "TODO"
         
 #         csvwriter.writerow([working_date, taskid, pretty_title, pretty_status, pretty_project, pretty_column, pretty_points])
+    working_date += datetime.timedelta(days=1)
 
 cur.close()
 conn.close()

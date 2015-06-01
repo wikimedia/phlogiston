@@ -1,39 +1,39 @@
-drop table if exists phab_task_to_project;
-drop table if exists phab_transaction;
-drop table if exists phab_task;
-drop table if exists phab_column;
-drop table if exists phab_project;
+drop table if exists maniphest_task_to_project;
+drop table if exists maniphest_transaction;
+drop table if exists maniphest_task;
+drop table if exists phabricator_column;
+drop table if exists phabricator_project;
 
-create table phab_project (
+create table phabricator_project (
        id int,
        name text,
        phid text primary key
 );
 
-create table phab_column (
+create table phabricator_column (
        id int,
        phid text primary key,
        name text,
-       project_phid text references phab_project
+       project_phid text references phabricator_project
 );
 
-create table phab_task (
+create table maniphest_task (
        id int,
        phid text primary key
 );
 
-create table phab_transaction (
+create table maniphest_transaction (
        id int,
        phid text primary key,
-       object_phid text references phab_task,
+       object_phid text references maniphest_task,
        transaction_type text,
        new_value text,
        date_modified timestamp
 );
 
-create table phab_task_to_project (
-       task_phid text references phab_task,
-       project_phid text references phab_project,
+create table maniphest_task_to_project (
+       task_phid text references maniphest_task,
+       project_phid text references phabricator_project,
        primary key (task_phid, project_phid)
 );
 
