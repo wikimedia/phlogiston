@@ -155,11 +155,7 @@ def report(conn, VERBOSE, DEBUG):
             transaction_values_query = """
                 SELECT mt.new_value 
                   FROM maniphest_transaction mt 
-                 WHERE mt.date_modified = (SELECT max(mt1.date_modified) 
-                                            FROM maniphest_transaction mt1 
-                                           WHERE mt1.object_phid = %(object_phid)s 
-                                             AND mt1.transaction_type = %(transaction_type)s 
-                                             AND date(mt1.date_modified) <= %(query_date)s)
+                 WHERE date(mt.date_modified) <= %(query_date)s
                    AND mt.transaction_type = %(transaction_type)s 
                    AND mt.object_phid = %(object_phid)s
               ORDER BY date_modified DESC"""
