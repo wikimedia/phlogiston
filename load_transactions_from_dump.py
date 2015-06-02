@@ -15,7 +15,7 @@ from pprint import pprint
 
 def main(argv):
     try:
-        opts, args = getopt.getopt(argv, "vhlr", ["verbose", "help", "load", "report"])
+        opts, args = getopt.getopt(argv, "dvhlr", ["debug", "verbose", "help", "load", "report"])
     except getopt.GetoptError:
         usage()
         sys.exit(2)
@@ -24,11 +24,13 @@ def main(argv):
     run_report = False
     DEBUG = False
     for opt, arg in opts:
-        if opt in ("-h", "--help"):
+        if opt in ("-d", "--debug"):
+           DEBUG = True
+        elif opt in ("-h", "--help"):
            usage()
            sys.exit()
         elif opt in ("-v", "--verbose"):
-           DEBUG = True
+           VERBOSE = True
         elif opt in ("-l", "--load"):
            load_data = True
         elif opt in ("-r", "--report"):
@@ -38,9 +40,9 @@ def main(argv):
     conn.autocommit = True
 
     if load_data:
-        load(conn, DEBUG)
+        load(conn, VERBOSE, DEBUG)
     if run_report:
-        report(conn, DEBUG)
+        report(conn, VERBOSE, DEBUG)
 
     conn.close()
 
@@ -49,9 +51,10 @@ def usage():
   --help for this message.\n
   --load to load data.  This will wipe existing data in the reporting database.\n
   --report to make report.
-  --verbose to show debugging (and also to operate on a smaller set of data)""")
+  --verbose to show extra messages
+  --debug to work on a small subset of data""")
    
-def load(conn, DEBUG):
+def load(conn, VERBOSE, DEBUG):
     cur = conn.cursor()
     with open('../phabricator_public.dump') as dump_file:
        data = json.load(dump_file)
@@ -60,70 +63,42 @@ def load(conn, DEBUG):
     cur.execute(open("rebuild_working_tables.sql", "r").read())
 
     ######################################################################
+    # Load transactions
+    ######################################################################
+    if VERBOSE:
+        print("Trying to load transactions for {count} tasks".format(count=len(data['task'].keys())))
+
+    for task_id in data['task'].keys():
+        task = data['task'][task_id]
+        transactions = task['transactions']
+        for trans_key in list(transactions.keys()):
+            if transactions[trans_key]:
+                for trans in transactions[trans_key]:
+                    transaction_insert = (
+                        """INSERT INTO maniphest_transaction (id, phid, object_phid, transaction_type, new_value, date_modified)
+                        VALUES (%(id)s, %(phid)s, %(object_phid)s, %(transaction_type)s, %(new_value)s, %(date_modified)s)""")
+                    cur.execute(transaction_insert, {'id':trans[0] , 'phid':trans[1], 'object_phid':trans[3], 'transaction_type':trans[6], 'new_value':trans[8], 'date_modified': time.strftime('%m/%d/%Y %H:%M:%S', time.gmtime(trans[11])) })
+
+    ######################################################################
     # Load project and project column data
     ######################################################################
-    project_query = ("""INSERT INTO phabricator_project (id, name, phid)
+    project_insert = ("""INSERT INTO phabricator_project (id, name, phid)
                 VALUES (%(id)s, %(name)s, %(phid)s)""")
-
+    if VERBOSE:
+        print("Trying to load {count} projects".format(count=len(data['project']['projects'])))
     for row in data['project']['projects']:
-       cur.execute(project_query, {'id':row[0] , 'name':row[1], 'phid':row[2] })
+       cur.execute(project_insert, {'id':row[0] , 'name':row[1], 'phid':row[2] })
 
-    if DEBUG:
-        print("Loaded {count} projects".format(count=len(data['project']['projects'])))
-
-    column_query = ("""INSERT INTO phabricator_column (id, name, phid, project_phid)
+    column_insert = ("""INSERT INTO phabricator_column (id, name, phid, project_phid)
                 VALUES (%(id)s, %(name)s, %(phid)s, %(project_phid)s)""")
-
+    if VERBOSE:
+        print("Trying to load {count} projectcolumns".format(count=len(data['project']['columns'])))
     for row in data['project']['columns']:
-       cur.execute(column_query, {'id':row[0] , 'name':row[2], 'phid':row[1], 'project_phid':row[5] })
+       cur.execute(column_insert, {'id':row[0] , 'name':row[2], 'phid':row[1], 'project_phid':row[5] })
 
-    if DEBUG:
-        print("Loaded {count} projectcolumns".format(count=len(data['project']['columns'])))
-
-    ######################################################################
-    # Load tasks and edges and transactions
-    ######################################################################
-
-    task_query = (
-        """INSERT INTO maniphest_task (id, phid)
-                VALUES (%(id)s, %(phid)s)
-        """)
-
-    for task in data['task'].keys():
-        print(task)
-        # add the task
-        try:
-            task_phid = data['task'][task]['edge'][0][0]
-            cur.execute(task_query, {'id':task , 'phid':task_phid })
-        except IndexError as e:
-            if DEBUG:
-                print("Index Error for task {task}: {e}".format(task=task, e=e))
-            break
-            # this task has no project.  Skip this task altogether
-
-        edge_query = ("""INSERT INTO maniphest_task_to_project (task_phid, project_phid)
-                    VALUES (%(task_phid)s, %(project_phid)s)""")
-
-        for edge in data['task'][task]['edge']:
-            try:
-                cur.execute(edge_query, {'task_phid':edge[0] , 'project_phid':edge[2] })
-            except psycopg2.IntegrityError:
-               pass
-               # this is a case where the task has the same project two or more times            
-
-        transaction_query = (
-           """INSERT INTO maniphest_transaction (id, phid, object_phid, transaction_type, new_value, date_modified)
-                    VALUES (%(id)s, %(phid)s, %(object_phid)s, %(transaction_type)s, %(new_value)s, %(date_modified)s)""")
-
-        for row in data['task'][task]['transactions'].keys():
-            if data['task'][task]['transactions'][row]:
-                for trans in data['task'][task]['transactions'][row]:
-                    cur.execute(transaction_query, {'id':trans[0] , 'phid':trans[1], 'object_phid':trans[3], 'transaction_type':trans[6], 'new_value':trans[8], 'date_modified': time.strftime('%m/%d/%Y %H:%M:%S', time.gmtime(trans[11])) })
-    if DEBUG:
-        print("Read {count} tasks.  (Not all tasks may have been imported.)".format(count=len(data['task'].keys())))
     cur.close()
-    
-def report(conn, DEBUG):
+   
+def report(conn, VERBOSE):
     cur = conn.cursor()
 
     # preload project and column for fast lookup
@@ -148,11 +123,11 @@ def report(conn, DEBUG):
     csvwriter.writerow(["Date","ID", "Title", "Project", "Status", "Column", "Points"])
 
     target_date = datetime.datetime.now().date()
-    if DEBUG:
+    if VERBOSE:
         target_date = datetime.date(2014, 10, 21)
         
     while working_date <= target_date:
-        if DEBUG:
+        if VERBOSE:
             print(working_date)
         # generate a list of all tasks that have been created by this date
         # assumes that the transaction data includes the creation of all tasks, i.e.,
