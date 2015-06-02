@@ -11,7 +11,6 @@ import json
 import time
 import datetime
 import sys, getopt
-from pprint import pprint
 
 def main(argv):
     try:
@@ -63,21 +62,31 @@ def load(conn, VERBOSE, DEBUG):
     cur.execute(open("rebuild_working_tables.sql", "r").read())
 
     ######################################################################
-    # Load transactions
+    # Load transactions and edges
     ######################################################################
+    # Phabricator doesn't seem to create transactions for the initial project
+    # (and maybe for any initial data?) so this may be somewhat useless
+
     if VERBOSE:
-        print("Trying to load transactions for {count} tasks".format(count=len(data['task'].keys())))
+        print("Trying to load transactions and edges for {count} tasks".format(count=len(data['task'].keys())))
 
     for task_id in data['task'].keys():
         task = data['task'][task_id]
+        edges = task['edge']
+        for edge in edges:
+            edge_insert = (
+                """INSERT INTO maniphest_edge (task_phid, project_phid, date_modified)
+                        VALUES (%(task_phid)s, %(project_phid)s, %(date_modified)s)""")
+            cur.execute(edge_insert, {'task_phid':edge[0] , 'project_phid':edge[2], 'date_modified': time.strftime('%m/%d/%Y %H:%M:%S', time.gmtime(edge[3])) })
+
         transactions = task['transactions']
         for trans_key in list(transactions.keys()):
             if transactions[trans_key]:
                 for trans in transactions[trans_key]:
                     transaction_insert = (
-                        """INSERT INTO maniphest_transaction (id, phid, object_phid, transaction_type, new_value, date_modified)
-                        VALUES (%(id)s, %(phid)s, %(object_phid)s, %(transaction_type)s, %(new_value)s, %(date_modified)s)""")
-                    cur.execute(transaction_insert, {'id':trans[0] , 'phid':trans[1], 'object_phid':trans[3], 'transaction_type':trans[6], 'new_value':trans[8], 'date_modified': time.strftime('%m/%d/%Y %H:%M:%S', time.gmtime(trans[11])) })
+                        """INSERT INTO maniphest_transaction (id, phid, task_id, object_phid, transaction_type, new_value, date_modified)
+                        VALUES (%(id)s, %(phid)s, %(task_id)s, %(object_phid)s, %(transaction_type)s, %(new_value)s, %(date_modified)s)""")
+                    cur.execute(transaction_insert, {'id':trans[0] , 'phid':trans[1], 'task_id': task_id, 'object_phid':trans[3], 'transaction_type':trans[6], 'new_value':trans[8], 'date_modified': time.strftime('%m/%d/%Y %H:%M:%S', time.gmtime(trans[11])) })
 
     ######################################################################
     # Load project and project column data
@@ -98,7 +107,7 @@ def load(conn, VERBOSE, DEBUG):
 
     cur.close()
    
-def report(conn, VERBOSE):
+def report(conn, VERBOSE, DEBUG):
     cur = conn.cursor()
 
     # preload project and column for fast lookup
@@ -110,53 +119,56 @@ def report(conn, VERBOSE):
     ######################################################################
     # Generate denormalized data
     ######################################################################
-
     # get the oldest date in the data and walk forward day by day from there
-
     oldest_data_query = """SELECT date(min(date_modified)) from maniphest_transaction"""
-
     cur.execute(oldest_data_query)
-    result=cur.fetchone()[0]
-    working_date = result
-    working_date = datetime.date(2014,9,19)
+    working_date = cur.fetchone()[0]
+    if DEBUG:
+        working_date = datetime.date(2015,2,1)
+    target_date = datetime.datetime.now().date()
+    if DEBUG:
+        target_date = datetime.date(2015,4, 20)
+
     csvwriter = csv.writer(open('test.csv', 'w'), delimiter=',')
     csvwriter.writerow(["Date","ID", "Title", "Project", "Status", "Column", "Points"])
 
-    target_date = datetime.datetime.now().date()
-    if VERBOSE:
-        target_date = datetime.date(2014, 10, 21)
-        
     while working_date <= target_date:
+        # because working_date is midnight at the beginning of the day, use a date at
+        # the midnight at the end of the day to make the queries line up with the date label
+        query_date = working_date + datetime.timedelta(days=1)
         if VERBOSE:
-            print(working_date)
-        # generate a list of all tasks that have been created by this date
-        # assumes that the transaction data includes the creation of all tasks, i.e.,
-        # goes back all the way
+            print(query_date)
 
-        # TODO: DEBUG
-        task_on_day_query = """SELECT distinct(object_phid) FROM maniphest_transaction WHERE date(date_modified) <= %(working_date)s AND object_phid = 'PHID-TASK-ewnlk4lkha5fx3wfn3k6'"""
-        cur.execute(task_on_day_query, {'working_date': working_date })
-
+        task_on_day_query = """SELECT distinct(object_phid) FROM maniphest_transaction WHERE date(date_modified) <= %(query_date)s"""
+        if DEBUG:
+            task_on_day_query = """SELECT distinct(object_phid) FROM maniphest_transaction WHERE date(date_modified) <= %(query_date)s AND object_phid = 'PHID-TASK-bthovluuuig2pmi2xlsd'"""
+            
+        cur.execute(task_on_day_query, {'query_date': query_date })
         for row in cur.fetchall():
-
             # for each relevant variable of the task, use the most recent value
             # that is no later than that day.  (So, if that variable didn't change that day,
             # use the last time it was changed.  If it changed multiple times, use the final value)
-            # TODO: order to make sure the final value is selected
-            taskid = row[0]
-            print(taskid)
-            task_attribute_query = """
+
+            object_phid = row[0]
+            if DEBUG:
+                print(object_phid)
+            transaction_values_query = """
                 SELECT mt.new_value 
                   FROM maniphest_transaction mt 
                  WHERE mt.date_modified = (SELECT max(mt1.date_modified) 
                                             FROM maniphest_transaction mt1 
-                                           WHERE mt1.object_phid = %(taskid)s 
+                                           WHERE mt1.object_phid = %(object_phid)s 
                                              AND mt1.transaction_type = %(transaction_type)s 
-                                             AND mt1.date_modified <= %(working_date)s)
+                                             AND date(mt1.date_modified) <= %(query_date)s)
                    AND mt.transaction_type = %(transaction_type)s 
-                   AND mt.object_phid = %(taskid)s"""
+                   AND mt.object_phid = %(object_phid)s
+              ORDER BY date_modified DESC"""
 
-            cur.execute(task_attribute_query, {'taskid': taskid, 'working_date': working_date, 'transaction_type': 'status'})
+            # ----------------------------------------------------------------------
+            # Status
+            # ----------------------------------------------------------------------
+            
+            cur.execute(transaction_values_query, {'object_phid': object_phid, 'query_date': query_date, 'transaction_type': 'status'})
             status_raw= cur.fetchone()
             
             if status_raw:
@@ -164,28 +176,36 @@ def report(conn, VERBOSE):
             else:
                 pretty_status = ""
 
+            # ----------------------------------------------------------------------
+            # Points
+            # ----------------------------------------------------------------------
+
             pretty_points = "Points TODO"
 
-            cur.execute(task_attribute_query, {'taskid': taskid, 'working_date': working_date, 'transaction_type': 'projectcolumn'})
-            pc_raw = cur.fetchall()
-            
-            pprint(pc_raw)
+            # ----------------------------------------------------------------------
+            # Project
+            # ----------------------------------------------------------------------
 
-            pretty_column = ""
+            edge_query = """
+            SELECT me.project_phid
+              FROM maniphest_edge me
+             WHERE me.task_phid = %(object_phid)s
+               AND date(me.date_modified) <= %(query_date)s
+            """
+
+            cur.execute(edge_query, {'object_phid': object_phid, 'query_date': query_date, 'transaction_type': 'status'})
+            edges = cur.fetchall()
             pretty_project = ""
-
-            if pc_raw:
-                pc_semiraw = pc_raw[0]
-                pc_json = json.loads(pc_semiraw)
-                raw_project = str(pc_json['projectPHID'])
-                print(pc_json['columnPHIDS'].length())
-                
-                raw_column = str(pc_json['columnPHIDs'][0])
+            for edge in edges:
+                raw_project = edge[0]
                 pretty_project = project_dict[raw_project]
-                pretty_column = column_dict[raw_column]
 
-            
-            csvwriter.writerow([working_date, taskid, pretty_status, pretty_project, pretty_column, pretty_points])
+                # ----------------------------------------------------------------------
+                # Column
+                # ----------------------------------------------------------------------
+                pretty_column = "column TODO"
+                
+                csvwriter.writerow([query_date, object_phid, pretty_status, pretty_project, pretty_column, pretty_points])
 
         working_date += datetime.timedelta(days=1)
 
