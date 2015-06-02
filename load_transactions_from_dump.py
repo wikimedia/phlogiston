@@ -64,8 +64,6 @@ def load(conn, VERBOSE, DEBUG):
     ######################################################################
     # Load transactions and edges
     ######################################################################
-    # Phabricator doesn't seem to create transactions for the initial project
-    # (and maybe for any initial data?) so this may be somewhat useless
 
     if VERBOSE:
         print("Trying to load transactions and edges for {count} tasks".format(count=len(data['task'].keys())))
@@ -120,17 +118,16 @@ def report(conn, VERBOSE, DEBUG):
     # Generate denormalized data
     ######################################################################
     # get the oldest date in the data and walk forward day by day from there
+    csvwriter = csv.writer(open('test.csv', 'w'), delimiter=',')
+    csvwriter.writerow(["Date","ID", "Status", "Project", "Column", "Points"])
+
     oldest_data_query = """SELECT date(min(date_modified)) from maniphest_transaction"""
     cur.execute(oldest_data_query)
     working_date = cur.fetchone()[0]
-    if DEBUG:
-        working_date = datetime.date(2015,2,1)
     target_date = datetime.datetime.now().date()
     if DEBUG:
+        working_date = datetime.date(2015,2,1)
         target_date = datetime.date(2015,4, 20)
-
-    csvwriter = csv.writer(open('test.csv', 'w'), delimiter=',')
-    csvwriter.writerow(["Date","ID", "Title", "Project", "Status", "Column", "Points"])
 
     while working_date <= target_date:
         # because working_date is midnight at the beginning of the day, use a date at
@@ -139,7 +136,12 @@ def report(conn, VERBOSE, DEBUG):
         if VERBOSE:
             print(query_date)
 
-        task_on_day_query = """SELECT distinct(object_phid) FROM maniphest_transaction WHERE date(date_modified) <= %(query_date)s"""
+        task_on_day_query = """SELECT distinct(mt.object_phid) 
+                                 FROM maniphest_transaction mt
+                                WHERE mt.object_phid in (SELECT task_phid
+                                                           FROM maniphest_edge
+                                                          WHERE project_phid = 'PHID-PROJ-e5pkst3uyzpxifwwj7qb')
+                                  AND date(mt.date_modified) <= %(query_date)s """
         if DEBUG:
             task_on_day_query = """SELECT distinct(object_phid) FROM maniphest_transaction WHERE date(date_modified) <= %(query_date)s AND object_phid = 'PHID-TASK-bthovluuuig2pmi2xlsd'"""
             
