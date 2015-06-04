@@ -1,4 +1,5 @@
 drop table if exists maniphest_transaction;
+drop table if exists maniphest_task;
 drop table if exists maniphest_edge;
 drop table if exists phabricator_column;
 drop table if exists phabricator_project;
@@ -7,6 +8,13 @@ create table phabricator_project (
        id int,
        name text,
        phid text primary key
+);
+
+create table maniphest_task (
+       id int,
+       phid text primary key,
+       title text,
+       story_points text
 );
 
 create table phabricator_column (
