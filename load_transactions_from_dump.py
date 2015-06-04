@@ -138,10 +138,13 @@ def report(conn, VERBOSE, DEBUG):
 
         task_on_day_query = """SELECT distinct(mt.object_phid) 
                                  FROM maniphest_transaction mt
-                                WHERE mt.object_phid in (SELECT task_phid
-                                                           FROM maniphest_edge
-                                                          WHERE project_phid = 'PHID-PROJ-e5pkst3uyzpxifwwj7qb')
-                                  AND date(mt.date_modified) <= %(query_date)s """
+                                WHERE date(mt.date_modified) <= %(query_date)s"""
+
+        # DEBUG: filter VEQ3 only for performance reasons
+        # AND mt.object_phid in (SELECT task_phid
+        #                                                   FROM maniphest_edge
+        #                                                  WHERE project_phid = 'PHID-PROJ-e5pkst3uyzpxifwwj7qb')
+
         if DEBUG:
             task_on_day_query = """SELECT distinct(object_phid) FROM maniphest_transaction WHERE date(date_modified) <= %(query_date)s AND object_phid = 'PHID-TASK-bthovluuuig2pmi2xlsd'"""
             
