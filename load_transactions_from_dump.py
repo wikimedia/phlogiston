@@ -3,8 +3,6 @@
 # and outputs a flat file containing a denormalized report of the task history
 # with one row for each task for each day since the data started
 # Data is available at  http://dumps.wikimedia.org/other/misc/phabricator_public.dump
-#
-# requires pyscopg2.  On ubuntu: apt-get install python3-psycopg2
 
 import psycopg2
 import csv
