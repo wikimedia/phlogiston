@@ -21,6 +21,7 @@ def main(argv):
     load_data = False
     run_report = False
     DEBUG = False
+    VERBOSE = False
     project_filter = None
     for opt, arg in opts:
         if opt in ("-d", "--debug"):
@@ -49,11 +50,12 @@ def main(argv):
 
 def usage():
    print("""Usage:\n
+  --debug to work on a small subset of data
   --help for this message.\n
   --load to load data.  This will wipe existing data in the reporting database.\n
-  --report to make report.
-  --verbose to show extra messages
-  --debug to work on a small subset of data""")
+  --project PHID to filter for only tasks with the provided Project PHID.\n
+  --report to make report.\n
+  --verbose to show extra messages\n""")
    
 def load(conn, VERBOSE, DEBUG):
     cur = conn.cursor()
