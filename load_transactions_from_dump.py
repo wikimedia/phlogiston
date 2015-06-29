@@ -13,8 +13,9 @@ import sys, getopt
 
 def main(argv):
     try:
-        opts, args = getopt.getopt(argv, "dhlp:rv", ["debug", "help", "load", "project=", "report", "verbose"])
-    except getopt.GetoptError:
+        opts, args = getopt.getopt(argv, "bdhlp:rv", ["bi", "debug", "help", "load", "project=", "report", "verbose"])
+    except getopt.GetoptError as e:
+        print(e)
         usage()
         sys.exit(2)
 
@@ -22,9 +23,12 @@ def main(argv):
     run_report = False
     DEBUG = False
     VERBOSE = False
+    BI_OUTPUT = False
     project_filter = None
     for opt, arg in opts:
-        if opt in ("-d", "--debug"):
+        if opt in ("-b", "--bi"):
+            BI_OUTPUT = True
+        elif opt in ("-d", "--debug"):
             DEBUG = True
         elif opt in ("-h", "--help"):
             usage()
@@ -44,17 +48,18 @@ def main(argv):
     if load_data:
         load(conn, VERBOSE, DEBUG)
     if run_report:
-        report(conn, VERBOSE, DEBUG, project_filter)
+        report(conn, VERBOSE, DEBUG, BI_OUTPUT, project_filter)
 
     conn.close()
 
 def usage():
    print("""Usage:\n
-  --debug to work on a small subset of data
+  --bi (during report) output to database table for pentaho BI; do not output a csv file\n
+  --debug to work on a small subset of data\n
   --help for this message.\n
   --load to load data.  This will wipe existing data in the reporting database.\n
   --project PHID to filter for only tasks with the provided Project PHID.\n
-  --report to make report.\n
+  --report output a csv file.\n
   --verbose to show extra messages\n""")
    
 def load(conn, VERBOSE, DEBUG):
@@ -122,7 +127,7 @@ def load(conn, VERBOSE, DEBUG):
 
     cur.close()
    
-def report(conn, VERBOSE, DEBUG, project_filter):
+def report(conn, VERBOSE, DEBUG, BI_OUTPUT, project_filter):
     cur = conn.cursor()
 
     # preload project and column for fast lookup
@@ -135,8 +140,13 @@ def report(conn, VERBOSE, DEBUG, project_filter):
     # Generate denormalized data
     ######################################################################
     # get the oldest date in the data and walk forward day by day from there
-    csvwriter = csv.writer(open('test.csv', 'w'), delimiter=',')
-    csvwriter.writerow(["Date","ID", "Title", "Status", "Project", "Column", "Points"])
+
+    if BI_OUTPUT:
+        # reload the database tables
+        cur.execute(open("rebuild_bi_tables.sql", "r").read())
+    else:
+        csvwriter = csv.writer(open('test.csv', 'w'), delimiter=',')
+        csvwriter.writerow(["Date","ID", "Title", "Status", "Project", "Column", "Points"])
 
     oldest_data_query = """SELECT date(min(date_modified)) from maniphest_transaction"""
     cur.execute(oldest_data_query)
@@ -232,8 +242,20 @@ def report(conn, VERBOSE, DEBUG, project_filter):
                 # Column
                 # ----------------------------------------------------------------------
                 pretty_column = "column TODO"
-                
-                csvwriter.writerow([query_date, object_phid, pretty_title, pretty_status, pretty_project, pretty_column, pretty_points])
+
+                if BI_OUTPUT:
+                    denorm_query = """
+                    INSERT INTO task_history VALUES (
+                    %(query_date)s,
+                    %(title)s,
+                    %(status)s,
+                    %(project)s,
+                    %(projectcolumn)s,
+                    %(points)s)"""
+                    cur.execute(denorm_query, {'query_date': query_date, 'title': pretty_title, 'status': pretty_status, 'project': pretty_project, 'projectcolumn': pretty_column, 'points': pretty_points })
+                    
+                else:
+                    csvwriter.writerow([query_date, object_phid, pretty_title, pretty_status, pretty_project, pretty_column, pretty_points])
 
         working_date += datetime.timedelta(days=1)
 
