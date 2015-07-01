@@ -13,7 +13,7 @@ import sys, getopt
 
 def main(argv):
     try:
-        opts, args = getopt.getopt(argv, "bdhlp:rv", ["bi", "debug", "help", "load", "project=", "report", "verbose"])
+        opts, args = getopt.getopt(argv, "bdhlo:p:rv", ["bi", "debug", "help", "load", "output=", "project=", "report", "verbose"])
     except getopt.GetoptError as e:
         print(e)
         usage()
@@ -22,6 +22,7 @@ def main(argv):
     run_report = False
     DEBUG = False
     VERBOSE = False
+    OUTPUT_FILE=''
     BI_OUTPUT = False
     project_filter = None
     for opt, arg in opts:
@@ -32,20 +33,22 @@ def main(argv):
         elif opt in ("-h", "--help"):
             usage()
             sys.exit()
-        elif opt in ("-v", "--verbose"):
-            VERBOSE = True
         elif opt in ("-l", "--load"):
             load_data = True
-        elif opt in ("-r", "--report"):
-            run_report = True
+        elif opt in ("-0", "--output"):
+            OUTPUT_FILE = arg
         elif opt in ("-p", "--project"):
             project_filter = arg
+        elif opt in ("-r", "--report"):
+            run_report = True
+        elif opt in ("-v", "--verbose"):
+            VERBOSE = True
     conn = psycopg2.connect("dbname=phab")
     conn.autocommit = True
     if load_data:
         load(conn, VERBOSE, DEBUG)
     if run_report:
-        report(conn, VERBOSE, DEBUG, BI_OUTPUT, project_filter)
+        report(conn, VERBOSE, DEBUG, BI_OUTPUT, OUTPUT_FILE, project_filter)
     conn.close()
 
 def usage():
@@ -122,7 +125,7 @@ def load(conn, VERBOSE, DEBUG):
 
     cur.close()
    
-def report(conn, VERBOSE, DEBUG, BI_OUTPUT, project_filter):
+def report(conn, VERBOSE, DEBUG, BI_OUTPUT, OUTPUT_FILE, project_filter):
     cur = conn.cursor()
 
     # preload project and column for fast lookup
@@ -130,19 +133,24 @@ def report(conn, VERBOSE, DEBUG, BI_OUTPUT, project_filter):
     project_dict = dict(cur.fetchall())
     cur.execute("SELECT phid, name from phabricator_column")
     column_dict = dict(cur.fetchall())
-    project_list = tuple(project_filter.split(","))
+    project_list = ""
+    if project_filter:
+        project_list = tuple(project_filter.split(","))
     
     ######################################################################
     # Generate denormalized data
     ######################################################################
     # get the oldest date in the data and walk forward day by day from there
 
+    header= ["Date","ID", "Title", "Status", "Project", "Column", "Points"]
     if BI_OUTPUT:
         # reload the database tables
         cur.execute(open("rebuild_bi_tables.sql", "r").read())
+    elif OUTPUT_FILE:
+        csvwriter = csv.writer(open(OUTPUT_FILE, 'w'), delimiter=',')
+        csvwriter.writerow(header)
     else:
-        csvwriter = csv.writer(open('test.csv', 'w'), delimiter=',')
-        csvwriter.writerow(["Date","ID", "Title", "Status", "Project", "Column", "Points"])
+        print(header)
 
     oldest_data_query = """SELECT date(min(date_modified)) from maniphest_transaction"""
     cur.execute(oldest_data_query)
@@ -168,8 +176,10 @@ def report(conn, VERBOSE, DEBUG, BI_OUTPUT, project_filter):
         else:
             task_on_day_query += """ WHERE """
         task_on_day_query += """ date(mt.date_modified) <= %(query_date)s"""
+
         if DEBUG:
             task_on_day_query = """SELECT distinct(object_phid) FROM maniphest_transaction WHERE date(date_modified) <= %(query_date)s AND object_phid = 'PHID-TASK-bthovluuuig2pmi2xlsd'"""
+
         cur.execute(task_on_day_query, {'query_date': query_date , 'project_phid': project_list})
 
         for row in cur.fetchall():
@@ -218,22 +228,32 @@ def report(conn, VERBOSE, DEBUG, BI_OUTPUT, project_filter):
             """
             cur.execute(edge_query, {'object_phid': object_phid, 'query_date': query_date, 'transaction_type': 'status', 'project_list': project_list})
             edges = cur.fetchall()
+            edges_list = [i[0] for i in edges]
             pretty_project = ""
-            reportable_edges = edges
+            reportable_edges = []
+
             if project_list:
-                # if a list of projects is specified, reduce the list of edges to only the single best match,
-                # where best = earliest in the specified project list
+                # if a list of projects is specified, reduce the list
+                # of edges to only the single best match, where best =
+                # earliest in the specified project list
                 for project in project_list:
-                    if project in edges:
-                        reportable_edges = project
+                    if project in edges_list:
+                        reportable_edges.append(project)
                         break
+            else:
+                reportable_edges = edges_list
+                
+            if VERBOSE:
+                print("reportable_edges is {0}".format(reportable_edges))
             for edge in reportable_edges:
-                raw_project = edge[0]
+                raw_project = edge
                 pretty_project = project_dict[raw_project]
                 # ----------------------------------------------------------------------
                 # Column
                 # ----------------------------------------------------------------------
                 pretty_column = "column TODO"
+
+                output_row = [query_date, object_phid, pretty_title, pretty_status, pretty_project, pretty_column, pretty_points]
                 if BI_OUTPUT:
                     denorm_query = """
                     INSERT INTO task_history VALUES (
@@ -244,8 +264,10 @@ def report(conn, VERBOSE, DEBUG, BI_OUTPUT, project_filter):
                     %(projectcolumn)s,
                     %(points)s)"""
                     cur.execute(denorm_query, {'query_date': query_date, 'title': pretty_title, 'status': pretty_status, 'project': pretty_project, 'projectcolumn': pretty_column, 'points': pretty_points })
+                elif OUTPUT_FILE:
+                    csvwriter.writerow(output_row)
                 else:
-                    csvwriter.writerow([query_date, object_phid, pretty_title, pretty_status, pretty_project, pretty_column, pretty_points])
+                    print(output_row)
         working_date += datetime.timedelta(days=1)
     cur.close()
 
