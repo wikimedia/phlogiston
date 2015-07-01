@@ -18,7 +18,6 @@ def main(argv):
         print(e)
         usage()
         sys.exit(2)
-
     load_data = False
     run_report = False
     DEBUG = False
@@ -41,15 +40,12 @@ def main(argv):
             run_report = True
         elif opt in ("-p", "--project"):
             project_filter = arg
-
     conn = psycopg2.connect("dbname=phab")
     conn.autocommit = True
-
     if load_data:
         load(conn, VERBOSE, DEBUG)
     if run_report:
         report(conn, VERBOSE, DEBUG, BI_OUTPUT, project_filter)
-
     conn.close()
 
 def usage():
@@ -58,7 +54,7 @@ def usage():
   --debug to work on a small subset of data\n
   --help for this message.\n
   --load to load data.  This will wipe existing data in the reporting database.\n
-  --project PHID to filter for only tasks with the provided Project PHID.\n
+   --project comma-separated list of PHID to include. Tasks belonging to multiple PHIDs are assigned only to the first in this list.  Applies only to reporting, not loading.\n
   --report output a csv file.\n
   --verbose to show extra messages\n""")
    
@@ -73,7 +69,7 @@ def load(conn, VERBOSE, DEBUG):
     ######################################################################
     # Load transactions and edges
     ######################################################################
-
+    
     if VERBOSE:
         print("Trying to load tasks, transactions, and edges for {count} tasks".format(count=len(data['task'].keys())))
 
@@ -87,18 +83,17 @@ def load(conn, VERBOSE, DEBUG):
             title = task['info'][7]
         if task['storypoints']:
             story_points = task['storypoints'][2]
-
         task_insert = (""" INSERT INTO maniphest_task (id, phid, title, story_points)
                                 VALUES (%(task_id)s, %(phid)s, %(title)s, %(story_points)s) """)
         cur.execute(task_insert, {'task_id': task_id, 'phid': task_phid, 'title': title, 'story_points': story_points})
-
         edges = task['edge']
+        # edge is membership in a project.  This ought to be transactional, but until the data is better understood,
+        # this only records adding of a project to a task, not removing
         for edge in edges:
             edge_insert = (
                 """INSERT INTO maniphest_edge (task_phid, project_phid, date_modified)
                         VALUES (%(task_phid)s, %(project_phid)s, %(date_modified)s)""")
             cur.execute(edge_insert, {'task_phid':task_phid , 'project_phid':edge[2], 'date_modified': time.strftime('%m/%d/%Y %H:%M:%S', time.gmtime(edge[3])) })
-
         transactions = task['transactions']
         for trans_key in list(transactions.keys()):
             if transactions[trans_key]:
@@ -135,6 +130,7 @@ def report(conn, VERBOSE, DEBUG, BI_OUTPUT, project_filter):
     project_dict = dict(cur.fetchall())
     cur.execute("SELECT phid, name from phabricator_column")
     column_dict = dict(cur.fetchall())
+    project_list = tuple(project_filter.split(","))
     
     ######################################################################
     # Generate denormalized data
@@ -162,87 +158,82 @@ def report(conn, VERBOSE, DEBUG, BI_OUTPUT, project_filter):
         query_date = working_date + datetime.timedelta(days=1)
         if VERBOSE:
             print(query_date)
-
         task_on_day_query = """SELECT distinct(mt.object_phid) 
-                                 FROM maniphest_transaction mt
-                                WHERE date(mt.date_modified) <= %(query_date)s"""
-
+                                 FROM maniphest_transaction mt"""
         if project_filter:
-            task_on_day_query += """ AND mt.object_phid in (SELECT task_phid
-            FROM maniphest_edge
-            WHERE project_phid = %(project_phid)s)"""
-
+            task_on_day_query += """, maniphest_edge me
+                                WHERE mt.object_phid = me.task_phid 
+                                  AND me.project_phid IN %(project_phid)s
+                                  AND """
+        else:
+            task_on_day_query += """ WHERE """
+        task_on_day_query += """ date(mt.date_modified) <= %(query_date)s"""
         if DEBUG:
             task_on_day_query = """SELECT distinct(object_phid) FROM maniphest_transaction WHERE date(date_modified) <= %(query_date)s AND object_phid = 'PHID-TASK-bthovluuuig2pmi2xlsd'"""
-            
-        cur.execute(task_on_day_query, {'query_date': query_date , 'project_phid': project_filter})
+        cur.execute(task_on_day_query, {'query_date': query_date , 'project_phid': project_list})
+
         for row in cur.fetchall():
-            # for each relevant variable of the task, use the most recent value
-            # that is no later than that day.  (So, if that variable didn't change that day,
-            # use the last time it was changed.  If it changed multiple times, use the final value)
-
             object_phid = row[0]
-            if DEBUG:
-                print(object_phid)
-
             # ----------------------------------------------------------------------
             # Title and Points
             # currently points are a separate field not in transaction data
             # this means historical points charts are actually retroactive
+            # Title could be tracked retroactively but this code doesn't make that effort
             # ----------------------------------------------------------------------
-
             task_query = """SELECT title, story_points
                               FROM maniphest_task
                              WHERE phid = %(object_phid)s"""
-
             cur.execute(task_query, {'object_phid': object_phid, 'query_date': query_date, 'transaction_type': 'status'})
             task_info = cur.fetchone()
             pretty_title = task_info[0]
             pretty_points = task_info[1]
-
+            # for each relevant variable of the task, use the most recent value
+            # that is no later than that day.  (So, if that variable didn't change that day,
+            # use the last time it was changed.  If it changed multiple times, use the final value)
             transaction_values_query = """
                 SELECT mt.new_value 
                   FROM maniphest_transaction mt 
                  WHERE date(mt.date_modified) <= %(query_date)s
                    AND mt.transaction_type = %(transaction_type)s 
                    AND mt.object_phid = %(object_phid)s
-              ORDER BY date_modified DESC"""
+              ORDER BY date_modified DESC """
 
             # ----------------------------------------------------------------------
             # Status
             # ----------------------------------------------------------------------
-            
             cur.execute(transaction_values_query, {'object_phid': object_phid, 'query_date': query_date, 'transaction_type': 'status'})
             status_raw= cur.fetchone()
-            
+            pretty_status = ""
             if status_raw:
                 pretty_status = status_raw[0]
-            else:
-                pretty_status = ""
 
             # ----------------------------------------------------------------------
             # Project
             # ----------------------------------------------------------------------
-
             edge_query = """
             SELECT me.project_phid
               FROM maniphest_edge me
              WHERE me.task_phid = %(object_phid)s
                AND date(me.date_modified) <= %(query_date)s
             """
-
-            cur.execute(edge_query, {'object_phid': object_phid, 'query_date': query_date, 'transaction_type': 'status'})
+            cur.execute(edge_query, {'object_phid': object_phid, 'query_date': query_date, 'transaction_type': 'status', 'project_list': project_list})
             edges = cur.fetchall()
             pretty_project = ""
-            for edge in edges:
+            reportable_edges = edges
+            if project_list:
+                # if a list of projects is specified, reduce the list of edges to only the single best match,
+                # where best = earliest in the specified project list
+                for project in project_list:
+                    if project in edges:
+                        reportable_edges = project
+                        break
+            for edge in reportable_edges:
                 raw_project = edge[0]
                 pretty_project = project_dict[raw_project]
-
                 # ----------------------------------------------------------------------
                 # Column
                 # ----------------------------------------------------------------------
                 pretty_column = "column TODO"
-
                 if BI_OUTPUT:
                     denorm_query = """
                     INSERT INTO task_history VALUES (
@@ -253,12 +244,9 @@ def report(conn, VERBOSE, DEBUG, BI_OUTPUT, project_filter):
                     %(projectcolumn)s,
                     %(points)s)"""
                     cur.execute(denorm_query, {'query_date': query_date, 'title': pretty_title, 'status': pretty_status, 'project': pretty_project, 'projectcolumn': pretty_column, 'points': pretty_points })
-                    
                 else:
                     csvwriter.writerow([query_date, object_phid, pretty_title, pretty_status, pretty_project, pretty_column, pretty_points])
-
         working_date += datetime.timedelta(days=1)
-
     cur.close()
 
 if __name__ == "__main__":
