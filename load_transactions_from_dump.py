@@ -13,7 +13,7 @@ import sys, getopt
 
 def main(argv):
     try:
-        opts, args = getopt.getopt(argv, "bdhlo:p:rv", ["bi", "debug", "help", "load", "output=", "project=", "report", "verbose"])
+        opts, args = getopt.getopt(argv, "bdehlo:p:rv", ["bi", "debug", "defaultpoints", "help", "load", "output=", "project=", "report", "verbose"])
     except getopt.GetoptError as e:
         print(e)
         usage()
@@ -25,11 +25,14 @@ def main(argv):
     OUTPUT_FILE=''
     BI_OUTPUT = False
     project_filter = None
+    default_points = 10
     for opt, arg in opts:
         if opt in ("-b", "--bi"):
             BI_OUTPUT = True
         elif opt in ("-d", "--debug"):
             DEBUG = True
+        elif opt in ("-e", "--defaultpoints"):
+            default_points = arg
         elif opt in ("-h", "--help"):
             usage()
             sys.exit()
@@ -48,7 +51,7 @@ def main(argv):
     if load_data:
         load(conn, VERBOSE, DEBUG)
     if run_report:
-        report(conn, VERBOSE, DEBUG, BI_OUTPUT, OUTPUT_FILE, project_filter)
+        report(conn, VERBOSE, DEBUG, BI_OUTPUT, OUTPUT_FILE, project_filter, default_points)
     conn.close()
 
 def usage():
@@ -90,6 +93,8 @@ def load(conn, VERBOSE, DEBUG):
                                 VALUES (%(task_id)s, %(phid)s, %(title)s, %(story_points)s) """)
         cur.execute(task_insert, {'task_id': task_id, 'phid': task_phid, 'title': title, 'story_points': story_points})
         edges = task['edge']
+        import ipdb; ipdb.set_trace()
+
         # edge is membership in a project.  This ought to be transactional, but until the data is better understood,
         # this only records adding of a project to a task, not removing
         for edge in edges:
@@ -125,7 +130,7 @@ def load(conn, VERBOSE, DEBUG):
 
     cur.close()
    
-def report(conn, VERBOSE, DEBUG, BI_OUTPUT, OUTPUT_FILE, project_filter):
+def report(conn, VERBOSE, DEBUG, BI_OUTPUT, OUTPUT_FILE, project_filter, default_points):
     cur = conn.cursor()
 
     # preload project and column for fast lookup
@@ -196,7 +201,10 @@ def report(conn, VERBOSE, DEBUG, BI_OUTPUT, OUTPUT_FILE, project_filter):
             cur.execute(task_query, {'object_phid': object_phid, 'query_date': query_date, 'transaction_type': 'status'})
             task_info = cur.fetchone()
             pretty_title = task_info[0]
-            pretty_points = task_info[1]
+            try:
+                pretty_points = int(task_info[1])
+            except:
+                pretty_points = default_points
             # for each relevant variable of the task, use the most recent value
             # that is no later than that day.  (So, if that variable didn't change that day,
             # use the last time it was changed.  If it changed multiple times, use the final value)
