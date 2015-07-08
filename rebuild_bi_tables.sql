@@ -6,7 +6,7 @@ create table task_history (
        status text,
        project text,
        projectcolumn text,
-       points text
+       points int
 );     
 
 

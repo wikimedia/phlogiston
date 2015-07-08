@@ -10,25 +10,27 @@ import json
 import time
 import datetime
 import sys, getopt
+import subprocess
+
 
 def main(argv):
     try:
-        opts, args = getopt.getopt(argv, "bdehlo:p:rv", ["bi", "debug", "defaultpoints", "help", "load", "output=", "project=", "report", "verbose"])
+        opts, args = getopt.getopt(argv, "cdehlo:p:rv", ["reconstruct", "debug", "defaultpoints", "help", "load", "output=", "project=", "report", "verbose"])
     except getopt.GetoptError as e:
         print(e)
         usage()
         sys.exit(2)
     load_data = False
+    reconstruct_data = False
     run_report = False
     DEBUG = False
     VERBOSE = False
-    OUTPUT_FILE=''
-    BI_OUTPUT = False
+    OUTPUT_FILE = ''
     project_filter = None
     default_points = 10
     for opt, arg in opts:
-        if opt in ("-b", "--bi"):
-            BI_OUTPUT = True
+        if opt in ("-c", "--reconstruct"):
+            reconstruct_data = True
         elif opt in ("-d", "--debug"):
             DEBUG = True
         elif opt in ("-e", "--defaultpoints"):
@@ -38,7 +40,7 @@ def main(argv):
             sys.exit()
         elif opt in ("-l", "--load"):
             load_data = True
-        elif opt in ("-0", "--output"):
+        elif opt in ("-o", "--output"):
             OUTPUT_FILE = arg
         elif opt in ("-p", "--project"):
             project_filter = arg
@@ -50,19 +52,22 @@ def main(argv):
     conn.autocommit = True
     if load_data:
         load(conn, VERBOSE, DEBUG)
+    if reconstruct_data:
+        reconstruct(conn, VERBOSE, DEBUG, OUTPUT_FILE, project_filter, default_points)
     if run_report:
-        report(conn, VERBOSE, DEBUG, BI_OUTPUT, OUTPUT_FILE, project_filter, default_points)
+        report(conn, VERBOSE, DEBUG)
     conn.close()
 
 def usage():
    print("""Usage:\n
-  --bi (during report) output to database table for pentaho BI; do not output a csv file\n
   --debug to work on a small subset of data\n
   --help for this message.\n
   --load to load data.  This will wipe existing data in the reporting database.\n
-   --project comma-separated list of PHID to include. Tasks belonging to multiple PHIDs are assigned only to the first in this list.  Applies only to reporting, not loading.\n
-  --report output a csv file.\n
-  --verbose to show extra messages\n""")
+  --output FILE.  This will produce a csv dump of the fully denormalized data (one line per task per projectcolumn per day).
+  --project comma-separated list of PHID to include. Tasks belonging to multiple PHIDs are assigned only to the first in this list.  Applies only to reporting, not loading.\n
+  --report Process data in SQL, generate graphs in R, and output a set of png files.\n
+  --verbose to show extra messages\n
+  --reconstruct Reprocess the loaded data to reconstruct a historical record day by day, in the database""")
    
 def load(conn, VERBOSE, DEBUG):
     cur = conn.cursor()
@@ -130,14 +135,16 @@ def load(conn, VERBOSE, DEBUG):
 
     cur.close()
    
-def report(conn, VERBOSE, DEBUG, BI_OUTPUT, OUTPUT_FILE, project_filter, default_points):
+def reconstruct(conn, VERBOSE, DEBUG, OUTPUT_FILE, project_filter, default_points):
     cur = conn.cursor()
+    cur.execute(open("rebuild_bi_tables.sql", "r").read())
 
-    # preload project and column for fast lookup
+    # preload project and column for fast lookup within Python
     cur.execute("SELECT phid, name from phabricator_project")
     project_dict = dict(cur.fetchall())
     cur.execute("SELECT phid, name from phabricator_column")
     column_dict = dict(cur.fetchall())
+
     project_list = ""
     if project_filter:
         project_list = tuple(project_filter.split(","))
@@ -148,14 +155,11 @@ def report(conn, VERBOSE, DEBUG, BI_OUTPUT, OUTPUT_FILE, project_filter, default
     # get the oldest date in the data and walk forward day by day from there
 
     header= ["Date","ID", "Title", "Status", "Project", "Column", "Points"]
-    if BI_OUTPUT:
-        # reload the database tables
-        cur.execute(open("rebuild_bi_tables.sql", "r").read())
-    elif OUTPUT_FILE:
+    # reload the database tables
+    cur.execute(open("rebuild_bi_tables.sql", "r").read())
+    if OUTPUT_FILE:
         csvwriter = csv.writer(open(OUTPUT_FILE, 'w'), delimiter=',')
         csvwriter.writerow(header)
-    else:
-        print(header)
 
     oldest_data_query = """SELECT date(min(date_modified)) from maniphest_transaction"""
     cur.execute(oldest_data_query)
@@ -262,8 +266,7 @@ def report(conn, VERBOSE, DEBUG, BI_OUTPUT, OUTPUT_FILE, project_filter, default
                 pretty_column = "column TODO"
 
                 output_row = [query_date, object_phid, pretty_title, pretty_status, pretty_project, pretty_column, pretty_points]
-                if BI_OUTPUT:
-                    denorm_query = """
+                denorm_query = """
                     INSERT INTO task_history VALUES (
                     %(query_date)s,
                     %(title)s,
@@ -271,13 +274,18 @@ def report(conn, VERBOSE, DEBUG, BI_OUTPUT, OUTPUT_FILE, project_filter, default
                     %(project)s,
                     %(projectcolumn)s,
                     %(points)s)"""
-                    cur.execute(denorm_query, {'query_date': query_date, 'title': pretty_title, 'status': pretty_status, 'project': pretty_project, 'projectcolumn': pretty_column, 'points': pretty_points })
-                elif OUTPUT_FILE:
+                cur.execute(denorm_query, {'query_date': query_date, 'title': pretty_title, 'status': pretty_status, 'project': pretty_project, 'projectcolumn': pretty_column, 'points': pretty_points })
+
+                if OUTPUT_FILE:
                     csvwriter.writerow(output_row)
-                else:
-                    print(output_row)
+
         working_date += datetime.timedelta(days=1)
     cur.close()
+
+def report(conn, VERBOSE, DEBUG):
+    cur = conn.cursor()
+    cur.execute(open("rebuild_report_tables.sql", "r").read())
+    subprocess.Popen("Rscript report.R", shell = True)
 
 if __name__ == "__main__":
     main(sys.argv[1:])
