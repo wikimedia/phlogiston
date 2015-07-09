@@ -26,12 +26,12 @@ DROP TABLE IF EXISTS resolved_ve;
 SELECT date,
        status,
        sum(points) as point_total
-  INTO tall_status_history
-  FROM resolved_ve
+  INTO resolved_ve
+  FROM task_history
  WHERE project = 'VisualEditor' and status='"resolved"'
  GROUP BY date, status;
 
-COPY tall_status_history to '/tmp/VE_status.csv' DELIMITER ',' CSV HEADER;
+COPY resolved_ve to '/tmp/VE_status.csv' DELIMITER ',' CSV HEADER;
 
 DROP TABLE IF EXISTS burnup;
 DROP TABLE IF EXISTS burnup_week;
@@ -107,3 +107,19 @@ COPY (SELECT date,
     GROUP BY date
     ORDER BY date)
 TO '/tmp/VE_burnup.csv' DELIMITER ',' CSV HEADER;
+
+
+DROP TABLE IF EXISTS tall_tranche_backlog;
+
+SELECT date,
+       project || ' ' || projectcolumn as project,
+       sum(points) as point_total
+  INTO tall_tranche_backlog
+  FROM task_history
+ WHERE project = 'VisualEditor'
+   AND date > '2015-06-19'
+   AND projectcolumn like '%TR%'
+GROUP BY project, projectcolumn, date;
+
+COPY tall_tranche_backlog to '/tmp/VE_tranche_backlog.csv' DELIMITER ',' CSV
+HEADER;

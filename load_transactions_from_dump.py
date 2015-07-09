@@ -11,7 +11,7 @@ import time
 import datetime
 import sys, getopt
 import subprocess
-
+import datetime
 
 def main(argv):
     try:
@@ -100,13 +100,14 @@ def load(conn, VERBOSE, DEBUG):
         edges = task['edge']
         import ipdb; ipdb.set_trace()
 
+        for edge in edges:
         # edge is membership in a project.  This ought to be transactional, but until the data is better understood,
         # this only records adding of a project to a task, not removing
-        for edge in edges:
             edge_insert = (
                 """INSERT INTO maniphest_edge (task_phid, project_phid, date_modified)
                         VALUES (%(task_phid)s, %(project_phid)s, %(date_modified)s)""")
             cur.execute(edge_insert, {'task_phid':task_phid , 'project_phid':edge[2], 'date_modified': time.strftime('%m/%d/%Y %H:%M:%S', time.gmtime(edge[3])) })
+
         transactions = task['transactions']
         for trans_key in list(transactions.keys()):
             if transactions[trans_key]:
@@ -116,6 +117,7 @@ def load(conn, VERBOSE, DEBUG):
                         VALUES (%(id)s, %(phid)s, %(task_id)s, %(object_phid)s, %(transaction_type)s, %(new_value)s, %(date_modified)s)""")
                     cur.execute(transaction_insert, {'id':trans[0] , 'phid':trans[1], 'task_id': task_id, 'object_phid':trans[3], 'transaction_type':trans[6], 'new_value':trans[8], 'date_modified': time.strftime('%m/%d/%Y %H:%M:%S', time.gmtime(trans[11])) })
 
+        
     ######################################################################
     # Load project and project column data
     ######################################################################
@@ -166,15 +168,16 @@ def reconstruct(conn, VERBOSE, DEBUG, OUTPUT_FILE, project_filter, default_point
     working_date = cur.fetchone()[0]
     target_date = datetime.datetime.now().date()
     if DEBUG:
-        working_date = datetime.date(2015,2,1)
-        target_date = datetime.date(2015,4, 20)
+#        working_date = datetime.date(2015,2,23)
+        target_date = datetime.date(2015,3,1)
 
     while working_date <= target_date:
         # because working_date is midnight at the beginning of the day, use a date at
         # the midnight at the end of the day to make the queries line up with the date label
         query_date = working_date + datetime.timedelta(days=1)
         if VERBOSE:
-            print(query_date)
+            print()
+            print(query_date,end="")
         task_on_day_query = """SELECT distinct(mt.object_phid) 
                                  FROM maniphest_transaction mt"""
         if project_filter:
@@ -187,7 +190,7 @@ def reconstruct(conn, VERBOSE, DEBUG, OUTPUT_FILE, project_filter, default_point
         task_on_day_query += """ date(mt.date_modified) <= %(query_date)s"""
 
         if DEBUG:
-            task_on_day_query = """SELECT distinct(object_phid) FROM maniphest_transaction WHERE date(date_modified) <= %(query_date)s AND object_phid = 'PHID-TASK-bthovluuuig2pmi2xlsd'"""
+            task_on_day_query = """SELECT distinct(object_phid) FROM maniphest_transaction WHERE date(date_modified) <= %(query_date)s AND object_phid = 'PHID-TASK-h27s7yvr62xzheogrrv7'"""
 
         cur.execute(task_on_day_query, {'query_date': query_date , 'project_phid': project_list})
 
@@ -244,26 +247,43 @@ def reconstruct(conn, VERBOSE, DEBUG, OUTPUT_FILE, project_filter, default_point
             pretty_project = ""
             reportable_edges = []
 
+            if DEBUG:
+                for edge in edges_list:
+                    print(project_dict[edge], " ", end="")
+#                print("PROJECT")
+#                for project in project_list:
+#                    print(project_dict[project])
+
             if project_list:
                 # if a list of projects is specified, reduce the list
                 # of edges to only the single best match, where best =
                 # earliest in the specified project list
+#                import ipdb; ipdb.set_trace()
                 for project in project_list:
                     if project in edges_list:
                         reportable_edges.append(project)
                         break
             else:
                 reportable_edges = edges_list
-                
-            if VERBOSE:
-                print("reportable_edges is {0}".format(reportable_edges))
+
+#            if DEBUG:
+#                print(reportable_edges)
+
             for edge in reportable_edges:
-                raw_project = edge
-                pretty_project = project_dict[raw_project]
+                project_phid = edge
+                pretty_project = project_dict[project_phid]
+                pretty_column = ''
                 # ----------------------------------------------------------------------
                 # Column
                 # ----------------------------------------------------------------------
-                pretty_column = "column TODO"
+                cur.execute(transaction_values_query, {'object_phid': object_phid, 'query_date': query_date, 'transaction_type': 'projectcolumn'})
+                pc_trans_list = cur.fetchall()
+                for pc_trans in pc_trans_list:
+                    jblob = json.loads(pc_trans[0])
+                    if project_phid in jblob['projectPHID']:
+                        column_phid = jblob['columnPHIDs'][0]
+                        pretty_column = column_dict[column_phid]
+                        break
 
                 output_row = [query_date, object_phid, pretty_title, pretty_status, pretty_project, pretty_column, pretty_points]
                 denorm_query = """
