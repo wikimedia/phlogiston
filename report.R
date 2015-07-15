@@ -5,11 +5,29 @@ library(reshape2)
 library(ggplot2)
 library(scales)
 library(grid)
-backlog=read.csv("/tmp/VE_backlog.csv")
 
+######################################################################
+## VisualEditor Status
+######################################################################
+
+VE_status=read.csv("/tmp/VE_status.csv")
+VE_status$date <- as.Date(VE_status$date, "%Y-%m-%d")
+
+ve_status_output=png(filename = "/tmp/VE-backlog-status.png", width=2000, height=1400, units="px", pointsize=30)
+    
+ggplot(VE_status) +
+    labs(title="Disposition of the VE backlog", y="Story Point Total") +
+    theme(text = element_text(size=30), legend.title=element_blank())+
+    geom_area(position='stack', aes(x = date, y = point_total, group=status, fill=status, order=-as.numeric(status))) +
+    scale_x_date(breaks="1 month", label=date_format("%Y-%b"), limits = as.Date(c('2014-12-01', NA))) +
+    scale_y_continuous(limits=c(0, 60000))
+dev.off()
+
+######################################################################
 ## Backlog
+######################################################################
 
-## convert string to date
+backlog=read.csv("/tmp/VE_backlog.csv")
 backlog$date <- as.Date(backlog$date, "%Y-%m-%d")
 ## manually set ordering of data
 backlog$project2 <- factor(backlog$project, levels = c("VisualEditor","VisualEditor 2015/16 Q1 blockers","VisualEditor 2014/15 Q4 blockers","VisualEditor 2014/15 Q3 blockers","VisualEditor Interrupt"))
@@ -17,46 +35,70 @@ backlog$project2 <- factor(backlog$project, levels = c("VisualEditor","VisualEdi
 burnup=read.csv("/tmp/VE_burnup.csv")
 burnup$date <- as.Date(burnup$date, "%Y-%m-%d")
 burnup$project2 <- 0 ## dummy colum so it fits on the same ggplot
-burnup_output=png(filename = "VE-backlog_burnup.png", width=2000, height=1400, units="px", pointsize=30)
+burnup_output=png(filename = "/tmp/VE-backlog_burnup.png", width=2000, height=1400, units="px", pointsize=30)
     
 ggplot(backlog) +
     labs(title="VE backlog", y="Story Point Total") +
     theme(text = element_text(size=30), legend.title=element_blank())+
     geom_area(position='stack', aes(x = date, y = point_total, group=project2, fill=project2, order=-as.numeric(project2))) +
-    scale_x_date(breaks="1 month", label=date_format("%Y-%b"), limits = as.Date(c('2015-01-01', '2015-06-30'))) +
+    scale_x_date(breaks="1 month", label=date_format("%Y-%b"), limits = as.Date(c('2015-01-01', NA))) +
     scale_y_continuous(limits=c(0, 60000)) +
-        geom_point(data=burnup, aes(x=date, y=points))
+        geom_line(data=burnup, aes(x=date, y=points), size=2)
 dev.off()
 
-burnup_crop_output=png(filename = "VE-backlog_burnup_crop.png", width=2000, height=1400, units="px", pointsize=30)
+######################################################################
+## Cropped backlog
+
+burnup_crop_output=png(filename = "/tmp/VE-backlog_burnup_crop.png", width=2000, height=1400, units="px", pointsize=30)
     
 ggplot(backlog) +
-    labs(title="VE backlog (Zoomed)", y="Story Point Total") +
+    labs(title="VE backlog (zoomed)", y="Story Point Total") +
     theme(text = element_text(size=30), legend.title=element_blank()) +
     geom_area(position='stack', aes(x = date, y = point_total, group=project2, fill=project2, order=-as.numeric(project2))) +
-    scale_x_date(breaks="1 month", label=date_format("%Y-%b"), limits = as.Date(c('2015-02-01', '2015-06-30'))) +
+    scale_x_date(breaks="1 month", label=date_format("%Y-%b"), limits = as.Date(c('2015-02-01', NA))) +
     scale_y_continuous(limits=c(0, 10000)) +
-    geom_point(data=burnup, aes(x=date, y=points))
+    geom_line(data=burnup, aes(x=date, y=points), size=2)
 dev.off()
 
-vestatus=read.csv("/tmp/VE_status.csv")
-vestatus$date <- as.Date(vestatus$date, "%Y-%m-%d")
+######################################################################
+## Interrupt
+######################################################################
 
-status_output=png(filename = "VE-status.png", width=2000, height=1400, units="px", pointsize=30)
+veinterrupt=read.csv("/tmp/VE_interrupt.csv")
+veinterrupt$date <- as.Date(veinterrupt$date, "%Y-%m-%d")
+
+status_output=png(filename = "/tmp/VE-interrupt.png", width=2000, height=1400, units="px", pointsize=30)
     
-ggplot(vestatus) +
-    labs(title="Burnup vs resolved Interrupt", y="Story Point Total") +
+ggplot(veinterrupt) +
+    labs(title="Capacity and Interrupt", y="Story Point Total") +
     theme(text = element_text(size=30), legend.title=element_blank()) +
-    geom_area(position='stack', aes(x = date, y = point_total, group=status, fill=status, order=as.numeric(status))) +
-    scale_x_date(breaks="1 month", label=date_format("%Y-%b"), limits = as.Date(c('2014-12-01', '2015-06-30'))) +
+    geom_area(position='stack', aes(x = date, y = point_total)) +
+    scale_x_date(breaks="1 month", label=date_format("%Y-%b"), limits = as.Date(c('2014-12-01', NA))) +
     scale_y_continuous(limits=c(0, 15000)) +
-    geom_point(data=burnup, aes(x=date, y=points))
+    geom_line(data=burnup, aes(x=date, y=points), size=2)
 dev.off()
+
+veinterrupt_delta=read.csv("/tmp/VE_interrupt_delta.csv")
+veinterrupt_delta$date <- as.Date(veinterrupt_delta$date, "%Y-%m-%d")
+
+status_output=png(filename = "/tmp/VE-interrupt-delta.png", width=2000, height=1400, units="px", pointsize=30)
+    
+ggplot(veinterrupt_delta) +
+    labs(title="Capacity minus Interrupt", y="Story Point Total") +
+    theme(text = element_text(size=30), legend.title=element_blank()) +
+    geom_area(position='stack', aes(x = date, y = point_total)) +
+    scale_x_date(breaks="1 month", label=date_format("%Y-%b"), limits = as.Date(c('2014-12-01', NA))) +
+    scale_y_continuous(limits=c(0, NA))
+dev.off()
+
+######################################################################
+## Velocity
+######################################################################
 
 velocity=read.csv("/tmp/VE_velocity.csv")
 velocity$week <- as.Date(velocity$week, "%Y-%m-%d")
 
-velocity_output=png(filename = "VE-velocity.png", width=1000, height=700, units="px", pointsize=30)
+velocity_output=png(filename = "/tmp/VE-velocity.png", width=1000, height=700, units="px", pointsize=30)
 
 ggplot(velocity, aes(week, velocity)) +
     labs(title="Velocity per week", y="Story Points") +
@@ -67,7 +109,7 @@ dev.off()
 #net_growth=read.csv("/tmp/VE_net_growth.csv")
 #net_growth$date <- as.Date(net_growth$date, "%Y-%m-%d")
 
-#net_growth_output=png(filename = "VE-net_growth.png", width=1000, height=700, units="px", pointsize=30)
+#net_growth_output=png(filename = "/tmp/VE-net_growth.png", width=1000, height=700, units="px", pointsize=30)
 
 #ggplot() +
 #    labs(title="Net change in open backlog", y="Story Points") +
@@ -76,7 +118,7 @@ dev.off()
 
 #dev.off()
 
-##histogram_output=png(filename = "VE-histogram.png", width=2000, height=1400, units="px", pointsize=30)
+##histogram_output=png(filename = "/tmp/VE-histogram.png", width=2000, height=1400, units="px", pointsize=30)
 
 ##point_hist=read.csv("/tmp/histogram.csv");
 ##point_hist_wide <- dcast(point <- hist, points + project ~ category, value.var="count")
@@ -95,23 +137,39 @@ dev.off()
 ## write.csv(VelocityT, file="velocity.csv")
 ## write.csv(phab_summ_t, file="backlog.csv")
 
+######################################################################
+## Tranche Backlog
+######################################################################
+
 tranche_backlog=read.csv("/tmp/VE_tranche_backlog.csv")
 
 ## Backlog
 
-## convert string to date
 tranche_backlog$date <- as.Date(tranche_backlog$date, "%Y-%m-%d")
-## manually set ordering of data
-##tranche_backlog$project2 <- factor(backlog$project, levels = c("VisualEditor","VisualEditor 2015/16 Q1 blockers","VisualEditor 2014/15 Q4 blockers","VisualEditor 2014/15 Q3 blockers","VisualEditor Interrupt"))
+tranche_backlog$project2 <- factor(tranche_backlog$project, levels = c("VisualEditor TR0: Interrupt", "VisualEditor TR1: Releases", "VisualEditor TR2: Mobile MVP", "VisualEditor TR3: Language support", "VisualEditor TR4: Link editor tweaks"))
 
-burnup2=read.csv("/tmp/VE_burnup.csv")
-burnup2$date <- as.Date(burnup2$date, "%Y-%m-%d")
-burnup_tranche_output=png(filename = "VE-tranche_backlog_burnup.png", width=2000, height=1400, units="px", pointsize=30)
-    
+burnup_tranche_output=png(filename = "/tmp/VE-tranche_backlog_burnup.png", width=2000, height=1400, units="px", pointsize=30)
+
+tranche_burnup=read.csv("/tmp/VE_tranche_burnup.csv")
+tranche_burnup$date <- as.Date(tranche_burnup$date, "%Y-%m-%d")
+##tranche_burnup$points <- tranche_burnup$points - 6850
+tranche_burnup$project2 <- 0 
+
 ggplot(tranche_backlog) +
     labs(title="VE backlog by tranche", y="Story Point Total") +
     theme(text = element_text(size=30), legend.title=element_blank())+
-    geom_area(position='stack', aes(x = date, y = point_total, group=project, fill=project, order=as.numeric(project))) +
-        scale_x_date(breaks="1 month", label=date_format("%Y-%b"), limits = as.Date(c('2015-04-01', '2015-06-30')))
+    geom_area(position='stack', aes(x = date, y = point_total, group=project2, fill=project2, order=as.numeric(project2))) +
+    scale_x_date(breaks="1 month", label=date_format("%Y-%b"), limits = as.Date(c('2015-06-18', NA))) + 
+    geom_line(data=tranche_burnup, aes(x=date, y=points), size=2)
 dev.off()
 
+tranche_status=read.csv("/tmp/VE_tranche_status.csv")
+tranche_status$date <- as.Date(tranche_status$date, "%Y-%m-%d")
+
+burnup_tranche_status_output=png(filename = "/tmp/VE-tranche_status_burnup.png", width=2000, height=1400, units="px", pointsize=30)
+ggplot(tranche_status) +
+    labs(title="VE backlog by tranche and status", y="Story Point Total") +
+    theme(text = element_text(size=30), legend.title=element_blank())+
+    geom_area(position='stack', aes(x = date, y = point_total, group=project, fill=project, order=as.numeric(project))) +
+    scale_x_date(breaks="1 month", label=date_format("%Y-%b"), limits = as.Date(c('2015-06-18', NA)))
+dev.off()

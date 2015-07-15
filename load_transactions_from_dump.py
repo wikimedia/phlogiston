@@ -11,7 +11,6 @@ import time
 import datetime
 import sys, getopt
 import subprocess
-import datetime
 
 def main(argv):
     try:
@@ -71,6 +70,7 @@ def usage():
    
 def load(conn, VERBOSE, DEBUG):
     cur = conn.cursor()
+
     with open('../phabricator_public.dump') as dump_file:
        data = json.load(dump_file)
 
@@ -98,7 +98,6 @@ def load(conn, VERBOSE, DEBUG):
                                 VALUES (%(task_id)s, %(phid)s, %(title)s, %(story_points)s) """)
         cur.execute(task_insert, {'task_id': task_id, 'phid': task_phid, 'title': title, 'story_points': story_points})
         edges = task['edge']
-        import ipdb; ipdb.set_trace()
 
         for edge in edges:
         # edge is membership in a project.  This ought to be transactional, but until the data is better understood,
@@ -117,7 +116,6 @@ def load(conn, VERBOSE, DEBUG):
                         VALUES (%(id)s, %(phid)s, %(task_id)s, %(object_phid)s, %(transaction_type)s, %(new_value)s, %(date_modified)s)""")
                     cur.execute(transaction_insert, {'id':trans[0] , 'phid':trans[1], 'task_id': task_id, 'object_phid':trans[3], 'transaction_type':trans[6], 'new_value':trans[8], 'date_modified': time.strftime('%m/%d/%Y %H:%M:%S', time.gmtime(trans[11])) })
 
-        
     ######################################################################
     # Load project and project column data
     ######################################################################
@@ -136,7 +134,8 @@ def load(conn, VERBOSE, DEBUG):
        cur.execute(column_insert, {'id':row[0] , 'name':row[2], 'phid':row[1], 'project_phid':row[5] })
 
     cur.close()
-   
+
+
 def reconstruct(conn, VERBOSE, DEBUG, OUTPUT_FILE, project_filter, default_points):
     cur = conn.cursor()
     cur.execute(open("rebuild_bi_tables.sql", "r").read())
@@ -177,7 +176,6 @@ def reconstruct(conn, VERBOSE, DEBUG, OUTPUT_FILE, project_filter, default_point
         query_date = working_date + datetime.timedelta(days=1)
         if VERBOSE:
             print()
-            print(query_date,end="")
         task_on_day_query = """SELECT distinct(mt.object_phid) 
                                  FROM maniphest_transaction mt"""
         if project_filter:
@@ -247,27 +245,16 @@ def reconstruct(conn, VERBOSE, DEBUG, OUTPUT_FILE, project_filter, default_point
             pretty_project = ""
             reportable_edges = []
 
-            if DEBUG:
-                for edge in edges_list:
-                    print(project_dict[edge], " ", end="")
-#                print("PROJECT")
-#                for project in project_list:
-#                    print(project_dict[project])
-
             if project_list:
                 # if a list of projects is specified, reduce the list
                 # of edges to only the single best match, where best =
                 # earliest in the specified project list
-#                import ipdb; ipdb.set_trace()
                 for project in project_list:
                     if project in edges_list:
                         reportable_edges.append(project)
                         break
             else:
                 reportable_edges = edges_list
-
-#            if DEBUG:
-#                print(reportable_edges)
 
             for edge in reportable_edges:
                 project_phid = edge
