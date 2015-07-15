@@ -1,7 +1,7 @@
-# This script reads a JSON file produced by https://gerrit.wikimedia.org/r/#/c/214398/2/wmfphablib/phabdb.py
-# and reloads a postgresql database containing the data
-# and outputs a flat file containing a denormalized report of the task history
-# with one row for each task for each day since the data started
+# This script
+# 1) reads a JSON file produced by https://gerrit.wikimedia.org/r/#/c/214398/2/wmfphablib/phabdb.py
+# 2) loads a postgresql database containing the data (or outputs a CSV file)
+# 3) Generates chart images via an R script
 # Data is available at  http://dumps.wikimedia.org/other/misc/phabricator_public.dump
 
 import psycopg2
