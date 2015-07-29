@@ -175,7 +175,7 @@ def reconstruct(conn, VERBOSE, DEBUG, OUTPUT_FILE, project_filter, default_point
         # the midnight at the end of the day to make the queries line up with the date label
         query_date = working_date + datetime.timedelta(days=1)
         if VERBOSE:
-            print()
+            print(query_date)
         task_on_day_query = """SELECT distinct(mt.object_phid) 
                                  FROM maniphest_transaction mt"""
         if project_filter:
