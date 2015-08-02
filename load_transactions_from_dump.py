@@ -28,7 +28,8 @@ def main(argv):
     VERBOSE = False
     output_file = ''
     default_points = 5
-    start_date = ''
+    start_date = '2015-01-01'
+    project_source = ''
     for opt, arg in opts:
         if opt in ("-c", "--reconstruct"):
             reconstruct_data = True
@@ -59,7 +60,7 @@ def main(argv):
         config = configparser.ConfigParser()
         config.read(project_source)
         default_points = config.get("vars", "default_points")
-        project_list = tuple(config.get("vars", "project_list").split())
+        project_list = tuple(config.get("vars", "project_list").split(','))
         reconstruct_script = config.get("vars", "reconstruct_script")
         report_tables_script = config.get("vars", "report_tables_script")
         report_script = config.get("vars", "report_script")
@@ -103,7 +104,8 @@ def load(conn, VERBOSE, DEBUG):
     ######################################################################
     
     if VERBOSE:
-        print("Trying to load tasks, transactions, and edges for {count} tasks".format(count=len(data['task'].keys())))
+        print("Trying to load tasks, transactions, and edges for {count} tasks".
+              format(count=len(data['task'].keys())))
 
     for task_id in data['task'].keys():
         task = data['task'][task_id]
@@ -211,7 +213,6 @@ def reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_list,
             task_on_day_query = """SELECT distinct(object_phid) FROM maniphest_transaction WHERE date(date_modified) <= %(query_date)s AND object_phid = 'PHID-TASK-h27s7yvr62xzheogrrv7'"""
 
         cur.execute(task_on_day_query, {'query_date': query_date , 'project_phid': project_list})
-
         for row in cur.fetchall():
             object_phid = row[0]
             # ----------------------------------------------------------------------

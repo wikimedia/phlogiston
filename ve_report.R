@@ -1,6 +1,5 @@
 ## Convert a historical transaction file from Phab into a burnup report
 
-library(dplyr)
 library(reshape2)
 library(ggplot2)
 library(scales)
@@ -70,7 +69,7 @@ burnup_output=png(filename = "/tmp/VE-tranch0_burnup.png", width=2000, height=11
 
 par(las=3)
 ggplot(tr_burnup) + 
-    labs(title="VE Tranch 0 backlog", y="Story Point Total") +
+    labs(title="VE Interruptions (Tranche 0)", y="Story Point Total") +
     theme(text = element_text(size=30), legend.title=element_blank())+
     geom_area(position='stack', aes(x = date, y = points, group=status, fill=status, order=-as.numeric(status))) +
     scale_x_date(breaks="1 week", label=date_format("%Y-%b-%d"), limits = as.Date(c('2015-06-18', NA)))
