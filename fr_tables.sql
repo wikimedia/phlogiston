@@ -1,30 +1,30 @@
-DROP TABLE IF EXISTS an_tall_status;
+DROP TABLE IF EXISTS fr_tall_status;
 
 SELECT date,
        status,
        sum(points) as points
-  INTO an_tall_status
+  INTO fr_tall_status
   FROM task_history
  GROUP BY date, status;
 
-COPY an_tall_status to '/tmp/an_status.csv' DELIMITER ',' CSV
+COPY fr_tall_status to '/tmp/fr_status.csv' DELIMITER ',' CSV
 HEADER;
 
 /* Entire Backlog
 
 */ 
 
-DROP TABLE IF EXISTS an_tall_backlog;
+DROP TABLE IF EXISTS fr_tall_backlog;
 
 SELECT date,
        project,
        sum(points) as points
-  INTO an_tall_backlog
+  INTO fr_tall_backlog
   FROM task_history
  WHERE status != '"invalid"' AND status != '"declined"'
  GROUP BY project, date;
 
-COPY an_tall_backlog to '/tmp/an_backlog.csv' DELIMITER ',' CSV
+COPY fr_tall_backlog to '/tmp/fr_backlog.csv' DELIMITER ',' CSV
 HEADER;
 
 /* Velocity */
@@ -56,18 +56,16 @@ SELECT week, done, row_number() over () AS rnum
 COPY (SELECT v2.week, GREATEST(v2.done - v1.done, 0) AS velocity
         FROM burnup_week_row AS v1
         JOIN burnup_week_row AS v2 ON (v1.rnum + 1 = v2.rnum))
-  TO '/tmp/an_velocity.csv' DELIMITER ',' CSV HEADER;
+  TO '/tmp/fr_velocity.csv' DELIMITER ',' CSV HEADER;
 
 /* Total backlog */
 
 DROP TABLE IF EXISTS total_backlog;
-DROP TABLE IF EXISTS net_growth;
-DROP TABLE IF EXISTS growth_delta;
 
 SELECT date,
        sum(points) AS points
   INTO total_backlog
-  FROM an_tall_backlog
+  FROM fr_tall_backlog
  GROUP BY date
  ORDER BY date;
 
@@ -77,7 +75,7 @@ SELECT tb.date,
   FROM total_backlog tb, burnup b
  WHERE tb.date = b.date
  ORDER BY date
-) to '/tmp/an_net_growth.csv' DELIMITER ',' CSV HEADER;
+) to '/tmp/fr_net_growth.csv' DELIMITER ',' CSV HEADER;
 
 DROP TABLE IF EXISTS histogram;
 
@@ -95,7 +93,7 @@ COPY (SELECT count(title),
              FROM histogram
     GROUP BY project, points
     ORDER BY project, points)
-TO '/tmp/an_histogram.csv' CSV HEADER;
+TO '/tmp/fr_histogram.csv' CSV HEADER;
 
 COPY (SELECT date,
              sum(points) as points
@@ -103,4 +101,4 @@ COPY (SELECT date,
        WHERE status = '"resolved"'
     GROUP BY date
     ORDER BY date)
-TO '/tmp/an_burnup.csv' DELIMITER ',' CSV HEADER;
+TO '/tmp/fr_burnup.csv' DELIMITER ',' CSV HEADER;

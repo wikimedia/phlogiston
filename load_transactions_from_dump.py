@@ -61,14 +61,13 @@ def main(argv):
         config.read(project_source)
         default_points = config.get("vars", "default_points")
         project_list = tuple(config.get("vars", "project_list").split(','))
-        reconstruct_script = config.get("vars", "reconstruct_script")
         report_tables_script = config.get("vars", "report_tables_script")
         report_script = config.get("vars", "report_script")
         start_date = datetime.datetime.strptime(config.get("vars", "start_date"), "%Y-%m-%d").date()
 
     if reconstruct_data:
         if project_source:
-            reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_list, reconstruct_script, start_date)
+            reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_list, start_date)
         else:
             print("Reconstruct specified without a project.  Please specify a project with --project.")
     if run_report:
@@ -159,7 +158,7 @@ def load(conn, VERBOSE, DEBUG):
     cur.close()
 
 
-def reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_list, reconstruct_script, start_date):
+def reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_list, start_date):
     cur = conn.cursor()
 
     # preload project and column for fast lookup within Python
