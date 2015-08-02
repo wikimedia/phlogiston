@@ -30,7 +30,7 @@ dev.off()
 backlog=read.csv("/tmp/VE_backlog.csv")
 backlog$date <- as.Date(backlog$date, "%Y-%m-%d")
 ## manually set ordering of data
-backlog$project2 <- factor(backlog$project, levels = c("VisualEditor","VisualEditor 2015/16 Q1 blockers","VisualEditor 2014/15 Q4 blockers","VisualEditor 2014/15 Q3 blockers","VisualEditor Interrupt"))
+backlog$project2 <- factor(backlog$project, levels = c("VisualEditor","VisualEditor 2014/15 Q4 blockers","VisualEditor 2014/15 Q3 blockers","VisualEditor Interrupt"))
 
 burnup=read.csv("/tmp/VE_burnup.csv")
 burnup$date <- as.Date(burnup$date, "%Y-%m-%d")

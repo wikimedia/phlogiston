@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 # This script
 # 1) reads a JSON file produced by https://gerrit.wikimedia.org/r/#/c/214398/2/wmfphablib/phabdb.py
 # 2) loads a postgresql database containing the data (or outputs a CSV file)
@@ -11,10 +12,11 @@ import time
 import datetime
 import sys, getopt
 import subprocess
+import configparser
 
 def main(argv):
     try:
-        opts, args = getopt.getopt(argv, "cdehlo:p:rv", ["reconstruct", "debug", "defaultpoints", "help", "load", "output=", "project=", "report", "verbose"])
+        opts, args = getopt.getopt(argv, "cdhlo:p:rs:v", ["reconstruct", "debug", "help", "load", "output=", "project=", "report", "startdate", "verbose"])
     except getopt.GetoptError as e:
         print(e)
         usage()
@@ -24,37 +26,53 @@ def main(argv):
     run_report = False
     DEBUG = False
     VERBOSE = False
-    OUTPUT_FILE = ''
-    project_filter = None
-    default_points = 10
+    output_file = ''
+    default_points = 5
+    start_date = ''
     for opt, arg in opts:
         if opt in ("-c", "--reconstruct"):
             reconstruct_data = True
         elif opt in ("-d", "--debug"):
             DEBUG = True
-        elif opt in ("-e", "--defaultpoints"):
-            default_points = arg
         elif opt in ("-h", "--help"):
             usage()
             sys.exit()
         elif opt in ("-l", "--load"):
             load_data = True
         elif opt in ("-o", "--output"):
-            OUTPUT_FILE = arg
+            output_file = arg
         elif opt in ("-p", "--project"):
-            project_filter = arg
+            project_source = arg
         elif opt in ("-r", "--report"):
             run_report = True
+        elif opt in ("-s", "--startdate"):
+            start_date = datetime.datetime.strptime(arg, "%Y-%m-%d").date()
         elif opt in ("-v", "--verbose"):
             VERBOSE = True
     conn = psycopg2.connect("dbname=phab")
     conn.autocommit = True
+
     if load_data:
         load(conn, VERBOSE, DEBUG)
+
+    if project_source:
+        config = configparser.ConfigParser()
+        config.read(project_source)
+        default_points = config.get("vars", "default_points")
+        project_list = tuple(config.get("vars", "project_list").split())
+        database_script = config.get("vars", "database_script")
+        start_date = datetime.datetime.strptime(config.get("vars", "start_date"), "%Y-%m-%d").date()
+
     if reconstruct_data:
-        reconstruct(conn, VERBOSE, DEBUG, OUTPUT_FILE, project_filter, default_points)
+        if project_source:
+            reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_list, database_script, start_date)
+        else:
+            print("Reconstruct specified without a project.  Please specify a project with --project.")
     if run_report:
-        report(conn, VERBOSE, DEBUG)
+        if project_source:
+            report(conn, VERBOSE, DEBUG, project_source)
+        else:
+            print("Reconstruct specified without a project.  Please specify a project with --project.")
     conn.close()
 
 def usage():
@@ -62,12 +80,13 @@ def usage():
   --debug to work on a small subset of data\n
   --help for this message.\n
   --load to load data.  This will wipe existing data in the reporting database.\n
-  --output FILE.  This will produce a csv dump of the fully denormalized data (one line per task per projectcolumn per day).
-  --project comma-separated list of PHID to include. Tasks belonging to multiple PHIDs are assigned only to the first in this list.  Applies only to reporting, not loading.\n
+  --output FILE.  This will produce a csv dump of the fully denormalized data (one line per task per projectcolumn per day).\n
+  --project Name of a Python file containing metadata specific to the project to be analyzed.  Reconstruct and report will not function without a project.\n
   --report Process data in SQL, generate graphs in R, and output a set of png files.\n
   --verbose to show extra messages\n
-  --reconstruct Reprocess the loaded data to reconstruct a historical record day by day, in the database""")
-   
+  --reconstruct Reprocess the loaded data to reconstruct a historical record day by day, in the database\n
+  --startdate The date reconstruction should start, as YYYY-MM-DD""")
+  
 def load(conn, VERBOSE, DEBUG):
     cur = conn.cursor()
 
@@ -136,9 +155,8 @@ def load(conn, VERBOSE, DEBUG):
     cur.close()
 
 
-def reconstruct(conn, VERBOSE, DEBUG, OUTPUT_FILE, project_filter, default_points):
+def reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_list, database_script, start_date):
     cur = conn.cursor()
-    cur.execute(open("rebuild_bi_tables.sql", "r").read())
 
     # preload project and column for fast lookup within Python
     cur.execute("SELECT phid, name from phabricator_project")
@@ -146,10 +164,6 @@ def reconstruct(conn, VERBOSE, DEBUG, OUTPUT_FILE, project_filter, default_point
     cur.execute("SELECT phid, name from phabricator_column")
     column_dict = dict(cur.fetchall())
 
-    project_list = ""
-    if project_filter:
-        project_list = tuple(project_filter.split(","))
-    
     ######################################################################
     # Generate denormalized data
     ######################################################################
@@ -158,27 +172,31 @@ def reconstruct(conn, VERBOSE, DEBUG, OUTPUT_FILE, project_filter, default_point
     header= ["Date","ID", "Title", "Status", "Project", "Column", "Points"]
     # reload the database tables
     cur.execute(open("rebuild_bi_tables.sql", "r").read())
-    if OUTPUT_FILE:
-        csvwriter = csv.writer(open(OUTPUT_FILE, 'w'), delimiter=',')
+    if output_file:
+        csvwriter = csv.writer(open(output_file, 'w'), delimiter=',')
         csvwriter.writerow(header)
 
-    oldest_data_query = """SELECT date(min(date_modified)) from maniphest_transaction"""
-    cur.execute(oldest_data_query)
-    working_date = cur.fetchone()[0]
-    target_date = datetime.datetime.now().date()
-    if DEBUG:
-#        working_date = datetime.date(2015,2,23)
-        target_date = datetime.date(2015,3,1)
+    if start_date:
+        working_date = start_date
+    else:
+        oldest_data_query = """SELECT date(min(date_modified)) from maniphest_transaction"""
+        cur.execute(oldest_data_query)
+        working_date = cur.fetchone()[0]
 
+    if DEBUG:
+        target_date = datetime.date(2015,3,1)
+    else:
+        target_date = datetime.datetime.now().date()
+    
     while working_date <= target_date:
         # because working_date is midnight at the beginning of the day, use a date at
         # the midnight at the end of the day to make the queries line up with the date label
         query_date = working_date + datetime.timedelta(days=1)
         if VERBOSE:
-            print(query_date)
+            print(working_date)
         task_on_day_query = """SELECT distinct(mt.object_phid) 
                                  FROM maniphest_transaction mt"""
-        if project_filter:
+        if project_list:
             task_on_day_query += """, maniphest_edge me
                                 WHERE mt.object_phid = me.task_phid 
                                   AND me.project_phid IN %(project_phid)s
@@ -283,7 +301,7 @@ def reconstruct(conn, VERBOSE, DEBUG, OUTPUT_FILE, project_filter, default_point
                     %(points)s)"""
                 cur.execute(denorm_query, {'query_date': query_date, 'title': pretty_title, 'status': pretty_status, 'project': pretty_project, 'projectcolumn': pretty_column, 'points': pretty_points })
 
-                if OUTPUT_FILE:
+                if output_file:
                     csvwriter.writerow(output_row)
 
         working_date += datetime.timedelta(days=1)
