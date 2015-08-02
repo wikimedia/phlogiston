@@ -60,17 +60,19 @@ def main(argv):
         config.read(project_source)
         default_points = config.get("vars", "default_points")
         project_list = tuple(config.get("vars", "project_list").split())
-        database_script = config.get("vars", "database_script")
+        reconstruct_script = config.get("vars", "reconstruct_script")
+        report_tables_script = config.get("vars", "report_tables_script")
+        report_script = config.get("vars", "report_script")
         start_date = datetime.datetime.strptime(config.get("vars", "start_date"), "%Y-%m-%d").date()
 
     if reconstruct_data:
         if project_source:
-            reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_list, database_script, start_date)
+            reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_list, reconstruct_script, start_date)
         else:
             print("Reconstruct specified without a project.  Please specify a project with --project.")
     if run_report:
         if project_source:
-            report(conn, VERBOSE, DEBUG, project_source)
+            report(conn, VERBOSE, DEBUG, report_tables_script, report_script)
         else:
             print("Reconstruct specified without a project.  Please specify a project with --project.")
     conn.close()
@@ -155,7 +157,7 @@ def load(conn, VERBOSE, DEBUG):
     cur.close()
 
 
-def reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_list, database_script, start_date):
+def reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_list, reconstruct_script, start_date):
     cur = conn.cursor()
 
     # preload project and column for fast lookup within Python
@@ -307,10 +309,10 @@ def reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_list,
         working_date += datetime.timedelta(days=1)
     cur.close()
 
-def report(conn, VERBOSE, DEBUG):
+def report(conn, VERBOSE, DEBUG, report_tables_script, report_script):
     cur = conn.cursor()
-    cur.execute(open("rebuild_report_tables.sql", "r").read())
-    subprocess.Popen("Rscript report.R", shell = True)
+    cur.execute(open(report_tables_script, "r").read())
+    subprocess.Popen("Rscript {0}".format(report_script), shell = True)
 
 if __name__ == "__main__":
     main(sys.argv[1:])
