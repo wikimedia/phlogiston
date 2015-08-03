@@ -9,7 +9,7 @@ SELECT date,
   FROM task_history
  GROUP BY date, status;
 
-COPY tall_status to '/tmp/VE_status.csv' DELIMITER ',' CSV
+COPY tall_status to '/tmp/ve_status.csv' DELIMITER ',' CSV
 HEADER;
 
 DROP TABLE IF EXISTS resolved_ve;
@@ -19,9 +19,10 @@ SELECT date,
   INTO resolved_ve
   FROM task_history
  WHERE project = 'VisualEditor' and status='"resolved"'
+   AND date < '2015-01-30'
  GROUP BY date, status;
 
-COPY resolved_ve to '/tmp/VE_interrupt.csv' DELIMITER ',' CSV HEADER;
+COPY resolved_ve to '/tmp/ve_interrupt.csv' DELIMITER ',' CSV HEADER;
 
 
 /* Entire Backlog
@@ -50,7 +51,7 @@ SELECT date,
    AND projectcolumn NOT LIKE '%TR%'
  GROUP BY date);
 
-COPY tall_backlog to '/tmp/VE_backlog.csv' DELIMITER ',' CSV
+COPY tall_backlog to '/tmp/ve_backlog.csv' DELIMITER ',' CSV
 HEADER;
 
 /* Velocity */
@@ -82,7 +83,7 @@ SELECT week, done, row_number() over () AS rnum
 COPY (SELECT v2.week, GREATEST(v2.done - v1.done, 0) AS velocity
         FROM burnup_week_row AS v1
         JOIN burnup_week_row AS v2 ON (v1.rnum + 1 = v2.rnum))
-  TO '/tmp/VE_velocity.csv' DELIMITER ',' CSV HEADER;
+  TO '/tmp/ve_velocity.csv' DELIMITER ',' CSV HEADER;
 
 /* Total backlog */
 
@@ -103,7 +104,7 @@ SELECT tb.date,
   FROM total_backlog tb, burnup b
  WHERE tb.date = b.date
  ORDER BY date
-) to '/tmp/VE_net_growth.csv' DELIMITER ',' CSV HEADER;
+) to '/tmp/ve_net_growth.csv' DELIMITER ',' CSV HEADER;
 
 DROP TABLE IF EXISTS histogram;
 
@@ -129,7 +130,7 @@ COPY (SELECT date,
        WHERE status = '"resolved"'
     GROUP BY date
     ORDER BY date)
-TO '/tmp/VE_burnup.csv' DELIMITER ',' CSV HEADER;
+TO '/tmp/ve_burnup.csv' DELIMITER ',' CSV HEADER;
 
 COPY (SELECT date,
              sum(points) as points
@@ -138,7 +139,7 @@ COPY (SELECT date,
          AND projectcolumn SIMILAR TO '%TR(0|1|2|3|4)%'
     GROUP BY date
     ORDER BY date)
-TO '/tmp/VE_tranche_burnup.csv' DELIMITER ',' CSV HEADER;
+TO '/tmp/ve_tranche_burnup.csv' DELIMITER ',' CSV HEADER;
 
 
 COPY (SELECT date,
@@ -149,7 +150,7 @@ COPY (SELECT date,
          AND (status = '"open"' OR status = '"resolved"')
     GROUP BY date, status
     ORDER BY date, status)
-TO '/tmp/VE_TR0.csv' DELIMITER ',' CSV HEADER;
+TO '/tmp/ve_TR0.csv' DELIMITER ',' CSV HEADER;
 
 COPY (SELECT date,
              sum(points) as points,
@@ -159,7 +160,7 @@ COPY (SELECT date,
          AND (status = '"open"' OR status = '"resolved"')
     GROUP BY date, status
     ORDER BY date, status)
-TO '/tmp/VE_TR1.csv' DELIMITER ',' CSV HEADER;
+TO '/tmp/ve_TR1.csv' DELIMITER ',' CSV HEADER;
 
 COPY (SELECT date,
              sum(points) as points,
@@ -169,7 +170,7 @@ COPY (SELECT date,
          AND (status = '"open"' OR status = '"resolved"')
     GROUP BY date, status
     ORDER BY date, status)
-TO '/tmp/VE_TR2.csv' DELIMITER ',' CSV HEADER;
+TO '/tmp/ve_TR2.csv' DELIMITER ',' CSV HEADER;
 
 COPY (SELECT date,
              sum(points) as points,
@@ -179,17 +180,28 @@ COPY (SELECT date,
          AND (status = '"open"' OR status = '"resolved"')
     GROUP BY date, status
     ORDER BY date, status)
-TO '/tmp/VE_TR3.csv' DELIMITER ',' CSV HEADER;
+TO '/tmp/ve_TR3.csv' DELIMITER ',' CSV HEADER;
 
 COPY (SELECT date,
              sum(points) as points,
              status
         FROM task_history
-       WHERE projectcolumn SIMILAR TO '%TR40%'
+       WHERE projectcolumn SIMILAR TO '%TR4%'
          AND (status = '"open"' OR status = '"resolved"')
     GROUP BY date, status
     ORDER BY date, status)
-TO '/tmp/VE_TR4.csv' DELIMITER ',' CSV HEADER;
+TO '/tmp/ve_TR4.csv' DELIMITER ',' CSV HEADER;
+
+COPY (SELECT date,
+             sum(points) as points,
+             status
+        FROM task_history
+       WHERE projectcolumn SIMILAR TO '%TR5%'
+         AND (status = '"open"' OR status = '"resolved"')
+    GROUP BY date, status
+    ORDER BY date, status)
+TO '/tmp/ve_TR5.csv' DELIMITER ',' CSV HEADER;
+
 
 DROP TABLE IF EXISTS tall_tranche_backlog;
 
@@ -204,7 +216,7 @@ SELECT date,
    AND status != '"invalid"' AND status != '"declined"'
 GROUP BY project, projectcolumn, date;
 
-COPY tall_tranche_backlog to '/tmp/VE_tranche_backlog.csv' DELIMITER ',' CSV
+COPY tall_tranche_backlog to '/tmp/ve_tranche_backlog.csv' DELIMITER ',' CSV
 HEADER;
 
 DROP TABLE IF EXISTS tall_tranche_status;
@@ -220,7 +232,7 @@ SELECT date,
    AND status != '"invalid"' AND status != '"declined"'
 GROUP BY project, projectcolumn, date, status;
 
-COPY tall_tranche_status to '/tmp/VE_tranche_status.csv' DELIMITER ',' CSV
+COPY tall_tranche_status to '/tmp/ve_tranche_status.csv' DELIMITER ',' CSV
 HEADER;
 
 SELECT title, ('2015-07-15' - min(th1.date)) as age

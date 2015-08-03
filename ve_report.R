@@ -129,6 +129,19 @@ ggplot(tr_burnup) +
     geom_area(position='stack', aes(x = date, y = points, group=status, fill=status, order=-as.numeric(status)))
 dev.off()
 
+######################################################################
+## TR5
+
+tr_burnup=read.csv("/tmp/VE_TR5.csv")
+tr_burnup$date <- as.Date(tr_burnup$date, "%Y-%m-%d")
+burnup_output=png(filename = "/tmp/VE-tranch5_burnup.png", width=2000, height=1125, units="px", pointsize=30)
+    
+ggplot(tr_burnup) +
+    labs(title="VE Tranch 5 backlog", y="Story Point Total") +
+    theme(text = element_text(size=30), legend.title=element_blank())+
+    geom_area(position='stack', aes(x = date, y = points, group=status, fill=status, order=-as.numeric(status)))
+dev.off()
+
 
 ######################################################################
 ## Interrupt
