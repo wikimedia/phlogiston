@@ -157,7 +157,7 @@ def load(conn, VERBOSE, DEBUG):
 
     cur.close()
 
-
+    
 def reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_list, start_date):
     cur = conn.cursor()
 
@@ -220,12 +220,13 @@ def reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_list,
             # this means historical points charts are actually retroactive
             # Title could be tracked retroactively but this code doesn't make that effort
             # ----------------------------------------------------------------------
-            task_query = """SELECT title, story_points
+            task_query = """SELECT title, story_points, id
                               FROM maniphest_task
                              WHERE phid = %(object_phid)s"""
             cur.execute(task_query, {'object_phid': object_phid, 'query_date': query_date, 'transaction_type': 'status'})
             task_info = cur.fetchone()
             pretty_title = task_info[0]
+            task_id = task_info[2]
             try:
                 pretty_points = int(task_info[1])
             except:
@@ -296,12 +297,13 @@ def reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_list,
                 denorm_query = """
                     INSERT INTO task_history VALUES (
                     %(query_date)s,
+                    %(id)s,
                     %(title)s,
                     %(status)s,
                     %(project)s,
                     %(projectcolumn)s,
                     %(points)s)"""
-                cur.execute(denorm_query, {'query_date': query_date, 'title': pretty_title, 'status': pretty_status, 'project': pretty_project, 'projectcolumn': pretty_column, 'points': pretty_points })
+                cur.execute(denorm_query, {'query_date': query_date, 'id': task_id, 'title': pretty_title, 'status': pretty_status, 'project': pretty_project, 'projectcolumn': pretty_column, 'points': pretty_points })
 
                 if output_file:
                     csvwriter.writerow(output_row)

@@ -105,3 +105,29 @@ COPY (SELECT date,
     GROUP BY date
     ORDER BY date)
 TO '/tmp/AN_burnup.csv' DELIMITER ',' CSV HEADER;
+
+DROP TABLE IF EXISTS an_leadtime;
+
+SELECT date AS resolve_date,
+       (SELECT min(date)
+          FROM task_history th2
+         WHERE th2.title = th1.title
+           AND status = '"open"') as open_date
+  INTO an_leadtime
+  FROM
+      ( SELECT th.date,
+               th.title,
+               lag(th.title) OVER (ORDER BY title, th.date ASC) as prev_title,
+               th.status,
+               lag(th.status) OVER (ORDER BY title, th.date ASC) as prev_status
+          FROM task_history th
+      ORDER BY title, date ASC) as th1
+ WHERE prev_status = '"open"' AND status='"resolved"' AND title=prev_title;
+
+COPY (SELECT count(*),
+             width_bucket(extract(days from (resolve_date - open_date)),1,70,7) as leadtime,
+             date_trunc('week', resolve_date) AS week
+        FROM an_leadtime
+       GROUP BY leadtime, week
+       ORDER by week, leadtime)
+TO '/tmp/AN_leadtime.csv' DELIMITER ',' CSV HEADER;

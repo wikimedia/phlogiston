@@ -4,6 +4,7 @@ library(reshape2)
 library(ggplot2)
 library(scales)
 library(grid)
+library(RColorBrewer)
 
 ######################################################################
 ## Analytics Status
@@ -57,6 +58,35 @@ ggplot(velocity, aes(week, velocity)) +
     labs(title="Project B Velocity per week", y="Story Points") +
     geom_bar(stat="identity")
 dev.off()
+
+######################################################################
+## Lead Time
+######################################################################
+
+leadtime=read.csv("/tmp/AN_leadtime.csv")
+leadtime$week <- as.Date(leadtime$week, "%Y-%m-%d")
+
+leadtime_output=png(filename = "/tmp/AN-leadtime.png", width=2000, height=1125, units="px", pointsize=30)
+
+ggplot(leadtime, aes(x=week, y=count, fill=leadtime)) +
+    geom_bar(stat="identity")
+
+dev.off()
+
+## ######################################################################
+## ## Velocity vs backlog
+## ######################################################################
+
+## net_growth=read.csv("/tmp/AN_net_growth.csv")
+## net_growth$date <- as.Date(net_growth$date, "%Y-%m-%d")
+
+## net_growth_output=png(filename = "/tmp/AN-net_growth.png", width=2000, height=1125, units="px", pointsize=30)
+
+## ggplot() +
+##     labs(title="Net change in open backlog", y="Story Points") +
+##     theme(text = element_text(size=30), legend.title=element_blank())+
+##     geom_line(data = net_growth, stat="identity", aes(date, points), size=2)
+## dev.off()
 
 ## ######################################################################
 ## ## Velocity vs backlog
