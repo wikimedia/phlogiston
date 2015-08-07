@@ -192,7 +192,30 @@ def reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_list,
 
     header= ["Date","ID", "Title", "Status", "Project", "Column", "Points"]
     # reload the database tables
-    cur.execute(open("rebuild_bi_tables.sql", "r").read())
+    task_history_ddl = """DROP TABLE IF EXISTS {0} ;
+
+                          CREATE TABLE {0} (
+                                 date timestamp,
+                                 id int,
+                                 title text,
+                                 status text,
+                                 project text,
+                                 projectcolumn text,
+                                 points int
+                          )     ;
+
+                          CREATE INDEX ON {0} (project) ;
+                          CREATE INDEX ON {0} (projectcolumn) ;
+                          CREATE INDEX ON {0} (status) ;
+                          CREATE INDEX ON {0} (date) ;
+                          CREATE INDEX ON {0} (id) ;
+                          CREATE INDEX ON {0} (date,id) ;"""
+
+    # Putting variables directly into SQL without escaping is vulnerable, but the only
+    # variable we're adding is from the config file so exposure is limited
+    unsafe_ddl = task_history_ddl.format(task_history_table_name)
+    cur.execute(unsafe_ddl)
+
     if output_file:
         csvwriter = csv.writer(open(output_file, 'w'), delimiter=',')
         csvwriter.writerow(header)
@@ -313,7 +336,7 @@ def reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_list,
 
                 output_row = [query_date, object_phid, pretty_title, pretty_status, pretty_project, pretty_column, pretty_points]
                 denorm_query = """
-                    INSERT INTO %(table_name) VALUES (
+                    INSERT INTO {0} VALUES (
                     %(query_date)s,
                     %(id)s,
                     %(title)s,
@@ -321,7 +344,9 @@ def reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_list,
                     %(project)s,
                     %(projectcolumn)s,
                     %(points)s)"""
-                cur.execute(denorm_query, {'table_name': task_history_table_name, 'query_date': query_date, 'id': task_id, 'title': pretty_title, 'status': pretty_status, 'project': pretty_project, 'projectcolumn': pretty_column, 'points': pretty_points })
+
+                unsafe_denorm_query = denorm_query.format(task_history_table_name)
+                cur.execute(unsafe_denorm_query, {'query_date': query_date, 'id': task_id, 'title': pretty_title, 'status': pretty_status, 'project': pretty_project, 'projectcolumn': pretty_column, 'points': pretty_points })
 
                 if output_file:
                     csvwriter.writerow(output_row)

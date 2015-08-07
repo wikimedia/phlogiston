@@ -9,12 +9,12 @@ library(grid)
 ## Analytics Status
 ######################################################################
 
-FR_status=read.csv("/tmp/FR_status.csv")
-FR_status$date <- as.Date(FR_status$date, "%Y-%m-%d")
+fr_status=read.csv("/tmp/fr_status.csv")
+fr_status$date <- as.Date(fr_status$date, "%Y-%m-%d")
 
-ve_status_output=png(filename = "/tmp/FR-backlog-status.png", width=2000, height=1125, units="px", pointsize=30)
+ve_status_output=png(filename = "/tmp/fr-backlog-status.png", width=2000, height=1125, units="px", pointsize=30)
     
-ggplot(FR_status) +
+ggplot(fr_status) +
     labs(title="Disposition of the Project C backlog", y="Story Point Total") +
     theme(text = element_text(size=30), legend.title=element_blank())+
     geom_area(position='stack', aes(x = date, y = points, group=status, fill=status, order=-as.numeric(status))) +
@@ -26,12 +26,12 @@ dev.off()
 ## Backlog
 ######################################################################
 
-backlog=read.csv("/tmp/FR_backlog.csv")
+backlog=read.csv("/tmp/fr_backlog.csv")
 backlog$date <- as.Date(backlog$date, "%Y-%m-%d")
 
-burnup=read.csv("/tmp/FR_burnup.csv")
+burnup=read.csv("/tmp/fr_burnup.csv")
 burnup$date <- as.Date(burnup$date, "%Y-%m-%d")
-burnup_output=png(filename = "/tmp/FR-backlog_burnup.png", width=2000, height=1125, units="px", pointsize=30)
+burnup_output=png(filename = "/tmp/fr-backlog_burnup.png", width=2000, height=1125, units="px", pointsize=30)
     
 ggplot(backlog) +
     labs(title="Project C backlog", y="Story Point Total") +
@@ -47,10 +47,10 @@ dev.off()
 ## Velocity
 ######################################################################
 
-velocity=read.csv("/tmp/FR_velocity.csv")
+velocity=read.csv("/tmp/fr_velocity.csv")
 velocity$week <- as.Date(velocity$week, "%Y-%m-%d")
 
-velocity_output=png(filename = "/tmp/FR-velocity.png", width=2000, height=1125, units="px", pointsize=30)
+velocity_output=png(filename = "/tmp/fr-velocity.png", width=2000, height=1125, units="px", pointsize=30)
 
 ggplot(velocity, aes(week, velocity)) +
     labs(title="Project C Velocity per week", y="Story Points") +
@@ -61,10 +61,10 @@ dev.off()
 ## ## Velocity vs backlog
 ## ######################################################################
 
-## net_growth=read.csv("/tmp/FR_net_growth.csv")
+## net_growth=read.csv("/tmp/fr_net_growth.csv")
 ## net_growth$date <- as.Date(net_growth$date, "%Y-%m-%d")
 
-## net_growth_output=png(filename = "/tmp/FR-net_growth.png", width=2000, height=1125, units="px", pointsize=30)
+## net_growth_output=png(filename = "/tmp/fr-net_growth.png", width=2000, height=1125, units="px", pointsize=30)
 
 ## ggplot() +
 ##     labs(title="Net change in open backlog", y="Story Points") +
@@ -72,7 +72,7 @@ dev.off()
 ##     geom_line(data = net_growth, stat="identity", aes(date, points), size=2)
 ## dev.off()
 
-## ##histogram_output=png(filename = "/tmp/FR-histogram.png", width=2000, height=1125, units="px", pointsize=30)
+## ##histogram_output=png(filename = "/tmp/fr-histogram.png", width=2000, height=1125, units="px", pointsize=30)
 ## ##point_hist=read.csv("/tmp/histogram.csv");
 ## ##point_hist_wide <- dcast(point <- hist, points + project ~ category, value.var="count")
 ## ## ggplot(phab_summ, aes(x = Date, y = points, group=points, fill=Project)) + geom_area(position='stack')
@@ -87,16 +87,16 @@ dev.off()
 ## ## Tranche Backlog
 ## ######################################################################
 
-## tranche_backlog=read.csv("/tmp/FR_tranche_backlog.csv")
+## tranche_backlog=read.csv("/tmp/fr_tranche_backlog.csv")
 
 ## ## Backlog
 
 ## tranche_backlog$date <- as.Date(tranche_backlog$date, "%Y-%m-%d")
 ## tranche_backlog$project2 <- factor(tranche_backlog$project, levels = c("VisualEditor TR0: Interrupt", "VisualEditor TR1: Releases", "VisualEditor TR2: Mobile MVP", "VisualEditor TR3: Language support", "VisualEditor TR4: Link editor tweaks"))
 
-## burnup_tranche_output=png(filename = "/tmp/FR-tranche_backlog_burnup.png", width=2000, height=1125, units="px", pointsize=30)
+## burnup_tranche_output=png(filename = "/tmp/fr-tranche_backlog_burnup.png", width=2000, height=1125, units="px", pointsize=30)
 
-## tranche_burnup=read.csv("/tmp/FR_tranche_burnup.csv")
+## tranche_burnup=read.csv("/tmp/fr_tranche_burnup.csv")
 ## tranche_burnup$date <- as.Date(tranche_burnup$date, "%Y-%m-%d")
 ## ##tranche_burnup$points <- tranche_burnup$points - 6850
 ## tranche_burnup$project2 <- 0 
@@ -109,10 +109,10 @@ dev.off()
 ##     geom_line(data=tranche_burnup, aes(x=date, y=points), size=2)
 ## dev.off()
 
-## tranche_status=read.csv("/tmp/FR_tranche_status.csv")
+## tranche_status=read.csv("/tmp/fr_tranche_status.csv")
 ## tranche_status$date <- as.Date(tranche_status$date, "%Y-%m-%d")
 
-## burnup_tranche_status_output=png(filename = "/tmp/FR-tranche_status_burnup.png", width=2000, height=1125, units="px", pointsize=30)
+## burnup_tranche_status_output=png(filename = "/tmp/fr-tranche_status_burnup.png", width=2000, height=1125, units="px", pointsize=30)
 ## ggplot(tranche_status) +
 ##     labs(title="VE backlog by tranche and status", y="Story Point Total") +
 ##     theme(text = element_text(size=30), legend.title=element_blank())+

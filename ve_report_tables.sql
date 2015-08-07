@@ -196,27 +196,57 @@ TO '/tmp/histogram.csv' CSV HEADER;
 
 
 /* ####################################################################
-Lead Time */
+Lead Time
+This is also used for statistics of recently resolved tasks (histo-whatever)
+since it's the only way to identify recently resolved tasks 
+ */
 
 DROP TABLE IF EXISTS ve_leadtime;
+DROP TABLE IF EXISTS ve_statushist;
+DROP TABLE IF EXISTS ve_openage;
+SELECT th.date,
+       th.points,
+       th.id,
+       lag(th.id) OVER (ORDER BY th.id, th.date ASC) as prev_id,
+       th.status,
+       lag(th.status) OVER (ORDER BY th.id, th.date ASC) as prev_status
+  INTO ve_statushist
+  FROM ve_task_history th
+ ORDER BY th.id, th.date ASC;
 
-SELECT points,
+SELECT id,
+       status,
+       prev_status,
+       points,
        date AS resolve_date,
        (SELECT min(date)
           FROM ve_task_history th2
-         WHERE th2.title = th1.title
+         WHERE th2.id = th1.id
            AND status = '"open"') as open_date
   INTO ve_leadtime
-  FROM
-      ( SELECT th.date,
-               th.points,
-               th.title,
-               lag(th.title) OVER (ORDER BY title, th.date ASC) as prev_title,
-               th.status,
-               lag(th.status) OVER (ORDER BY title, th.date ASC) as prev_status
-          FROM ve_task_history th
-      ORDER BY title, date ASC) as th1
- WHERE prev_status = '"open"' AND status='"resolved"' AND title=prev_title;
+  FROM ve_statushist as th1
+ WHERE prev_status = '"open"'
+   AND status = '"resolved"'
+   AND id = prev_id;
+
+SELECT id,
+       points,
+       date,
+       (SELECT min(date)
+          FROM ve_task_history th2
+         WHERE th2.id = th1.id
+           AND status = '"open"') as open_date
+  INTO ve_openage
+  FROM ve_task_history as th1
+ WHERE status = '"open"';
+
+COPY (SELECT SUM(points) as points,
+             width_bucket(extract(days from (current_date - date)),1,70,7) as age,
+             date
+        FROM ve_openage
+       GROUP BY date, age
+       ORDER by date, age)
+TO '/tmp/ve_backlogage.csv' DELIMITER ',' CSV HEADER;
 
 COPY (SELECT SUM(points) as points,
              width_bucket(extract(days from (resolve_date - open_date)),1,70,7) as leadtime,
@@ -231,8 +261,17 @@ COPY (SELECT date_trunc('week', resolve_date) AS week,
             points
        FROM ve_leadtime
       GROUP BY points, week
+      ORDER BY week, count)
+TO '/tmp/ve_histocount.csv' DELIMITER ',' CSV HEADER;
+
+COPY (SELECT date_trunc('week', resolve_date) AS week,
+            sum(points) as sumpoints,
+            points
+       FROM ve_leadtime
+      GROUP BY points, week
       ORDER BY week, points)
 TO '/tmp/ve_histopoints.csv' DELIMITER ',' CSV HEADER;
+
 
 /* ####################################################################
 VE-specific Tranche-based analysis (tranches are projectcolumns) */

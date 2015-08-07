@@ -1,30 +1,30 @@
-drop table if exists maniphest_transaction;
-drop table if exists maniphest_task;
-drop table if exists maniphest_edge;
-drop table if exists phabricator_column;
-drop table if exists phabricator_project;
+DROP TABLE IF EXISTS maniphest_transaction;
+DROP TABLE IF EXISTS maniphest_task;
+DROP TABLE IF EXISTS maniphest_edge;
+DROP TABLE IF EXISTS phabricator_column;
+DROP TABLE IF EXISTS phabricator_project;
 
-create table phabricator_project (
+CREATE TABLE phabricator_project (
        id int,
        name text,
        phid text primary key
 );
 
-create table maniphest_task (
+CREATE TABLE maniphest_task (
        id int,
        phid text primary key,
        title text,
        story_points text
 );
 
-create table phabricator_column (
+CREATE TABLE phabricator_column (
        id int,
        phid text primary key,
        name text,
        project_phid text references phabricator_project
 );
 
-create table maniphest_transaction (
+CREATE TABLE maniphest_transaction (
        id int,
        phid text primary key,
        task_id int,
@@ -34,12 +34,12 @@ create table maniphest_transaction (
        date_modified timestamp
 );
 
-create index on maniphest_transaction (object_phid, date(date_modified));
+CREATE INDEX ON maniphest_transaction (object_phid, date(date_modified));
 
-create table maniphest_edge (
+CREATE TABLE maniphest_edge (
        task_phid text,
        project_phid text,
        date_modified timestamp
 );
 
-create index on maniphest_edge (task_phid, date(date_modified));
+CREATE INDEX ON maniphest_edge (task_phid, date(date_modified));
