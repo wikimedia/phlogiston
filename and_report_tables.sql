@@ -13,7 +13,7 @@ SELECT date,
        project,
        SUM(points) as points
   INTO tall_backlog
-  FROM task_history
+  FROM and_task_history
  WHERE status != '"invalid"'
    AND status != '"declined"'
  GROUP BY project, date;
@@ -26,7 +26,7 @@ Status distribution of all tasks each day, weighted by points */
 COPY (SELECT date,
        status,
        SUM(points) as points
-  FROM task_history
+  FROM and_task_history
  GROUP BY date, status) TO '/tmp/and_status.csv' DELIMITER ',' CSV HEADER;
 
 
@@ -40,7 +40,7 @@ DROP TABLE IF EXISTS burnup_week_row;
 SELECT date,
        SUM(points) AS points
   INTO burnup
-  FROM task_history
+  FROM and_task_history
  WHERE status='"resolved"'
  GROUP BY date
  ORDER BY date;
@@ -50,7 +50,7 @@ COPY (SELECT * FROM burnup) TO '/tmp/and_burnup.csv' DELIMITER ',' CSV HEADER;
 SELECT DATE_TRUNC('week', date) AS week,
        SUM(points)/7 AS Done
   INTO burnup_week
-  FROM task_history
+  FROM and_task_history
  WHERE date > NOW() - interval '12 months'
    AND status='"resolved"'
  GROUP BY 1
@@ -97,7 +97,7 @@ SELECT title,
        max(project) as project,
        max(points) as points
   INTO histogram
-  FROM task_history
+  FROM and_task_history
  WHERE status != '"invalid"' and status != '"declined"'
  GROUP BY title;
 
@@ -118,7 +118,7 @@ DROP TABLE IF EXISTS and_leadtime;
 SELECT points,
        date AS resolved_date,
        (SELECT min(date)
-          FROM task_history th2
+          FROM and_task_history th2
          WHERE th2.title = th1.title
            AND status = '"open"') as open_date
   INTO and_leadtime
@@ -129,7 +129,7 @@ SELECT points,
                lag(th.title) OVER (ORDER BY title, th.date ASC) as prev_title,
                th.status,
                lag(th.status) OVER (ORDER BY title, th.date ASC) as prev_status
-          FROM task_history th
+          FROM and_task_history th
       ORDER BY title, date ASC) as th1
  WHERE prev_status = '"open"' AND status='"resolved"' AND title=prev_title;
 

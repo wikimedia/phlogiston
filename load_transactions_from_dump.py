@@ -19,6 +19,8 @@
 #  - automate retrieving the dump
 #  - softcode the rest of the file locations
 #  - refactor the .R and .SQL so that they are not copy-pasted from VE
+#  - optimize so the whole thing doesn't take 2+ hours for VE
+#  - rename the database tables so that the different projects don't clobber each other
 
 import psycopg2
 import csv
@@ -76,13 +78,14 @@ def main(argv):
         config.read(project_source)
         default_points = config.get("vars", "default_points")
         project_list = tuple(config.get("vars", "project_list").split(','))
+        task_history_table_name = config.get("vars", "task_history_table_name")
         report_tables_script = config.get("vars", "report_tables_script")
         report_script = config.get("vars", "report_script")
         start_date = datetime.datetime.strptime(config.get("vars", "start_date"), "%Y-%m-%d").date()
-
+        
     if reconstruct_data:
         if project_source:
-            reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_list, start_date)
+            reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_list, start_date, task_history_table_name)
         else:
             print("Reconstruct specified without a project.  Please specify a project with --project.")
     if run_report:
@@ -173,7 +176,7 @@ def load(conn, VERBOSE, DEBUG):
     cur.close()
 
     
-def reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_list, start_date):
+def reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_list, start_date, task_history_table_name):
     cur = conn.cursor()
 
     # preload project and column for fast lookup within Python
@@ -310,7 +313,7 @@ def reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_list,
 
                 output_row = [query_date, object_phid, pretty_title, pretty_status, pretty_project, pretty_column, pretty_points]
                 denorm_query = """
-                    INSERT INTO task_history VALUES (
+                    INSERT INTO %(table_name) VALUES (
                     %(query_date)s,
                     %(id)s,
                     %(title)s,
@@ -318,7 +321,7 @@ def reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_list,
                     %(project)s,
                     %(projectcolumn)s,
                     %(points)s)"""
-                cur.execute(denorm_query, {'query_date': query_date, 'id': task_id, 'title': pretty_title, 'status': pretty_status, 'project': pretty_project, 'projectcolumn': pretty_column, 'points': pretty_points })
+                cur.execute(denorm_query, {'table_name': task_history_table_name, 'query_date': query_date, 'id': task_id, 'title': pretty_title, 'status': pretty_status, 'project': pretty_project, 'projectcolumn': pretty_column, 'points': pretty_points })
 
                 if output_file:
                     csvwriter.writerow(output_row)

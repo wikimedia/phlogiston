@@ -4,7 +4,7 @@ SELECT date,
        status,
        sum(points) as points
   INTO tall_status
-  FROM task_history
+  FROM an_task_history
  GROUP BY date, status;
 
 COPY tall_status to '/tmp/AN_status.csv' DELIMITER ',' CSV
@@ -21,7 +21,7 @@ SELECT date,
        project,
        sum(points) as points
   INTO tall_backlog
-  FROM task_history
+  FROM an_task_history
  WHERE status != '"invalid"' AND status != '"declined"'
  GROUP BY project, date;
 
@@ -37,14 +37,14 @@ DROP TABLE IF EXISTS burnup_week_row;
 SELECT date,
        sum(points) AS Done
   INTO burnup
-  FROM task_history
+  FROM an_task_history
  WHERE status='"resolved"'
  GROUP BY date;
 
 SELECT date_trunc('week', date) AS week,
        sum(points)/7 AS Done
   INTO burnup_week
-  FROM task_history
+  FROM an_task_history
  WHERE date > now() - interval '12 months'
    AND status='"resolved"'
  GROUP BY 1
@@ -86,7 +86,7 @@ SELECT title,
        max(project) as project,
        max(points) as points
   INTO histogram
-  FROM task_history
+  FROM an_task_history
  WHERE status != '"invalid"' and status != '"declined"'
  GROUP BY title;
 
@@ -100,7 +100,7 @@ TO '/tmp/AN_histogram.csv' CSV HEADER;
 
 COPY (SELECT date,
              sum(points) as points
-        FROM task_history
+        FROM an_task_history
        WHERE status = '"resolved"'
     GROUP BY date
     ORDER BY date)
@@ -110,7 +110,7 @@ DROP TABLE IF EXISTS an_leadtime;
 
 SELECT date AS resolve_date,
        (SELECT min(date)
-          FROM task_history th2
+          FROM an_task_history th2
          WHERE th2.title = th1.title
            AND status = '"open"') as open_date
   INTO an_leadtime
@@ -120,7 +120,7 @@ SELECT date AS resolve_date,
                lag(th.title) OVER (ORDER BY title, th.date ASC) as prev_title,
                th.status,
                lag(th.status) OVER (ORDER BY title, th.date ASC) as prev_status
-          FROM task_history th
+          FROM an_task_history th
       ORDER BY title, date ASC) as th1
  WHERE prev_status = '"open"' AND status='"resolved"' AND title=prev_title;
 

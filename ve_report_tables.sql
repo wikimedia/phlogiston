@@ -14,7 +14,7 @@ DROP TABLE IF EXISTS ve_interrupt;
 SELECT date,
        SUM(points) as points
   INTO ve_interrupt
-  FROM task_history
+  FROM ve_task_history
  WHERE project = 'VisualEditor'
    AND status='"resolved"'
    AND projectcolumn NOT SIMILAR TO '%TR%'
@@ -25,7 +25,7 @@ SELECT date,
 INSERT INTO ve_interrupt (date, points) (
   SELECT date,
          SUM(points) as points
-    FROM task_history
+    FROM ve_task_history
    WHERE projectcolumn SIMILAR TO '%TR0%'
      AND status = '"resolved"'
    GROUP BY date);
@@ -57,7 +57,7 @@ SELECT date,
        project,
        SUM(points) as points
   INTO tall_backlog
-  FROM task_history
+  FROM ve_task_history
  WHERE project != 'VisualEditor'
    AND status != '"invalid"'
    AND status != '"declined"'
@@ -79,7 +79,7 @@ INSERT INTO tall_backlog (date, project, points) (
   SELECT date,
          projectcolumn,
          SUM(points) as points
-        FROM task_history
+        FROM ve_task_history
        WHERE project = 'VisualEditor'
          AND date >= '2015-06-18'
          AND projectcolumn SIMILAR TO 'TR%'
@@ -94,7 +94,7 @@ INSERT INTO tall_backlog (date, project, points) (
   SELECT date,
          'VisualEditor General Backlog',
          SUM(points) as points
-    FROM task_history
+    FROM ve_task_history
    WHERE project = 'VisualEditor'
      AND projectcolumn NOT SIMILAR TO 'TR%'
      AND status != '"resolved"'
@@ -111,7 +111,7 @@ Status distribution of all tasks each day, weighted by points */
 COPY (SELECT date,
        status,
        SUM(points) as points
-  FROM task_history
+  FROM ve_task_history
  GROUP BY date, status) TO '/tmp/ve_status.csv' DELIMITER ',' CSV HEADER;
 
 
@@ -125,7 +125,7 @@ DROP TABLE IF EXISTS burnup_week_row;
 SELECT date,
        SUM(points) AS points
   INTO burnup
-  FROM task_history
+  FROM ve_task_history
  WHERE status='"resolved"'
  GROUP BY date
  ORDER BY date;
@@ -135,7 +135,7 @@ COPY (SELECT * FROM burnup) TO '/tmp/ve_burnup.csv' DELIMITER ',' CSV HEADER;
 SELECT DATE_TRUNC('week', date) AS week,
        SUM(points)/7 AS Done
   INTO burnup_week
-  FROM task_history
+  FROM ve_task_history
  WHERE date > NOW() - interval '12 months'
    AND status='"resolved"'
  GROUP BY 1
@@ -182,7 +182,7 @@ SELECT title,
        max(project) as project,
        max(points) as points
   INTO histogram
-  FROM task_history
+  FROM ve_task_history
  WHERE status != '"invalid"' and status != '"declined"'
  GROUP BY title;
 
@@ -203,7 +203,7 @@ DROP TABLE IF EXISTS ve_leadtime;
 SELECT points,
        date AS resolve_date,
        (SELECT min(date)
-          FROM task_history th2
+          FROM ve_task_history th2
          WHERE th2.title = th1.title
            AND status = '"open"') as open_date
   INTO ve_leadtime
@@ -214,7 +214,7 @@ SELECT points,
                lag(th.title) OVER (ORDER BY title, th.date ASC) as prev_title,
                th.status,
                lag(th.status) OVER (ORDER BY title, th.date ASC) as prev_status
-          FROM task_history th
+          FROM ve_task_history th
       ORDER BY title, date ASC) as th1
  WHERE prev_status = '"open"' AND status='"resolved"' AND title=prev_title;
 
@@ -239,7 +239,7 @@ VE-specific Tranche-based analysis (tranches are projectcolumns) */
 
 COPY (SELECT date,
              SUM(points) as points
-        FROM task_history
+        FROM ve_task_history
        WHERE status = '"resolved"'
          AND projectcolumn SIMILAR TO '%TR(0|1|2|3|4)%'
     GROUP BY date
@@ -250,7 +250,7 @@ TO '/tmp/ve_tranche_burnup.csv' DELIMITER ',' CSV HEADER;
 COPY (SELECT date,
              SUM(points) as points,
              status
-        FROM task_history
+        FROM ve_task_history
        WHERE projectcolumn SIMILAR TO '%TR0%'
          AND (status = '"open"' OR status = '"resolved"')
     GROUP BY date, status
@@ -260,7 +260,7 @@ TO '/tmp/ve_TR0.csv' DELIMITER ',' CSV HEADER;
 COPY (SELECT date,
              SUM(points) as points,
              status
-        FROM task_history
+        FROM ve_task_history
        WHERE projectcolumn SIMILAR TO '%TR1%'
          AND (status = '"open"' OR status = '"resolved"')
     GROUP BY date, status
@@ -270,7 +270,7 @@ TO '/tmp/ve_TR1.csv' DELIMITER ',' CSV HEADER;
 COPY (SELECT date,
              SUM(points) as points,
              status
-        FROM task_history
+        FROM ve_task_history
        WHERE projectcolumn SIMILAR TO '%TR2%'
          AND (status = '"open"' OR status = '"resolved"')
     GROUP BY date, status
@@ -280,7 +280,7 @@ TO '/tmp/ve_TR2.csv' DELIMITER ',' CSV HEADER;
 COPY (SELECT date,
              SUM(points) as points,
              status
-        FROM task_history
+        FROM ve_task_history
        WHERE projectcolumn SIMILAR TO '%TR3%'
          AND (status = '"open"' OR status = '"resolved"')
     GROUP BY date, status
@@ -290,7 +290,7 @@ TO '/tmp/ve_TR3.csv' DELIMITER ',' CSV HEADER;
 COPY (SELECT date,
              SUM(points) as points,
              status
-        FROM task_history
+        FROM ve_task_history
        WHERE projectcolumn SIMILAR TO '%TR4%'
          AND (status = '"open"' OR status = '"resolved"')
     GROUP BY date, status
@@ -300,7 +300,7 @@ TO '/tmp/ve_TR4.csv' DELIMITER ',' CSV HEADER;
 COPY (SELECT date,
              SUM(points) as points,
              status
-        FROM task_history
+        FROM ve_task_history
        WHERE projectcolumn SIMILAR TO '%TR5%'
          AND (status = '"open"' OR status = '"resolved"')
     GROUP BY date, status
@@ -313,7 +313,7 @@ SELECT date,
        project || ' ' || projectcolumn as project,
        SUM(points) as points
   INTO tall_tranche_backlog
-  FROM task_history
+  FROM ve_task_history
  WHERE project = 'VisualEditor'
    AND date > '2015-06-19'
    AND projectcolumn like '%TR%'
@@ -329,7 +329,7 @@ SELECT date,
        project || ' ' || projectcolumn || ' ' || status as project,
        SUM(points) as points
   INTO tall_tranche_status
-  FROM task_history
+  FROM ve_task_history
  WHERE project = 'VisualEditor'
    AND date > '2015-06-19'
    AND projectcolumn like '%TR%'
@@ -341,10 +341,10 @@ HEADER;
 
 /* TODO: what's this for?
 SELECT title, ('2015-07-15' - min(th1.date)) as age
-  FROM task_history th1
+  FROM ve_task_history th1
  WHERE th1.status='"open"'
    AND th1.title in (SELECT th2.title
-                       FROM task_history th2
+                       FROM ve_task_history th2
                       WHERE th2.date = '2015-07-15'
                         AND th2.status = '"resolved"')
  GROUP BY title;
