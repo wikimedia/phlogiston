@@ -204,6 +204,7 @@ since it's the only way to identify recently resolved tasks
 DROP TABLE IF EXISTS ve_leadtime;
 DROP TABLE IF EXISTS ve_statushist;
 DROP TABLE IF EXISTS ve_openage;
+
 SELECT th.date,
        th.points,
        th.id,

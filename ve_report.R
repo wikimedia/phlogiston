@@ -274,9 +274,9 @@ ggplot(histocount, aes(x=week, y=count, fill=factor(points))) +
 dev.off()
 
 backlogage=read.csv("/tmp/ve_backlogage.csv")
-backlogage$week <- as.Date(backlogage$week, "%Y-%m-%d")
+backlogage$date <- as.Date(backlogage$date, "%Y-%m-%d")
 backlogage_output=png(filename = "/tmp/ve-backlogage.png", width=2000, height=1125, units="px", pointsize=30)
-ggplot(backlogage, aes(x=week, y=points, fill=backlogage)) +
+ggplot(backlogage, aes(x=date, y=points, fill=backlogage)) +
     labs(title="Age of VE backlog (open tasks)", y="Story Point Total") +
     geom_bar(stat="identity")
 dev.off()
