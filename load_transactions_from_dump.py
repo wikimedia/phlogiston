@@ -1,9 +1,23 @@
 #!/usr/bin/python3
-# This script
-# 1) reads a JSON file produced by https://gerrit.wikimedia.org/r/#/c/214398/2/wmfphablib/phabdb.py
-# 2) loads a postgresql database containing the data (or outputs a CSV file)
-# 3) Generates chart images via an R script
+# This script does
+# --load
+#  - reads a JSON file produced by https://gerrit.wikimedia.org/r/#/c/214398/2/wmfphablib/phabdb.py
+#  - loads a postgresql database containing the data (or outputs a CSV file)
+# --reconstruct
+#  - Calls a project-specific SQL script to reprocess the data in SQL and output CSV files
+# --report
+#  - Calls a project-specific R script to plot the csv files
+#
 # Data is available at  http://dumps.wikimedia.org/other/misc/phabricator_public.dump
+# It assumes this file is saved to the parent directory
+# it works in the "phab" postgresql database
+# it outputs CSV and PNG to /tmp
+#
+# Things that might be worth refactoring
+#  - status fields are all double-quote-delimited in the database, which makes the sql look stupid
+#  - should probably rip out the --output option and related code since current workflow doesn't use it
+#  - automate retrieving the dump
+#  - softcode the rest of the file locations
 
 import psycopg2
 import csv

@@ -1,6 +1,45 @@
 /* This script assumes that all tasks in the database are relevant to the VisualEditor team */
 
 /* ####################################################################
+Total points as of each day of all completed "Interrupt" work.  
+
+Interrupt work is defined as 
+ 1) Any resolved task in the VisualEditor project that is not 
+    in any of the Tranche projectcolumns
+ 2) Any resolved task in the TR0 projectcolumn of the 
+    VisualEditor project */
+
+DROP TABLE IF EXISTS ve_interrupt;
+
+SELECT date,
+       SUM(points) as points
+  INTO ve_interrupt
+  FROM task_history
+ WHERE project = 'VisualEditor'
+   AND status='"resolved"'
+   AND projectcolumn NOT SIMILAR TO '%TR%'
+ GROUP BY date
+
+ ORDER BY date;
+
+INSERT INTO ve_interrupt (date, points) (
+  SELECT date,
+         SUM(points) as points
+    FROM task_history
+   WHERE projectcolumn SIMILAR TO '%TR0%'
+     AND status = '"resolved"'
+   GROUP BY date);
+   
+COPY (
+  SELECT date,
+         SUM(points) as points
+    FROM ve_interrupt
+   GROUP BY date
+   ORDER BY date
+) TO '/tmp/ve_interrupt.csv' DELIMITER ',' CSV HEADER;
+
+
+/* ####################################################################
 Entire Backlog
 Each row is the point total of valid work for one day for one project.
 Valid work includes both open and closed tasks.
@@ -10,12 +49,7 @@ Invalid work is work with status="invalid" or status="declined".
  2) After that date, planned work is all work in TR% projectcolumn of the VisualEditor 
     project, except work in TR0 */ 
 
-<<<<<<< HEAD
-COPY tall_status to '/tmp/ve_status.csv' DELIMITER ',' CSV
-HEADER;
-=======
 DROP TABLE IF EXISTS tall_backlog;
->>>>>>> 809425dd6f08088be4eb7f8c3b504d90bdc35178
 
 /* the blocker projects */
 
@@ -24,20 +58,12 @@ SELECT date,
        SUM(points) as points
   INTO tall_backlog
   FROM task_history
-<<<<<<< HEAD
- WHERE project = 'VisualEditor' and status='"resolved"'
-   AND date < '2015-01-30'
- GROUP BY date, status;
-
-COPY resolved_ve to '/tmp/ve_interrupt.csv' DELIMITER ',' CSV HEADER;
-=======
  WHERE project != 'VisualEditor'
    AND status != '"invalid"'
    AND status != '"declined"'
  GROUP BY project, date;
 
 /* the interrupt pseudo-project */
->>>>>>> 809425dd6f08088be4eb7f8c3b504d90bdc35178
 
 INSERT INTO tall_backlog (date, project, points) (
   SELECT date,
@@ -88,44 +114,6 @@ COPY (SELECT date,
   FROM task_history
  GROUP BY date, status) TO '/tmp/ve_status.csv' DELIMITER ',' CSV HEADER;
 
-/* ####################################################################
-Total points as of each day of all completed "Interrupt" work.  Interrupt work is defined as 
- 1) Any resolved task in the VisualEditor project that is not in any of the Tranche projectcolumns
- 2) Any resolved task in the TR0 projectcolumn of the VisualEditor project */
-
-DROP TABLE IF EXISTS ve_interrupt;
-
-SELECT date,
-       SUM(points) as points
-  INTO ve_interrupt
-  FROM task_history
- WHERE project = 'VisualEditor'
-   AND status='"resolved"'
-   AND projectcolumn NOT SIMILAR TO '%TR%'
- GROUP BY date
- ORDER BY date;
-
-INSERT INTO ve_interrupt (date, points) (
-  SELECT date,
-         SUM(points) as points
-    FROM task_history
-   WHERE projectcolumn SIMILAR TO '%TR0%'
-     AND status = '"resolved"'
-   GROUP BY date);
-   
-COPY (
-  SELECT date,
-         SUM(points) as points
-    FROM ve_interrupt
-   GROUP BY date
-   ORDER BY date
-) TO '/tmp/ve_interrupt.csv' DELIMITER ',' CSV HEADER;
-
-<<<<<<< HEAD
-COPY tall_backlog to '/tmp/ve_backlog.csv' DELIMITER ',' CSV
-HEADER;
-=======
->>>>>>> 809425dd6f08088be4eb7f8c3b504d90bdc35178
 
 /* ####################################################################
 Burnup and Velocity */
@@ -183,12 +171,10 @@ SELECT tb.date,
  WHERE tb.date = b.date
  ORDER BY date
 ) to '/tmp/ve_net_growth.csv' DELIMITER ',' CSV HEADER;
-<<<<<<< HEAD
-=======
+
 
 /* ####################################################################
 Task Size Histograms */
->>>>>>> 809425dd6f08088be4eb7f8c3b504d90bdc35178
 
 DROP TABLE IF EXISTS histogram;
 
@@ -208,15 +194,7 @@ COPY (SELECT count(title),
     ORDER BY project, points)
 TO '/tmp/histogram.csv' CSV HEADER;
 
-<<<<<<< HEAD
-COPY (SELECT date,
-             sum(points) as points
-        FROM task_history
-       WHERE status = '"resolved"'
-    GROUP BY date
-    ORDER BY date)
-TO '/tmp/ve_burnup.csv' DELIMITER ',' CSV HEADER;
-=======
+
 /* ####################################################################
 Lead Time */
 
@@ -258,7 +236,6 @@ TO '/tmp/ve_histopoints.csv' DELIMITER ',' CSV HEADER;
 
 /* ####################################################################
 VE-specific Tranche-based analysis (tranches are projectcolumns) */
->>>>>>> 809425dd6f08088be4eb7f8c3b504d90bdc35178
 
 COPY (SELECT date,
              SUM(points) as points
@@ -321,11 +298,7 @@ COPY (SELECT date,
 TO '/tmp/ve_TR4.csv' DELIMITER ',' CSV HEADER;
 
 COPY (SELECT date,
-<<<<<<< HEAD
-             sum(points) as points,
-=======
              SUM(points) as points,
->>>>>>> 809425dd6f08088be4eb7f8c3b504d90bdc35178
              status
         FROM task_history
        WHERE projectcolumn SIMILAR TO '%TR5%'
@@ -333,10 +306,6 @@ COPY (SELECT date,
     GROUP BY date, status
     ORDER BY date, status)
 TO '/tmp/ve_TR5.csv' DELIMITER ',' CSV HEADER;
-<<<<<<< HEAD
-
-=======
->>>>>>> 809425dd6f08088be4eb7f8c3b504d90bdc35178
 
 DROP TABLE IF EXISTS tall_tranche_backlog;
 
