@@ -19,7 +19,7 @@ ggplot(ve_status) +
     theme(text = element_text(size=30), legend.title=element_blank())+
     geom_area(position='stack', aes(x = date, y = points, group=status, fill=status, order=-as.numeric(status))) +
     scale_x_date(breaks="1 month", label=date_format("%Y-%b"), limits = as.Date(c('2014-12-01', NA))) +
-    scale_y_continuous(limits=c(0, 60000))
+    scale_y_continuous(limits=c(0, 30000))
 dev.off()
 
 ######################################################################
@@ -29,20 +29,20 @@ dev.off()
 backlog=read.csv("/tmp/ve_backlog.csv")
 backlog$date <- as.Date(backlog$date, "%Y-%m-%d")
 ## manually set ordering of data
-## backlog$project2 <- factor(backlog$project, levels = c("VisualEditor","VisualEditor 2014/15 Q4 blockers","VisualEditor 2014/15 Q3 blockers","VisualEditor Interrupt"))
+backlog$project2 <- factor(backlog$project, levels = c("VisualEditor General Backlog","TR4: Link editor tweaks", "TR3: Language support", "TR2: Mobile MVP", "TR1: Releases","VisualEditor 2014/15 Q4 blockers","VisualEditor 2014/15 Q3 blockers","VisualEditor Interrupt"))
 
 burnup=read.csv("/tmp/ve_burnup.csv")
 burnup$date <- as.Date(burnup$date, "%Y-%m-%d")
-#burnup$project2 <- 0 ## dummy colum so it fits on the same ggplot
+burnup$project2 <- 0 ## dummy colum so it fits on the same ggplot
 burnup_output=png(filename = "/tmp/VE-backlog_burnup.png", width=2000, height=1125, units="px", pointsize=30)
     
 ggplot(backlog) +
     labs(title="VE backlog", y="Story Point Total") +
     theme(text = element_text(size=30), legend.title=element_blank())+
-    geom_area(position='stack', aes(x = date, y = points, group=project, fill=project, order=-as.numeric(project))) +
-    scale_x_date(breaks="1 month", label=date_format("%Y-%b"), limits = as.Date(c('2015-05-01', NA))) +
-    scale_y_continuous(limits=c(0, 30000)) 
-#        geom_line(data=burnup, aes(x=date, y=points), size=2)
+    geom_area(position='stack', aes(x = date, y = points, group=project2, fill=project2, order=-as.numeric(project2))) +
+    scale_x_date(breaks="1 month", label=date_format("%Y-%b"), limits = as.Date(c('2014-12-01', NA))) +
+    scale_y_continuous(limits=c(0, 30000)) +
+        geom_line(data=burnup, aes(x=date, y=points), size=2)
 dev.off()
 
 ######################################################################
@@ -53,10 +53,10 @@ burnup_crop_output=png(filename = "/tmp/VE-backlog_burnup_crop.png", width=2000,
 ggplot(backlog) +
     labs(title="VE backlog (zoomed)", y="Story Point Total") +
     theme(text = element_text(size=30), legend.title=element_blank()) +
-    geom_area(position='stack', aes(x = date, y = points, group=project, fill=project, order=-as.numeric(project))) +
+    geom_area(position='stack', aes(x = date, y = points, group=project2, fill=project2, order=-as.numeric(project2))) +
     scale_x_date(breaks="1 month", label=date_format("%Y-%b"), limits = as.Date(c('2015-02-01', NA))) +
-    scale_y_continuous(limits=c(0, 10000)) 
-#    geom_line(data=burnup, aes(x=date, y=points), size=2)
+    scale_y_continuous(limits=c(0, 10000)) +
+    geom_line(data=burnup, aes(x=date, y=points), size=2)
 dev.off()
 
 
@@ -72,7 +72,8 @@ ggplot(tr_burnup) +
     labs(title="VE Interruptions (Tranche 0)", y="Story Point Total") +
     theme(text = element_text(size=30), legend.title=element_blank())+
     geom_area(position='stack', aes(x = date, y = points, group=status, fill=status, order=-as.numeric(status))) +
-    scale_x_date(breaks="1 week", label=date_format("%Y-%b-%d"), limits = as.Date(c('2015-06-18', NA)))
+    scale_x_date(breaks="1 week", label=date_format("%Y-%b-%d"), limits = as.Date(c('2015-06-18', NA))) +
+    scale_y_continuous(limits=c(0, 800)) 
 dev.off()
 
 ######################################################################
@@ -86,7 +87,8 @@ ggplot(tr_burnup) +
     labs(title="VE Tranch 1 backlog", y="Story Point Total") +
     theme(text = element_text(size=30), legend.title=element_blank())+
     geom_area(position='stack', aes(x = date, y = points, group=status, fill=status, order=-as.numeric(status))) +
-    scale_x_date(breaks="1 week", label=date_format("%Y-%b-%d"), limits = as.Date(c('2015-06-18', NA)))
+    scale_x_date(breaks="1 week", label=date_format("%Y-%b-%d"), limits = as.Date(c('2015-06-18', NA))) +
+    scale_y_continuous(limits=c(0, 800)) 
 dev.off()
 
 ######################################################################
@@ -100,7 +102,8 @@ ggplot(tr_burnup) +
     labs(title="VE Tranch 2 backlog", y="Story Point Total") +
     theme(text = element_text(size=30), legend.title=element_blank())+
     geom_area(position='stack', aes(x = date, y = points, group=status, fill=status, order=-as.numeric(status))) +
-    scale_x_date(breaks="1 week", label=date_format("%Y-%b-%d"), limits = as.Date(c('2015-06-18', NA)))
+    scale_x_date(breaks="1 week", label=date_format("%Y-%b-%d"), limits = as.Date(c('2015-06-18', NA))) +
+    scale_y_continuous(limits=c(0, 800)) 
 dev.off()
 
 ######################################################################
@@ -113,7 +116,8 @@ burnup_output=png(filename = "/tmp/VE-tranch3_burnup.png", width=2000, height=11
 ggplot(tr_burnup) +
     labs(title="VE Tranch 3 backlog", y="Story Point Total") +
     theme(text = element_text(size=30), legend.title=element_blank())+
-    geom_area(position='stack', aes(x = date, y = points, group=status, fill=status, order=-as.numeric(status)))
+    geom_area(position='stack', aes(x = date, y = points, group=status, fill=status, order=-as.numeric(status))) +
+    scale_y_continuous(limits=c(0, 800)) 
 dev.off()
 
 ######################################################################
@@ -126,7 +130,8 @@ burnup_output=png(filename = "/tmp/VE-tranch4_burnup.png", width=2000, height=11
 ggplot(tr_burnup) +
     labs(title="VE Tranch 4 backlog", y="Story Point Total") +
     theme(text = element_text(size=30), legend.title=element_blank())+
-    geom_area(position='stack', aes(x = date, y = points, group=status, fill=status, order=-as.numeric(status)))
+    geom_area(position='stack', aes(x = date, y = points, group=status, fill=status, order=-as.numeric(status))) +
+    scale_y_continuous(limits=c(0, 800)) 
 dev.off()
 
 ######################################################################
@@ -139,7 +144,8 @@ burnup_output=png(filename = "/tmp/VE-tranch5_burnup.png", width=2000, height=11
 ggplot(tr_burnup) +
     labs(title="VE Tranch 5 backlog", y="Story Point Total") +
     theme(text = element_text(size=30), legend.title=element_blank())+
-    geom_area(position='stack', aes(x = date, y = points, group=status, fill=status, order=-as.numeric(status)))
+    geom_area(position='stack', aes(x = date, y = points, group=status, fill=status, order=-as.numeric(status))) +
+    scale_y_continuous(limits=c(0, 800)) 
 dev.off()
 
 
@@ -158,8 +164,8 @@ ggplot(veinterrupt) +
     geom_area(position='stack', aes(x = date, y = points)) +
     scale_fill_manual(values=c("red", "green")) +           
     scale_x_date(breaks="1 month", label=date_format("%Y-%b"), limits = as.Date(c('2014-12-01', NA))) +
-    scale_y_continuous(limits=c(0, 15000)) 
-#    geom_line(data=burnup, aes(x=date, y=points), size=2)
+    scale_y_continuous(limits=c(0, 15000)) +
+    geom_line(data=burnup, aes(x=date, y=points), size=2)
 dev.off()
 
 ######################################################################
@@ -247,12 +253,14 @@ leadtime=read.csv("/tmp/ve_leadtime.csv")
 leadtime$week <- as.Date(leadtime$week, "%Y-%m-%d")
 leadtime_output=png(filename = "/tmp/VE-leadtime.png", width=2000, height=1125, units="px", pointsize=30)
 ggplot(leadtime, aes(x=week, y=points, fill=leadtime)) +
+    labs(title="VE Lead Time for resolved tasks", y="Story Point Total") +
     geom_bar(stat="identity")
 dev.off()
 
 histodate=read.csv("/tmp/ve_histopoints.csv")
 histodate$week <- as.Date(histodate$week, "%Y-%m-%d")
 histodate_output=png(filename = "/tmp/VE-histodate.png", width=2000, height=1125, units="px", pointsize=30)
-ggplot(histodate, aes(x=week, y=count, fill=points)) +
+ggplot(histodate, aes(x=week, y=count, fill=factor(points))) +
+    labs(title="VE Age of backlog", y="Story Point Total") +
     geom_bar(stat="identity")
 dev.off()

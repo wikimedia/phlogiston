@@ -18,6 +18,7 @@
 #  - should probably rip out the --output option and related code since current workflow doesn't use it
 #  - automate retrieving the dump
 #  - softcode the rest of the file locations
+#  - refactor the .R and .SQL so that they are not copy-pasted from VE
 
 import psycopg2
 import csv

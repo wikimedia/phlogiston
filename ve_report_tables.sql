@@ -123,7 +123,7 @@ DROP TABLE IF EXISTS burnup_week;
 DROP TABLE IF EXISTS burnup_week_row;
 
 SELECT date,
-       SUM(points) AS Done
+       SUM(points) AS points
   INTO burnup
   FROM task_history
  WHERE status='"resolved"'
@@ -166,7 +166,7 @@ SELECT date,
 
 COPY (
 SELECT tb.date,
-       tb.points - b.done AS points
+       tb.points - b.points AS points
   FROM total_backlog tb, burnup b
  WHERE tb.date = b.date
  ORDER BY date
