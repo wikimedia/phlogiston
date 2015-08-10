@@ -17,10 +17,9 @@
 #  - status fields are all double-quote-delimited in the database, which makes the sql look stupid
 #  - should probably rip out the --output option and related code since current workflow doesn't use it
 #  - automate retrieving the dump
-#  - softcode the rest of the file locations
-#  - refactor the .R and .SQL so that they are not copy-pasted from VE
+#  - softcode the rest of the file and database locations
+#  - refactor the .R and .SQL to obey DRY; currently copy-pasted from VE example
 #  - optimize so the whole thing doesn't take 2+ hours for VE
-#  - rename the database tables so that the different projects don't clobber each other
 
 import psycopg2
 import csv
