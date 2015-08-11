@@ -4,4 +4,4 @@ project_list = PHID-PROJ-nz5zs2camiseltyuemsj,PHID-PROJ-e5pkst3uyzpxifwwj7qb,PHI
 task_history_table_name = ve_task_history 
 report_tables_script = ve_report_tables.sql
 report_script = ve_report.R
-start_date = 2015-07-01
+start_date = 2014-12-01
