@@ -4,9 +4,11 @@
 #  - reads a JSON file produced by https://gerrit.wikimedia.org/r/#/c/214398/2/wmfphablib/phabdb.py
 #  - loads a postgresql database containing the data (or outputs a CSV file)
 # --reconstruct
-#  - Calls a project-specific SQL script to reprocess the data in SQL and output CSV files
+#  - Calls a project-specific SQL script to reconstruct the historical state
+#    of the project day by day
 # --report
-#  - Calls a project-specific R script to plot the csv files
+#  - Calls a project-specific SQL script to process the data and generate csv files,
+#    and an R file to graph the data as PNG files
 #
 # Data is available at  http://dumps.wikimedia.org/other/misc/phabricator_public.dump
 # It assumes this file is saved to the parent directory
