@@ -257,26 +257,50 @@ ggplot(leadtime, aes(x=week, y=points, fill=leadtime)) +
     geom_bar(stat="identity")
 dev.off()
 
-histopoints=read.csv("/tmp/ve_histopoints.csv")
-histopoints$week <- as.Date(histopoints$week, "%Y-%m-%d")
-histopoints_output=png(filename = "/tmp/ve-histopoints.png", width=2000, height=1125, units="px", pointsize=30)
-ggplot(histopoints, aes(x=week, y=sumpoints, fill=factor(points))) +
-    labs(title="VE Age of backlog (by points)", y="Story Point Total") +
+age_of_resolved=read.csv("/tmp/ve_age_of_resolved.csv")
+age_of_resolved$week <- as.Date(age_of_resolved$week, "%Y-%m-%d")
+age_of_resolved_output=png(filename = "/tmp/ve-age_of_resolved.png", width=2000, height=1125, units="px", pointsize=30)
+ggplot(age_of_resolved, aes(x=week, y=sumpoints, fill=factor(points))) +
+    labs(title="VE Age of Resolved (by points)", y="Story Point Total") +
+    theme(text = element_text(size=30)) +
     geom_bar(stat="identity")
 dev.off()
 
-histocount=read.csv("/tmp/ve_histocount.csv")
-histocount$week <- as.Date(histocount$week, "%Y-%m-%d")
-histocount_output=png(filename = "/tmp/ve-histocount.png", width=2000, height=1125, units="px", pointsize=30)
-ggplot(histocount, aes(x=week, y=count, fill=factor(points))) +
-    labs(title="VE Age of backlog (by count)", y="Count") +
+age_of_resolved_count=read.csv("/tmp/ve_age_of_resolved_count.csv")
+age_of_resolved_count$week <- as.Date(age_of_resolved_count$week, "%Y-%m-%d")
+age_of_resolved_count_output=png(filename = "/tmp/ve-age_of_resolved_count.png", width=2000, height=1125, units="px", pointsize=30)
+ggplot(age_of_resolved_count, aes(x=week, y=count, fill=factor(points))) +
+    labs(title="VE Age of Resolved (by count)", y="Count") +
+    theme(text = element_text(size=30)) +
     geom_bar(stat="identity")
 dev.off()
 
-backlogage=read.csv("/tmp/ve_backlogage.csv")
-backlogage$date <- as.Date(backlogage$date, "%Y-%m-%d")
-backlogage_output=png(filename = "/tmp/ve-backlogage.png", width=2000, height=1125, units="px", pointsize=30)
-ggplot(backlogage, aes(x=date, y=points, fill=backlogage)) +
-    labs(title="Age of VE backlog (open tasks)", y="Story Point Total") +
-    geom_bar(stat="identity")
+age_of_resolved=read.csv("/tmp/ve_age_of_resolved.csv")
+age_of_resolved$week <- as.Date(age_of_resolved$week, "%Y-%m-%d")
+age_of_resolved_output=png(filename = "/tmp/ve-age_of_resolved.png", width=2000, height=1125, units="px", pointsize=30)
+ggplot(age_of_resolved, aes(x=week, y=sumpoints, fill=factor(points))) +
+    labs(title="VE Age of Resolved (by points)", y="Story Point Total") +
+    theme(text = element_text(size=30)) +
+    geom_bar(stat="identity") +
+    scale_fill_discrete(name="Size of Story in Points")
+dev.off()
+
+age_of_resolved_count=read.csv("/tmp/ve_age_of_resolved_count.csv")
+age_of_resolved_count$week <- as.Date(age_of_resolved_count$week, "%Y-%m-%d")
+age_of_resolved_count_output=png(filename = "/tmp/ve-age_of_resolved_count.png", width=2000, height=1125, units="px", pointsize=30)
+ggplot(age_of_resolved_count, aes(x=week, y=count, fill=factor(points))) +
+    labs(title="VE Age of Resolved (by count)", y="Count") +
+    theme(text = element_text(size=30)) +
+    geom_bar(stat="identity") +
+    scale_fill_discrete(name="Size of Story in Points")
+dev.off()
+
+backlogage=read.csv("/tmp/ve_age_of_backlog_specific.csv")
+backlogage$week <- as.Date(backlogage$week, "%Y-%m-%d")
+backlogage_output=png(filename = "/tmp/ve-age_of_backlog_specific.png", width=2000, height=1125, units="px", pointsize=30)
+ggplot(backlogage, aes(x=week, y=points, fill=age)) +
+    labs(title="Age of VE backlog (open tasks), excluding General Backlog", y="Story Point Total") +
+    theme(text = element_text(size=30)) +
+    geom_bar(stat="identity") +
+    scale_fill_continuous(name="Age in months")
 dev.off()

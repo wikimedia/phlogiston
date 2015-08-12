@@ -203,7 +203,7 @@ since it's the only way to identify recently resolved tasks
 
 DROP TABLE IF EXISTS ve_leadtime;
 DROP TABLE IF EXISTS ve_statushist;
-DROP TABLE IF EXISTS ve_openage;
+DROP TABLE IF EXISTS ve_openage_specific;
 
 SELECT th.date,
        th.points,
@@ -230,6 +230,8 @@ SELECT id,
    AND status = '"resolved"'
    AND id = prev_id;
 
+/* This takes forever and the data isn't very useful.
+DROP TABLE IF EXISTS ve_openage;
 SELECT id,
        points,
        date,
@@ -239,15 +241,27 @@ SELECT id,
            AND status = '"open"') as open_date
   INTO ve_openage
   FROM ve_task_history as th1
- WHERE status = '"open"';
+ WHERE status = '"open"'; */
 
-COPY (SELECT SUM(points) as points,
-             width_bucket(extract(days from (current_date - date)),1,70,7) as age,
-             date
-        FROM ve_openage
-       GROUP BY date, age
-       ORDER by date, age)
-TO '/tmp/ve_backlogage.csv' DELIMITER ',' CSV HEADER;
+SELECT id,
+       points,
+       date,
+       (SELECT min(date)
+          FROM ve_task_history th2
+         WHERE th2.id = th1.id
+           AND status = '"open"') as open_date
+  INTO ve_openage_specific
+  FROM ve_task_history as th1
+ WHERE status = '"open"'
+   AND NOT (project='VisualEditor' AND projectcolumn NOT SIMILAR TO 'TR%');
+
+COPY (SELECT SUM(points)/7 as points,
+             width_bucket(extract(days from (current_date - open_date)),1,365,12) as age,
+             date_trunc('week', date) as week
+        FROM ve_openage_specific
+       GROUP BY age, week
+       ORDER by week, age)
+TO '/tmp/ve_age_of_backlog_specific.csv' DELIMITER ',' CSV HEADER;
 
 COPY (SELECT SUM(points) as points,
              width_bucket(extract(days from (resolve_date - open_date)),1,70,7) as leadtime,
@@ -262,8 +276,8 @@ COPY (SELECT date_trunc('week', resolve_date) AS week,
             points
        FROM ve_leadtime
       GROUP BY points, week
-      ORDER BY week, count)
-TO '/tmp/ve_histocount.csv' DELIMITER ',' CSV HEADER;
+      ORDER BY week, points)
+TO '/tmp/ve_age_of_resolved_count.csv' DELIMITER ',' CSV HEADER;
 
 COPY (SELECT date_trunc('week', resolve_date) AS week,
             sum(points) as sumpoints,
@@ -271,7 +285,7 @@ COPY (SELECT date_trunc('week', resolve_date) AS week,
        FROM ve_leadtime
       GROUP BY points, week
       ORDER BY week, points)
-TO '/tmp/ve_histopoints.csv' DELIMITER ',' CSV HEADER;
+TO '/tmp/ve_age_of_resolved.csv' DELIMITER ',' CSV HEADER;
 
 
 /* ####################################################################
