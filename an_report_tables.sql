@@ -7,7 +7,7 @@ SELECT date,
   FROM an_task_history
  GROUP BY date, status;
 
-COPY tall_status to '/tmp/AN_status.csv' DELIMITER ',' CSV
+COPY tall_status to '/tmp/an_status.csv' DELIMITER ',' CSV
 HEADER;
 
 /* Entire Backlog
@@ -25,7 +25,7 @@ SELECT date,
  WHERE status != '"invalid"' AND status != '"declined"'
  GROUP BY project, date;
 
-COPY tall_backlog to '/tmp/AN_backlog.csv' DELIMITER ',' CSV
+COPY tall_backlog to '/tmp/an_backlog.csv' DELIMITER ',' CSV
 HEADER;
 
 /* Velocity */
@@ -57,7 +57,7 @@ SELECT week, done, row_number() over () AS rnum
 COPY (SELECT v2.week, GREATEST(v2.done - v1.done, 0) AS velocity
         FROM burnup_week_row AS v1
         JOIN burnup_week_row AS v2 ON (v1.rnum + 1 = v2.rnum))
-  TO '/tmp/AN_velocity.csv' DELIMITER ',' CSV HEADER;
+  TO '/tmp/an_velocity.csv' DELIMITER ',' CSV HEADER;
 
 /* Total backlog */
 
@@ -78,7 +78,7 @@ SELECT tb.date,
   FROM total_backlog tb, burnup b
  WHERE tb.date = b.date
  ORDER BY date
-) to '/tmp/AN_net_growth.csv' DELIMITER ',' CSV HEADER;
+) to '/tmp/an_net_growth.csv' DELIMITER ',' CSV HEADER;
 
 DROP TABLE IF EXISTS histogram;
 
@@ -96,7 +96,7 @@ COPY (SELECT count(title),
              FROM histogram
     GROUP BY project, points
     ORDER BY project, points)
-TO '/tmp/AN_histogram.csv' CSV HEADER;
+TO '/tmp/an_histogram.csv' CSV HEADER;
 
 COPY (SELECT date,
              sum(points) as points
@@ -104,7 +104,7 @@ COPY (SELECT date,
        WHERE status = '"resolved"'
     GROUP BY date
     ORDER BY date)
-TO '/tmp/AN_burnup.csv' DELIMITER ',' CSV HEADER;
+TO '/tmp/an_burnup.csv' DELIMITER ',' CSV HEADER;
 
 DROP TABLE IF EXISTS an_leadtime;
 
@@ -130,4 +130,4 @@ COPY (SELECT count(*),
         FROM an_leadtime
        GROUP BY leadtime, week
        ORDER by week, leadtime)
-TO '/tmp/AN_leadtime.csv' DELIMITER ',' CSV HEADER;
+TO '/tmp/an_leadtime.csv' DELIMITER ',' CSV HEADER;

@@ -118,23 +118,24 @@ COPY (SELECT date,
 /* ####################################################################
 Burnup and Velocity */
 
-DROP TABLE IF EXISTS burnup;
-DROP TABLE IF EXISTS burnup_week;
-DROP TABLE IF EXISTS burnup_week_row;
+DROP TABLE IF EXISTS ve_burnup;
+DROP TABLE IF EXISTS ve_burnup_week;
+DROP TABLE IF EXISTS ve_burnup_week_row;
+DROP TABLE IF EXISTS ve_velocity;
 
 SELECT date,
        SUM(points) AS points
-  INTO burnup
+  INTO ve_burnup
   FROM ve_task_history
  WHERE status='"resolved"'
  GROUP BY date
  ORDER BY date;
 
-COPY (SELECT * FROM burnup) TO '/tmp/ve_burnup.csv' DELIMITER ',' CSV HEADER;
+COPY (SELECT * FROM ve_burnup) TO '/tmp/ve_burnup.csv' DELIMITER ',' CSV HEADER;
 
 SELECT DATE_TRUNC('week', date) AS week,
        SUM(points)/7 AS Done
-  INTO burnup_week
+  INTO ve_burnup_week
   FROM ve_task_history
  WHERE date > NOW() - interval '12 months'
    AND status='"resolved"'
@@ -142,13 +143,15 @@ SELECT DATE_TRUNC('week', date) AS week,
  ORDER BY 1;
 
 SELECT week, done, row_number() over () AS rnum
-  INTO burnup_week_row
-  FROM burnup_week;
+  INTO ve_burnup_week_row
+  FROM ve_burnup_week;
 
-COPY (SELECT v2.week, GREATEST(v2.done - v1.done, 0) AS velocity
-        FROM burnup_week_row AS v1
-        JOIN burnup_week_row AS v2 ON (v1.rnum + 1 = v2.rnum))
-  TO '/tmp/ve_velocity.csv' DELIMITER ',' CSV HEADER;
+SELECT v2.week, GREATEST(v2.done - v1.done, 0) AS velocity
+  INTO ve_velocity
+  FROM ve_burnup_week_row AS v1
+  JOIN ve_burnup_week_row AS v2 ON (v1.rnum + 1 = v2.rnum);
+
+COPY (SELECT * from ve_velocity) TO '/tmp/ve_velocity.csv' DELIMITER ',' CSV HEADER;
 
 /* ####################################################################
 Backlog growth calculations */
@@ -167,7 +170,7 @@ SELECT date,
 COPY (
 SELECT tb.date,
        tb.points - b.points AS points
-  FROM total_backlog tb, burnup b
+  FROM total_backlog tb, ve_burnup b
  WHERE tb.date = b.date
  ORDER BY date
 ) to '/tmp/ve_net_growth.csv' DELIMITER ',' CSV HEADER;
@@ -393,14 +396,15 @@ GROUP BY project, projectcolumn, date, status;
 COPY tall_tranche_status to '/tmp/ve_tranche_status.csv' DELIMITER ',' CSV
 HEADER;
 
-/* TODO: what's this for?
-SELECT title, ('2015-07-15' - min(th1.date)) as age
-  FROM ve_task_history th1
- WHERE th1.status='"open"'
-   AND th1.title in (SELECT th2.title
-                       FROM ve_task_history th2
-                      WHERE th2.date = '2015-07-15'
-                        AND th2.status = '"resolved"')
- GROUP BY title;
+/* Queries actually used for forecasting - data is copied to spreadsheet
+
+select sum(velocity)/3 as min_velocity from (select velocity from ve_velocity where week >= '2015-04-20' and velocity <> 0 order by velocity limit 3) as x;
+
+select sum(velocity)/3 as max_velocity from (select velocity from ve_velocity where week >= '2015-04-20' and velocity <> 0 order by velocity desc limit 3) as x;
+
+select avg(velocity) as avg_velocity from (select velocity from ve_velocity where week >= '2015-04-20' and velocity <> 0) as x;
+
+select projectcolumn, sum(points) as open_backlog from ve_task_history where projectcolumn SIMILAR TO '%TR(1|2|3|4)%' and status='"open"' and date='2015-08-13' GROUP BY projectcolumn;
+
+
 */
-      

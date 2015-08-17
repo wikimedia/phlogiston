@@ -20,7 +20,7 @@ ggplot(ios_status) +
     theme(text = element_text(size=30), legend.title=element_blank())+
     geom_area(position='stack', aes(x = date, y = points, group=status, fill=status, order=-as.numeric(status))) +
     scale_x_date(breaks="1 month", label=date_format("%Y-%b"), limits = as.Date(c('2014-12-01', NA))) +
-    scale_y_continuous(limits=c(0, 2000))
+    scale_y_continuous(limits=c(0, 400))
 dev.off()
 
 ######################################################################
@@ -40,7 +40,7 @@ ggplot(backlog) +
     theme(text = element_text(size=30), legend.title=element_blank())+
     geom_area(position='stack', aes(x = date, y = points, group=project, fill=project, order=-as.numeric(project))) +
     scale_x_date(breaks="1 month", label=date_format("%Y-%b"), limits = as.Date(c('2015-01-01', NA))) +
-    scale_y_continuous(limits=c(0, 2000)) +
+    scale_y_continuous(limits=c(0, 400)) +
         geom_line(data=burnup, aes(x=date, y=points), size=2)
 dev.off()
 

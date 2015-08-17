@@ -179,7 +179,8 @@ velocity_output=png(filename = "/tmp/ve-velocity.png", width=2000, height=1125, 
 
 ggplot(velocity, aes(week, velocity)) +
     labs(title="Velocity per week", y="Story Points") +
-        geom_bar(stat="identity")
+    geom_bar(stat="identity") +
+    theme(text = element_text(size=30))
 dev.off()
 
 ######################################################################
