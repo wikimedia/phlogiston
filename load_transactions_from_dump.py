@@ -14,12 +14,17 @@
 # It assumes this file is saved to the parent directory
 # it works in the "phab" postgresql database
 # it outputs CSV and PNG to /tmp
+# 
+#  The reason it inputs from the parent directory and outputs to /tmp,
+#  rather that the current directory, is so that these temporary files
+#  don't get caught up in source control.  This should be refactored
+#  to whatever is best practice.
 #
 # Things that might be worth refactoring
 #  - status fields are all double-quote-delimited in the database, which makes the sql look stupid
 #  - should probably rip out the --output option and related code since current workflow doesn't use it
 #  - automate retrieving the dump
-#  - softcode the rest of the file and database locations
+#  - softcode the rest of the file and database locations (what is best practice?)
 #  - refactor the .R and .SQL to obey DRY; currently copy-pasted from VE example
 #  - optimize so the whole thing doesn't take 2+ hours for VE
 

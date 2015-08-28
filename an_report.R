@@ -16,7 +16,7 @@ an_status$date <- as.Date(an_status$date, "%Y-%m-%d")
 ve_status_output=png(filename = "/tmp/an-backlog-status.png", width=2000, height=1125, units="px", pointsize=30)
     
 ggplot(an_status) +
-    labs(title="Disposition of the Project B backlog", y="Story Point Total") +
+    labs(title="Disposition of the Analytics backlog", y="Story Point Total") +
     theme(text = element_text(size=30), legend.title=element_blank())+
     geom_area(position='stack', aes(x = date, y = points, group=status, fill=status, order=-as.numeric(status))) +
     scale_x_date(breaks="1 month", label=date_format("%Y-%b"), limits = as.Date(c('2014-12-01', NA))) +
@@ -36,7 +36,7 @@ burnup$date <- as.Date(burnup$date, "%Y-%m-%d")
 burnup_output=png(filename = "/tmp/an-backlog_burnup.png", width=2000, height=1125, units="px", pointsize=30)
     
 ggplot(backlog) +
-    labs(title="Project B backlog", y="Story Point Total") +
+    labs(title="Analytics backlog", y="Story Point Total") +
     theme(text = element_text(size=30), legend.title=element_blank())+
     geom_area(position='stack', aes(x = date, y = points, group=project, fill=project, order=-as.numeric(project))) +
     scale_x_date(breaks="1 month", label=date_format("%Y-%b"), limits = as.Date(c('2015-01-01', NA))) +
@@ -55,7 +55,7 @@ velocity$week <- as.Date(velocity$week, "%Y-%m-%d")
 velocity_output=png(filename = "/tmp/an-velocity.png", width=2000, height=1125, units="px", pointsize=30)
 
 ggplot(velocity, aes(week, velocity)) +
-    labs(title="Project B Velocity per week", y="Story Points") +
+    labs(title="Analytics Velocity per week", y="Story Points") +
     geom_bar(stat="identity")
 dev.off()
 

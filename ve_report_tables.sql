@@ -1,109 +1,225 @@
 /* This script assumes that all tasks in the database are relevant to the VisualEditor team */
 
-/* ####################################################################
-Total points as of each day of all completed "Interrupt" work.  
+/* Apply some filtering to the raw data */
 
-Interrupt work is defined as 
- 1) Any resolved task in the VisualEditor project that is not 
-    in any of the Tranche projectcolumns
- 2) Any resolved task in the TR0 projectcolumn of the 
-    VisualEditor project */
+UPDATE ve_task_history
+   SET status = '"open"'
+ WHERE status = '"stalled"';
 
-DROP TABLE IF EXISTS ve_interrupt;
+DELETE FROM ve_task_history
+ WHERE status = '"duplicate"'
+    OR status = '"invalid"'
+    OR status = '"declined"';
 
-SELECT date,
-       SUM(points) as points
-  INTO ve_interrupt
-  FROM ve_task_history
- WHERE project = 'VisualEditor'
-   AND status='"resolved"'
-   AND projectcolumn NOT SIMILAR TO '%TR%'
- GROUP BY date
+/* Apply current work breakdown to historical data.  VE has used both
+project and projectcolumn to categorize work; this script condenses
+both into a single new field called category. */
 
- ORDER BY date;
+/* ##################################################################
+Roll up the task history from individual tasks to cumulative totals.
 
-INSERT INTO ve_interrupt (date, points) (
-  SELECT date,
-         SUM(points) as points
-    FROM ve_task_history
-   WHERE projectcolumn SIMILAR TO '%TR0%'
-     AND status = '"resolved"'
-   GROUP BY date);
-   
-COPY (
-  SELECT date,
-         SUM(points) as points
-    FROM ve_interrupt
-   GROUP BY date
-   ORDER BY date
-) TO '/tmp/ve_interrupt.csv' DELIMITER ',' CSV HEADER;
+Each row is the cumulative point total for one day for one project and
+projectcolumn and status 
 
+Convert project and projectcolumn to category.  
 
-/* ####################################################################
-Entire Backlog
-Each row is the point total of valid work for one day for one project.
-Valid work includes both open and closed tasks.
-Invalid work is work with status="invalid" or status="declined".
+Remove invalid work: work with status="invalid" or status="declined". */
 
- 1) Prior to 2015-06-18, planned work is all work in one of the VE "blockers" projects.
- 2) After that date, planned work is all work in TR% projectcolumn of the VisualEditor 
-    project, except work in TR0 */ 
+DROP TABLE IF EXISTS ve_tall_backlog;
+ 
+/* Query 1
 
-DROP TABLE IF EXISTS tall_backlog;
-
-/* the blocker projects */
+Between January 2015 and June 2015, planned VE work was tracked in
+projects called "VisualEditor 2014/15 Q3 blockers" and
+"VisualEditor 2014/15 Q4 blockers".   This query should get everything
+from those projects. */
 
 SELECT date,
-       project,
+       project as category,
+       status,
        SUM(points) as points
-  INTO tall_backlog
+  INTO ve_tall_backlog
   FROM ve_task_history
  WHERE project != 'VisualEditor'
-   AND status != '"invalid"'
-   AND status != '"declined"'
- GROUP BY project, date;
+ GROUP BY status, category, date;
 
-/* the interrupt pseudo-project */
+/* Query 2
+Prior to January 2015, all VE work was tracked in the VisualEditor
+project and was not further categorized. Any "resolved" work in that project
+prior to Jan 2015, or between Jan 2015 and June 18, 2015 while the "Q# Blocker"
+projects were in use, is unplanned.  This query and the next query should together
+cover all work in the VisualEditor project prior to June 18, 2015.*/
 
-INSERT INTO tall_backlog (date, project, points) (
-  SELECT date,
-         'VisualEditor Interrupt',
-         SUM(points) as points
-    FROM ve_interrupt
-   GROUP BY date
-   ORDER BY date);
+INSERT INTO ve_tall_backlog (date, category, status, points) (
+SELECT date,
+       category,
+       status,
+       SUM(points) as points
+  FROM (
+SELECT date,
+       'TR0: Interrupt'::text as category,
+       status,
+       points
+  FROM ve_task_history
+ WHERE project = 'VisualEditor'
+   AND status = '"resolved"'
+   AND date < '2015-06-18') AS ve_old_interrupt
+GROUP BY status, category, date);
 
-/* all planned work since Tranches went into use */
+/* Query 3 */
 
-INSERT INTO tall_backlog (date, project, points) (
-  SELECT date,
-         projectcolumn,
-         SUM(points) as points
-        FROM ve_task_history
-       WHERE project = 'VisualEditor'
-         AND date >= '2015-06-18'
-         AND projectcolumn SIMILAR TO 'TR%'
-         AND projectcolumn NOT SIMILAR TO 'TR0%'
-         AND status != '"invalid"'
-         AND status != '"declined"'
-    GROUP BY date, projectcolumn);
+INSERT INTO ve_tall_backlog (date, category, status, points) (
+SELECT date,
+       category,
+       status,
+       SUM(points) as points
+  FROM (
+SELECT date,
+       CAST('General Backlog' AS text) as category,
+       status,
+       points
+  FROM ve_task_history
+ WHERE project = 'VisualEditor'
+   AND status = '"open"'
+   AND date < '2015-06-18') as ve_old_other
+ GROUP BY status, category, date);
 
-/* All other work */
+/* Query 4 
+Since June 18, 2018, any task in the VisualEditor project with a
+projectcolumn starting TR is categorized.  Any other tasks in the
+VisualEditor project are uncategorized. */
 
-INSERT INTO tall_backlog (date, project, points) (
-  SELECT date,
-         'VisualEditor General Backlog',
-         SUM(points) as points
-    FROM ve_task_history
-   WHERE project = 'VisualEditor'
-     AND projectcolumn NOT SIMILAR TO 'TR%'
-     AND status != '"resolved"'
-     AND status != '"invalid"'
-     AND status != '"declined"'
-   GROUP BY date
-   ORDER BY date);
+INSERT INTO ve_tall_backlog (date, category, status, points) (
+SELECT date,
+       projectcolumn as category,
+       status,
+       SUM(points) as points
+  FROM ve_task_history
+ WHERE project = 'VisualEditor'
+   AND projectcolumn SIMILAR TO 'TR%'
+   AND date >= '2015-06-18'
+GROUP BY status, category, date);
 
-COPY tall_backlog to '/tmp/ve_backlog.csv' DELIMITER ',' CSV HEADER;
+/* Query 5 */
+
+INSERT INTO ve_tall_backlog (date, category, status, points) (
+SELECT date,
+       category,
+       status,
+       SUM(points) as points
+  FROM (
+SELECT date,
+       CAST('General Backlog' AS text) as category,
+       status,
+       points
+  FROM ve_task_history
+ WHERE project = 'VisualEditor'
+   AND projectcolumn NOT SIMILAR TO 'TR%'
+   AND date >= '2015-06-18'
+   AND status = '"open"') AS ve_new_uncategorized
+GROUP BY status, category, date);
+
+/* Query 6
+This query should catch mis-categorized stories */
+
+INSERT INTO ve_tall_backlog (date, category, status, points) (
+SELECT date,
+       category,
+       status,
+       SUM(points) as points
+  FROM (
+SELECT date,
+       CAST('Miscategorized' AS text) as category,
+       CASE WHEN status='"stalled"' then CAST('"open"' as text)
+            ELSE status
+       END as status,
+       points
+  FROM ve_task_history
+ WHERE project = 'VisualEditor'
+   AND projectcolumn NOT SIMILAR TO 'TR%'
+   AND date >= '2015-06-18'
+   AND status = '"resolved"') AS ve_miscategorized
+GROUP BY status, category, date);
+
+COPY (
+SELECT date,
+       category,
+       SUM(points) as points
+  FROM ve_tall_backlog
+ WHERE category NOT SIMILAR TO 'TR0%'
+ GROUP BY category, date
+) to '/tmp/ve_backlog_no_interrupt.csv' DELIMITER ',' CSV HEADER;
+
+COPY (
+SELECT date,
+       SUM(points) as points
+  FROM ve_tall_backlog
+ WHERE category NOT SIMILAR TO 'TR0%'
+   AND status = '"resolved"'
+ GROUP BY date
+) to '/tmp/ve_burnup_no_interrupt.csv' DELIMITER ',' CSV HEADER;
+
+/* ####################################################################
+   Maintenance fraction
+Divide all resolved work into Maintenance or New Project, by week. */
+
+DROP TABLE IF EXISTS ve_maintenance_week;
+DROP TABLE IF EXISTS ve_maintenance_delta;
+
+SELECT DATE_TRUNC('week', date) as week,
+       CASE WHEN category = 'TR0: Interrupt' then 'Maintenance'
+            ELSE 'New Project'
+       END as type,
+       SUM(points) AS points
+ INTO ve_maintenance_week
+ FROM ve_tall_backlog
+ WHERE status = '"resolved"'
+ GROUP BY type, week
+ ORDER BY week, type;
+
+SELECT week,
+       type,
+       (points - lag(points) OVER (ORDER BY week)) as maint_points,
+       NULL::int as new_points
+  INTO ve_maintenance_delta
+  FROM ve_maintenance_week
+ WHERE type='Maintenance'
+ ORDER BY week, type;
+
+UPDATE ve_maintenance_delta a
+   SET new_points = (SELECT points
+                       FROM (SELECT week,
+                                    points - lag(points) OVER (ORDER BY week) as points
+                               FROM ve_maintenance_week
+                              WHERE type='New Project') as b
+                      WHERE a.week = b.week);
+
+COPY (
+SELECT week,
+       maint_frac
+  FROM (
+SELECT week,
+       maint_points::float / (maint_points + new_points) as maint_frac
+  FROM ve_maintenance_delta
+  ) as ve_maintenance_fraction
+) TO '/tmp/ve_maintenance_fraction.csv' DELIMITER ',' CSV HEADER;
+
+/* ####################################################################
+Total points as of each day of all completed "Maintenance" work. */
+
+/* not currently being used ! why not? should use this in fanciest subdivided burnup */
+
+COPY (
+SELECT date,
+       SUM(points) AS points
+ FROM ve_task_history
+ WHERE projectcolumn='TR0: Interrupt'
+   AND status = '"resolved"'
+ GROUP BY date
+ ORDER BY date
+) TO '/tmp/ve_maintenance.csv' DELIMITER ',' CSV HEADER;
+
+/* work in progress below this point
 
 /* ####################################################################
 Status distribution of all tasks each day, weighted by points */
@@ -142,10 +258,10 @@ SELECT DATE_TRUNC('week', date) AS week,
  GROUP BY 1
  ORDER BY 1;
 
-SELECT week, done, row_number() over () AS rnum
-  INTO ve_burnup_week_row
-  FROM ve_burnup_week;
-
+/*SELECT week, done, row_number() over () AS rnum
+#  INTO ve_burnup_week_row
+#  FROM ve_burnup_week;
+*/
 SELECT v2.week, GREATEST(v2.done - v1.done, 0) AS velocity
   INTO ve_velocity
   FROM ve_burnup_week_row AS v1
@@ -156,21 +272,21 @@ COPY (SELECT * from ve_velocity) TO '/tmp/ve_velocity.csv' DELIMITER ',' CSV HEA
 /* ####################################################################
 Backlog growth calculations */
 
-DROP TABLE IF EXISTS total_backlog;
-DROP TABLE IF EXISTS net_growth;
-DROP TABLE IF EXISTS growth_delta;
+DROP TABLE IF EXISTS ve_total_backlog;
+DROP TABLE IF EXISTS ve_net_growth;
+DROP TABLE IF EXISTS ve_growth_delta;
 
 SELECT date,
        SUM(points) AS points
-  INTO total_backlog
-  FROM tall_backlog
+  INTO ve_total_backlog
+  FROM ve_tall_backlog
  GROUP BY date
  ORDER BY date;
 
 COPY (
 SELECT tb.date,
        tb.points - b.points AS points
-  FROM total_backlog tb, ve_burnup b
+  FROM ve_total_backlog tb, ve_burnup b
  WHERE tb.date = b.date
  ORDER BY date
 ) to '/tmp/ve_net_growth.csv' DELIMITER ',' CSV HEADER;
@@ -179,12 +295,12 @@ SELECT tb.date,
 /* ####################################################################
 Task Size Histograms */
 
-DROP TABLE IF EXISTS histogram;
+DROP TABLE IF EXISTS ve_histogram;
 
 SELECT title,
        max(project) as project,
        max(points) as points
-  INTO histogram
+  INTO ve_histogram
   FROM ve_task_history
  WHERE status != '"invalid"' and status != '"declined"'
  GROUP BY title;
@@ -192,10 +308,10 @@ SELECT title,
 COPY (SELECT count(title),
              project,
              points
-             FROM histogram
+             FROM ve_histogram
     GROUP BY project, points
     ORDER BY project, points)
-TO '/tmp/histogram.csv' CSV HEADER;
+TO '/tmp/ve_histogram.csv' CSV HEADER;
 
 
 /* ####################################################################
@@ -369,7 +485,7 @@ DROP TABLE IF EXISTS tall_tranche_backlog;
 SELECT date,
        project || ' ' || projectcolumn as project,
        SUM(points) as points
-  INTO tall_tranche_backlog
+  INTO ve_tall_tranche_backlog
   FROM ve_task_history
  WHERE project = 'VisualEditor'
    AND date > '2015-06-19'
@@ -385,7 +501,7 @@ DROP TABLE IF EXISTS tall_tranche_status;
 SELECT date,
        project || ' ' || projectcolumn || ' ' || status as project,
        SUM(points) as points
-  INTO tall_tranche_status
+  INTO ve_tall_tranche_status
   FROM ve_task_history
  WHERE project = 'VisualEditor'
    AND date > '2015-06-19'
@@ -406,5 +522,6 @@ select avg(velocity) as avg_velocity from (select velocity from ve_velocity wher
 
 select projectcolumn, sum(points) as open_backlog from ve_task_history where projectcolumn SIMILAR TO '%TR(1|2|3|4)%' and status='"open"' and date='2015-08-13' GROUP BY projectcolumn;
 
+*/
 
 */
