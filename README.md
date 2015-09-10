@@ -1,16 +1,16 @@
 # phab_task_history
 
-Purpose:
+## Purpose:
 Generate burnup, cycle time, and other charts from Phabricator.  Intended for experimental prototyping and proof of concept for similar functionality to built into Phabricator.  Also a platform to do complex scripted data handling for Phab projects prior to reporting.
 
-Typical usage:
+## Typical usage:
 ```
 wget http://dumps.wikimedia.org/other/misc/phabricator_public.dump
 cd phab_task_history
 ./load_transactions_from_dump.py --load --reconstruct --report --project ve_source.py
 ```
 
-Environment:
+## Environment:
 ```
 foo/                              <- dump goes here
 foo/phab_task_history/            <- program goes here
@@ -18,7 +18,8 @@ foo/phab_task_history/            <- program goes here
 Postgresql database named "phab"  <- data goes here
 ```
 
-Installation Notes:
+## Installation Notes:
+
 1. Get an account and shell access on WMF Labs with Ubuntu 14.04 host
 2. Install prerequisites as root:
   Follow instructions to add Postgresql backport to get 9.4: http://www.postgresql.org/download/linux/ubuntu/
