@@ -1,0 +1,11 @@
+#!/bin/bash
+
+cd ~/phlogiston
+rm phabricator_public.dump
+wget http://dumps.wikimedia.org/other/misc/phabricator_public.dump
+cd phab_task_history
+time python3 load_transactions_from_dump.py --load --verbose
+time python3 load_transactions_from_dump.py --reconstruct --report --project ve_source.py --verbose
+time python3 load_transactions_from_dump.py --reconstruct --report --project and_source.py --verbose
+time python3 load_transactions_from_dump.py --reconstruct --report --project ios_source.py --verbose
+time python3 load_transactions_from_dump.py --reconstruct --report --project an_source.py --verbose

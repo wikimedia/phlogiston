@@ -34,13 +34,15 @@ Postgresql database named "phab"  <- data goes here
      * ```R
        install.packages(c("ggplot2"))
        quit()```
+  5. Set up Nginx website (TODO)
 3. Set up database.
    1. As user postgres,
      * `createuser -s phlogiston`
    2. As user phlogiston,
      * `createdb phab`
 4. Install virtualenv and packages.  As phlogiston, 
-     * ```pip3 install virtualenv
+     * ```mkdir ~/output
+   pip3 install virtualenv
    pip3 install psycopg2```
 5. Run this script.  As phlogiston:
      * ```virtualenv phlab
