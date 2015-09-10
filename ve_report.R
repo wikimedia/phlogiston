@@ -13,7 +13,7 @@ backlog <- read.csv("/tmp/ve_backlog.csv")
 backlog$date <- as.Date(backlog$date, "%Y-%m-%d")
 ## manually set ordering of data
 backlog$category2 <- factor(backlog$category, levels = c("General Backlog", "TR4: Link editor tweaks", "TR3: Language support", "TR2: Mobile MVP", "TR1: Releases", "VisualEditor 2014/15 Q4 blockers", "VisualEditor 2014/15 Q3 blockers", "TR0: Interrupt", "Miscategorized"))
-backlog_output=png(filename = "/tmp/ve-backlog_burnup.png", width=2000, height=1125, units="px", pointsize=30)
+backlog_output=png(filename = "~/output/ve-backlog_burnup.png", width=2000, height=1125, units="px", pointsize=30)
 
 burnup <- read.csv("/tmp/ve_burnup.csv")
 burnup$date <- as.Date(burnup$date, "%Y-%m-%d")
@@ -35,7 +35,7 @@ backlog_zoomed <- read.csv("/tmp/ve_backlog_zoomed.csv")
 backlog_zoomed$date <- as.Date(backlog_zoomed$date, "%Y-%m-%d")
 ## manually set ordering of data
 backlog_zoomed$category2 <- factor(backlog_zoomed$category, levels = c("TR4: Link editor tweaks", "TR3: Language support", "TR2: Mobile MVP", "TR1: Releases", "VisualEditor 2014/15 Q4 blockers", "VisualEditor 2014/15 Q3 blockers"))
-burnup_zoom_output=png(filename = "/tmp/ve-backlog_burnup_zoom.png", width=2000, height=1125, units="px", pointsize=30)
+burnup_zoom_output=png(filename = "~/output/ve-backlog_burnup_zoom.png", width=2000, height=1125, units="px", pointsize=30)
 
 burnup_zoomed <- read.csv("/tmp/ve_burnup_zoomed.csv")
 burnup_zoomed$date <- as.Date(burnup_zoomed$date, "%Y-%m-%d")
@@ -56,7 +56,7 @@ backlog_no_interrupt <- read.csv("/tmp/ve_backlog_zoomed.csv")
 backlog_no_interrupt$date <- as.Date(backlog_no_interrupt$date, "%Y-%m-%d")
 ## manually set ordering of data
 backlog_no_interrupt$category2 <- factor(backlog_no_interrupt$category, levels = c("General Backlog_No_Interrupt", "TR4: Link editor tweaks", "TR3: Language support", "TR2: Mobile MVP", "TR1: Releases", "VisualEditor 2014/15 Q4 blockers", "VisualEditor 2014/15 Q3 blockers", "TR0: Interrupt", "Miscategorized"))
-backlog_no_interrupt_output=png(filename = "/tmp/ve-backlog_no_interrupt_burnup.png", width=2000, height=1125, units="px", pointsize=30)
+backlog_no_interrupt_output=png(filename = "~/output/ve-backlog_no_interrupt_burnup.png", width=2000, height=1125, units="px", pointsize=30)
 
 burnup <- read.csv("/tmp/ve_burnup.csv")
 burnup$date <- as.Date(burnup$date, "%Y-%m-%d")
@@ -74,7 +74,7 @@ dev.off()
 ######################################################################
 ## TR0
 
-## burnup_output <- png(filename = "/tmp/ve-tranch0_burnup.png", width=2000, height=1125, units="px", pointsize=30)
+## burnup_output <- png(filename = "~/output/ve-tranch0_burnup.png", width=2000, height=1125, units="px", pointsize=30)
 
 ## par(las=3) ## vertical labels
 ## ggplot(backlog[backlog$category=='TR0: Interrupt',]) + 
@@ -91,7 +91,7 @@ dev.off()
 
 ## tr_burnup <- read.csv("/tmp/ve_TR1.csv")
 ## tr_burnup$date <- as.Date(tr_burnup$date, "%Y-%m-%d")
-## burnup_output <- png(filename = "/tmp/ve-tranch1_burnup.png", width=2000, height=1125, units="px", pointsize=30)
+## burnup_output <- png(filename = "~/output/ve-tranch1_burnup.png", width=2000, height=1125, units="px", pointsize=30)
   
 ## ggplot(tr_burnup) +
 ##   labs(title="VE Tranch 1 backlog", y="Story Point Total") +
@@ -106,7 +106,7 @@ dev.off()
 
 ## tr_burnup <- read.csv("/tmp/ve_TR2.csv")
 ## tr_burnup$date <- as.Date(tr_burnup$date, "%Y-%m-%d")
-## burnup_output <- png(filename = "/tmp/ve-tranch2_burnup.png", width=2000, height=1125, units="px", pointsize=30)
+## burnup_output <- png(filename = "~/output/ve-tranch2_burnup.png", width=2000, height=1125, units="px", pointsize=30)
   
 ## ggplot(tr_burnup) +
 ##   labs(title="VE Tranch 2 backlog", y="Story Point Total") +
@@ -121,7 +121,7 @@ dev.off()
 
 ## tr_burnup <- read.csv("/tmp/ve_TR3.csv")
 ## tr_burnup$date <- as.Date(tr_burnup$date, "%Y-%m-%d")
-## burnup_output <- png(filename = "/tmp/ve-tranch3_burnup.png", width=2000, height=1125, units="px", pointsize=30)
+## burnup_output <- png(filename = "~/output/ve-tranch3_burnup.png", width=2000, height=1125, units="px", pointsize=30)
   
 ## ggplot(tr_burnup) +
 ##   labs(title="VE Tranch 3 backlog", y="Story Point Total") +
@@ -135,7 +135,7 @@ dev.off()
 
 ## tr_burnup <- read.csv("/tmp/ve_TR4.csv")
 ## tr_burnup$date <- as.Date(tr_burnup$date, "%Y-%m-%d")
-## burnup_output <- png(filename = "/tmp/ve-tranch4_burnup.png", width=2000, height=1125, units="px", pointsize=30)
+## burnup_output <- png(filename = "~/output/ve-tranch4_burnup.png", width=2000, height=1125, units="px", pointsize=30)
   
 ## ggplot(tr_burnup) +
 ##   labs(title="VE Tranch 4 backlog", y="Story Point Total") +
@@ -149,7 +149,7 @@ dev.off()
 
 ## tr_burnup <- read.csv("/tmp/ve_TR5.csv")
 ## tr_burnup$date <- as.Date(tr_burnup$date, "%Y-%m-%d")
-## burnup_output <- png(filename = "/tmp/ve-tranch5_burnup.png", width=2000, height=1125, units="px", pointsize=30)
+## burnup_output <- png(filename = "~/output/ve-tranch5_burnup.png", width=2000, height=1125, units="px", pointsize=30)
   
 ## ggplot(tr_burnup) +
 ##   labs(title="VE Tranch 5 backlog", y="Story Point Total") +
@@ -165,12 +165,13 @@ dev.off()
 ve_maint_frac <- read.csv("/tmp/ve_maintenance_fraction.csv")
 ve_maint_frac$week <- as.Date(ve_maint_frac$week, "%Y-%m-%d")
 
-status_output <- png(filename = "/tmp/ve-maint_frac.png", width=2000, height=1125, units="px", pointsize=30)
+status_output <- png(filename = "~/output/ve-maint_frac.png", width=2000, height=1125, units="px", pointsize=30)
   
 ggplot(ve_maint_frac, aes(week, maint_frac)) +
   labs(title="VE Maintenance Fraction", y="Fraction of completed work that is maintenance") +
   geom_bar(stat="identity") +
-  theme(text = element_text(size=30))
+      theme(text = element_text(size=30)) +
+          scale_y_continuous(labels=percent, limits=c(0,1))
 dev.off()
 
 ######################################################################
@@ -180,7 +181,7 @@ dev.off()
 velocity <- read.csv("/tmp/ve_velocity.csv")
 velocity$week <- as.Date(velocity$week, "%Y-%m-%d")
 
-velocity_output <- png(filename = "/tmp/ve-velocity.png", width=2000, height=1125, units="px", pointsize=30)
+velocity_output <- png(filename = "~/output/ve-velocity.png", width=2000, height=1125, units="px", pointsize=30)
 
 ggplot(velocity, aes(week, velocity)) +
   labs(title="Velocity per week", y="Story Points") +
@@ -195,7 +196,7 @@ dev.off()
 net_growth <- read.csv("/tmp/ve_net_growth.csv")
 net_growth$date <- as.Date(net_growth$date, "%Y-%m-%d")
 
-net_growth_output <- png(filename = "/tmp/ve-net_growth.png", width=2000, height=1125, units="px", pointsize=30)
+net_growth_output <- png(filename = "~/output/ve-net_growth.png", width=2000, height=1125, units="px", pointsize=30)
 
 ggplot() +
   labs(title="Net change in open backlog", y="Story Points") +
@@ -210,7 +211,7 @@ dev.off()
 
 ## leadtime <- read.csv("/tmp/ve_leadtime.csv")
 ## leadtime$week <- as.Date(leadtime$week, "%Y-%m-%d")
-## leadtime_output <- png(filename = "/tmp/ve-leadtime.png", width=2000, height=1125, units="px", pointsize=30)
+## leadtime_output <- png(filename = "~/output/ve-leadtime.png", width=2000, height=1125, units="px", pointsize=30)
 ## ggplot(leadtime, aes(x=week, y=points, fill=leadtime)) +
 ##   labs(title="VE Lead Time for resolved tasks", y="Story Point Total") +
 ##   geom_bar(stat="identity")
@@ -218,7 +219,7 @@ dev.off()
 
 ## age_of_resolved <- read.csv("/tmp/ve_age_of_resolved.csv")
 ## age_of_resolved$week <- as.Date(age_of_resolved$week, "%Y-%m-%d")
-## age_of_resolved_output <- png(filename = "/tmp/ve-age_of_resolved.png", width=2000, height=1125, units="px", pointsize=30)
+## age_of_resolved_output <- png(filename = "~/output/ve-age_of_resolved.png", width=2000, height=1125, units="px", pointsize=30)
 ## ggplot(age_of_resolved, aes(x=week, y=sumpoints, fill=factor(points))) +
 ##   labs(title="VE Age of Resolved (by points)", y="Story Point Total") +
 ##   theme(text = element_text(size=30)) +
@@ -227,7 +228,7 @@ dev.off()
 
 ## age_of_resolved_count <- read.csv("/tmp/ve_age_of_resolved_count.csv")
 ## age_of_resolved_count$week <- as.Date(age_of_resolved_count$week, "%Y-%m-%d")
-## age_of_resolved_count_output <- png(filename = "/tmp/ve-age_of_resolved_count.png", width=2000, height=1125, units="px", pointsize=30)
+## age_of_resolved_count_output <- png(filename = "~/output/ve-age_of_resolved_count.png", width=2000, height=1125, units="px", pointsize=30)
 ## ggplot(age_of_resolved_count, aes(x=week, y=count, fill=factor(points))) +
 ##   labs(title="VE Age of Resolved (by count)", y="Count") +
 ##   theme(text = element_text(size=30)) +
@@ -236,7 +237,7 @@ dev.off()
 
 ## age_of_resolved <- read.csv("/tmp/ve_age_of_resolved.csv")
 ## age_of_resolved$week <- as.Date(age_of_resolved$week, "%Y-%m-%d")
-## age_of_resolved_output <- png(filename = "/tmp/ve-age_of_resolved.png", width=2000, height=1125, units="px", pointsize=30)
+## age_of_resolved_output <- png(filename = "~/output/ve-age_of_resolved.png", width=2000, height=1125, units="px", pointsize=30)
 ## ggplot(age_of_resolved, aes(x=week, y=sumpoints, fill=factor(points))) +
 ##   labs(title="VE Age of Resolved (by points)", y="Story Point Total") +
 ##   theme(text = element_text(size=30)) +
@@ -246,7 +247,7 @@ dev.off()
 
 ## age_of_resolved_count <- read.csv("/tmp/ve_age_of_resolved_count.csv")
 ## age_of_resolved_count$week <- as.Date(age_of_resolved_count$week, "%Y-%m-%d")
-## age_of_resolved_count_output <- png(filename = "/tmp/ve-age_of_resolved_count.png", width=2000, height=1125, units="px", pointsize=30)
+## age_of_resolved_count_output <- png(filename = "~/output/ve-age_of_resolved_count.png", width=2000, height=1125, units="px", pointsize=30)
 ## ggplot(age_of_resolved_count, aes(x=week, y=count, fill=factor(points))) +
 ##   labs(title="VE Age of Resolved (by count)", y="Count") +
 ##   theme(text = element_text(size=30)) +
@@ -256,7 +257,7 @@ dev.off()
 
 ## backlogage <- read.csv("/tmp/ve_age_of_backlog_specific.csv")
 ## backlogage$week <- as.Date(backlogage$week, "%Y-%m-%d")
-## backlogage_output <- png(filename = "/tmp/ve-age_of_backlog_specific.png", width=2000, height=1125, units="px", pointsize=30)
+## backlogage_output <- png(filename = "~/output/ve-age_of_backlog_specific.png", width=2000, height=1125, units="px", pointsize=30)
 ## ggplot(backlogage, aes(x=week, y=points, fill=age)) +
 ##   labs(title="Age of VE backlog (open tasks), excluding General Backlog", y="Story Point Total") +
 ##   theme(text = element_text(size=30)) +

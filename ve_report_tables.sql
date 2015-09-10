@@ -355,3 +355,4 @@ COPY (
 SELECT MAX(date)
   FROM ve_task_history)
 TO '/tmp/ve_max_date.csv' DELIMITER ',' CSV HEADER;
+

@@ -21,11 +21,19 @@ Postgresql database named "phab"  <- data goes here
 ## Installation Notes:
 
 1. Get an account and shell access on WMF Labs with Ubuntu 14.04 host
-2. Install prerequisites as root:
+2. Install prerequisites on the system.  As root:
   1. Follow instructions to add Postgresql backport to get 9.4: http://www.postgresql.org/download/linux/ubuntu/
-  2. Install ubuntu packages
+  2. Get access to newer R
+     * ```echo deb http://cran.es.r-project.org/bin/linux/ubuntu trusty/ > /etc/apt/sources.list.d/r.list
+       gpg --keyserver keyserver.ubuntu.com --recv-key E084DAB9
+       gpg -a --export E084DAB9 | sudo apt-key add -```
+  3. Install ubuntu packages
      * ```apt-get install nginx postgresql-9.4 python3-pip python3-psycopg2 python3-dev
-    apt-get build-dep python3-psycopg2```
+    apt-get build-dep python3-psycopg2 r-base-core r-base-script```
+  4. Install R packages.
+     * ```R
+       install.packages(c("ggplot2"))
+       quit()```
 3. Set up database.
    1. As user postgres,
      * `createuser -s phlogiston`
