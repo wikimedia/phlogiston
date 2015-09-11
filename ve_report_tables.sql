@@ -37,11 +37,12 @@ SELECT date,
  WHERE project != 'VisualEditor'
  GROUP BY status, category, date;
 
-/* Prior to 18 June 2015, VE work in the VisualEditor project was not organized around
-the interrupt or maintenance, so all work in that project prior to that date 
-can be considered General Backlog, regardless of state. The nested select is required
-to accurately group by category, after category is forced to a constant in the inner
-select. */
+/* Prior to 18 June 2015, VE work in the VisualEditor project was not
+organized around the interrupt or maintenance, so all work in that
+project prior to that date can be considered General Backlog,
+regardless of state or column.  The nested select is required to
+accurately group by category, after category is forced to a constant
+in the inner select. */
 
 INSERT INTO ve_tall_backlog (date, category, status, points) (
 SELECT date,
@@ -58,8 +59,9 @@ SELECT date,
    AND date < '2015-06-18') as ve_old_other
  GROUP BY status, category, date);
 
-/* Since June 18, 2018, any task in the VisualEditor project with a
-projectcolumn starting TR is categorized. */
+/* Since June 18, 2018, the projectcolumn in the VisualEditor project
+should be accurate, so any VE task in a Tranche should use the tranche
+as the category. */
 
 INSERT INTO ve_tall_backlog (date, category, status, points) (
 SELECT date,
@@ -72,9 +74,10 @@ SELECT date,
    AND date >= '2015-06-18'
 GROUP BY status, category, date);
 
-/* Any other tasks in the VisualEditor project are uncategorized. But
-if they are resolved, they should have been categorized, so handle
-these two cases with two queries. */
+/* Any other tasks in the VisualEditor project (i.e., any task after
+June 18th and not in a tranche) should be old data getting cleaned up.
+We will essentially ignore them by placing them in General Backlog.
+*/
 
 INSERT INTO ve_tall_backlog (date, category, status, points) (
 SELECT date,
@@ -89,25 +92,7 @@ SELECT date,
   FROM ve_task_history
  WHERE project = 'VisualEditor'
    AND projectcolumn NOT SIMILAR TO 'TR%'
-   AND date >= '2015-06-18'
-   AND status = '"open"') AS ve_new_uncategorized
-GROUP BY status, category, date);
-
-INSERT INTO ve_tall_backlog (date, category, status, points) (
-SELECT date,
-       category,
-       status,
-       SUM(points) as points
-  FROM (
-SELECT date,
-       CAST('Miscategorized' AS text) as category,
-       status,
-       points
-  FROM ve_task_history
- WHERE project = 'VisualEditor'
-   AND projectcolumn NOT SIMILAR TO 'TR%'
-   AND date >= '2015-06-18'
-   AND status = '"resolved"') AS ve_miscategorized
+   AND date >= '2015-06-18') AS ve_new_uncategorized
 GROUP BY status, category, date);
 
 COPY (

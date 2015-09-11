@@ -1,4 +1,4 @@
-# phab_task_history
+# Phlogiston
 
 ## Purpose:
 Generate burnup, cycle time, and other charts from Phabricator.  Intended for experimental prototyping and proof of concept for similar functionality to built into Phabricator.  Also a platform to do complex scripted data handling for Phab projects prior to reporting.
