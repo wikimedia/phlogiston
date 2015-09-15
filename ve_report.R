@@ -24,7 +24,6 @@ ggplot(backlog) +
   theme(text = element_text(size=30), legend.title=element_blank())+
   geom_area(position='stack', aes(x = date, y = points, group=category2, fill=category2, order=-as.numeric(category2))) +
   scale_x_date(breaks="1 month", label=date_format("%Y-%b"), limits = as.Date(c('2014-12-01', NA))) +
-  scale_y_continuous(limits=c(0, 100000)) +
   geom_line(data=burnup, aes(x=date, y=points), size=2)
 dev.off()
 
@@ -42,33 +41,11 @@ burnup_zoomed$date <- as.Date(burnup_zoomed$date, "%Y-%m-%d")
 burnup_zoomed$category2 <- 0 ## dummy colum so it fits on the same ggplot
 
 ggplot(backlog_zoomed) +
-  labs(title="VE backlog (zoomed; excludes Maintenance and General Backlog)", y="Story Point Total") +
+  labs(title="VE Planned backlog (excludes Maintenance and General Backlog)", y="Story Point Total") +
   theme(text = element_text(size=30), legend.title=element_blank()) +
   geom_area(position='stack', aes(x = date, y = points, group=category2, fill=category2, order=-as.numeric(category2))) +
   scale_x_date(breaks="1 month", label=date_format("%Y-%b"), limits = as.Date(c('2015-02-01', NA))) +
-  scale_y_continuous(limits=c(0, 10000)) +
-  geom_line(data=burnup, aes(x=date, y=points), size=2)
-dev.off()
-
-## Excluding Interrupt
-
-backlog_no_interrupt <- read.csv("/tmp/ve_backlog_zoomed.csv")
-backlog_no_interrupt$date <- as.Date(backlog_no_interrupt$date, "%Y-%m-%d")
-## manually set ordering of data
-backlog_no_interrupt$category2 <- factor(backlog_no_interrupt$category, levels = c("General Backlog_No_Interrupt", "TR4: Link editor tweaks", "TR3: Language support", "TR2: Mobile MVP", "TR1: Releases", "VisualEditor 2014/15 Q4 blockers", "VisualEditor 2014/15 Q3 blockers", "TR0: Interrupt", "Miscategorized"))
-backlog_no_interrupt_output=png(filename = "~/html/ve-backlog_no_interrupt_burnup.png", width=2000, height=1125, units="px", pointsize=30)
-
-burnup <- read.csv("/tmp/ve_burnup.csv")
-burnup$date <- as.Date(burnup$date, "%Y-%m-%d")
-burnup$category2 <- 0 ## dummy colum so it fits on the same ggplot
-
-ggplot(backlog_no_interrupt) +
-  labs(title="VE backlog (excluding Maintenance)", y="Story Point Total") +
-  theme(text = element_text(size=30), legend.title=element_blank())+
-  geom_area(position='stack', aes(x = date, y = points, group=category2, fill=category2, order=-as.numeric(category2))) +
-  scale_x_date(breaks="1 month", label=date_format("%Y-%b"), limits = as.Date(c('2014-12-01', NA))) +
-  scale_y_continuous(limits=c(0, 100000)) +
-  geom_line(data=burnup, aes(x=date, y=points), size=2)
+  geom_line(data=burnup_zoomed, aes(x=date, y=points), size=2)
 dev.off()
 
 ######################################################################

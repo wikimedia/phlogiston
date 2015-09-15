@@ -9,3 +9,5 @@ python3 load_transactions_from_dump.py --reconstruct --report --project ve_sourc
 python3 load_transactions_from_dump.py --reconstruct --report --project and_source.py 
 python3 load_transactions_from_dump.py --reconstruct --report --project ios_source.py 
 python3 load_transactions_from_dump.py --reconstruct --report --project an_source.py 
+cp /tmp/*max_date.csv ~/html
+

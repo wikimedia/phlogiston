@@ -129,8 +129,9 @@ SELECT date,
        SUM(points) as points
   FROM ve_tall_backlog
  WHERE status = '"resolved"'
-   AND category NOT SIMILAR TO 'TR0%'
- GROUP BY date
+   AND category NOT LIKE 'TR0%'
+   AND category NOT LIKE 'General Backlog'
+GROUP BY date
  ORDER BY date
 ) to '/tmp/ve_burnup_zoomed.csv' DELIMITER ',' CSV HEADER;
 
@@ -141,16 +142,17 @@ Divide all resolved work into Maintenance or New Project, by week. */
 DROP TABLE IF EXISTS ve_maintenance_week;
 DROP TABLE IF EXISTS ve_maintenance_delta;
 
-SELECT DATE_TRUNC('week', date) as week,
+SELECT date,
        CASE WHEN category = 'TR0: Interrupt' then 'Maintenance'
             ELSE 'New Project'
        END as type,
-       SUM(points) AS points
+       sum(points) as points
  INTO ve_maintenance_week
  FROM ve_tall_backlog
  WHERE status = '"resolved"'
- GROUP BY type, week
- ORDER BY week, type;
+   AND EXTRACT(dow FROM date) = 0
+ GROUP BY type, date
+ ORDER BY date, type;
 
 SELECT week,
        type,
