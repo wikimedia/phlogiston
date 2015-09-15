@@ -146,7 +146,7 @@ SELECT date,
        CASE WHEN category = 'TR0: Interrupt' then 'Maintenance'
             ELSE 'New Project'
        END as type,
-       sum(points) as points
+       SUM(points) as points
  INTO ve_maintenance_week
  FROM ve_tall_backlog
  WHERE status = '"resolved"'
@@ -154,28 +154,28 @@ SELECT date,
  GROUP BY type, date
  ORDER BY date, type;
 
-SELECT week,
+SELECT date,
        type,
-       (points - lag(points) OVER (ORDER BY week)) as maint_points,
+       (points - lag(points) OVER (ORDER BY date)) as maint_points,
        NULL::int as new_points
   INTO ve_maintenance_delta
   FROM ve_maintenance_week
  WHERE type='Maintenance'
- ORDER BY week, type;
+ ORDER BY date, type;
 
 UPDATE ve_maintenance_delta a
    SET new_points = (SELECT points
-                       FROM (SELECT week,
-                                    points - lag(points) OVER (ORDER BY week) as points
+                       FROM (SELECT date,
+                                    points - lag(points) OVER (ORDER BY date) as points
                                FROM ve_maintenance_week
                               WHERE type='New Project') as b
-                      WHERE a.week = b.week);
+                      WHERE a.date = b.date);
 
 COPY (
-SELECT week,
+SELECT date,
        maint_frac
   FROM (
-SELECT week,
+SELECT date,
        maint_points::float / (maint_points + new_points) as maint_frac
   FROM ve_maintenance_delta
   ) as ve_maintenance_fraction
@@ -187,31 +187,32 @@ Burnup and Velocity */
 DROP TABLE IF EXISTS ve_velocity_week;
 DROP TABLE IF EXISTS ve_velocity_delta;
 
-SELECT DATE_TRUNC('week', date) as week,
-       SUM(points)/7 AS points
+SELECT date,
+       SUM(points) AS points
  INTO ve_velocity_week
  FROM ve_tall_backlog
- WHERE status = '"resolved"'
- GROUP BY week
- ORDER BY week;
+WHERE status = '"resolved"'
+  AND EXTRACT(dow from date) = 0 
+ GROUP BY date
+ ORDER BY date;
 
-SELECT week,
-       (points - lag(points) OVER (ORDER BY week)) as points,
+SELECT date,
+       (points - lag(points) OVER (ORDER BY date)) as points,
        NULL::int as velocity
   INTO ve_velocity_delta
   FROM ve_velocity_week
- ORDER BY week;
+ ORDER BY date;
 
 UPDATE ve_velocity_delta a
    SET velocity = (SELECT points
-                       FROM (SELECT week,
-                                    points - lag(points) OVER (ORDER BY week) as points
+                       FROM (SELECT date,
+                                    points - lag(points) OVER (ORDER BY date) as points
                                FROM ve_velocity_week
                              ) as b
-                      WHERE a.week = b.week);
+                      WHERE a.date = b.date);
 
 COPY (
-SELECT week,
+SELECT date,
        velocity
   FROM ve_velocity_delta
 ) TO '/tmp/ve_velocity.csv' DELIMITER ',' CSV HEADER;
@@ -219,12 +220,21 @@ SELECT week,
 /* ####################################################################
 Backlog growth calculations */
 
+DROP TABLE IF EXISTS ve_backlog_size;
+
+SELECT date,
+       SUM(points) AS points
+ INTO ve_backlog_size
+ FROM ve_tall_backlog
+WHERE status != '"resolved"'
+  AND EXTRACT(dow from date) = 0 
+ GROUP BY date
+ ORDER BY date;
+
 COPY (
 SELECT date,
-       SUM(points) as points
-  FROM ve_tall_backlog
- WHERE status != '"resolved"'
- GROUP BY date
+       (points - lag(points) OVER (ORDER BY date)) as points
+  FROM ve_backlog_size
  ORDER BY date
 ) to '/tmp/ve_net_growth.csv' DELIMITER ',' CSV HEADER;
 

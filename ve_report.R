@@ -140,11 +140,11 @@ dev.off()
 ######################################################################
 
 ve_maint_frac <- read.csv("/tmp/ve_maintenance_fraction.csv")
-ve_maint_frac$week <- as.Date(ve_maint_frac$week, "%Y-%m-%d")
+ve_maint_frac$date <- as.Date(ve_maint_frac$date, "%Y-%m-%d")
 
 status_output <- png(filename = "~/html/ve-maint_frac.png", width=2000, height=1125, units="px", pointsize=30)
   
-ggplot(ve_maint_frac, aes(week, maint_frac)) +
+ggplot(ve_maint_frac, aes(date, maint_frac)) +
   labs(title="VE Maintenance Fraction", y="Fraction of completed work that is maintenance") +
   geom_bar(stat="identity") +
       theme(text = element_text(size=30)) +
@@ -156,11 +156,11 @@ dev.off()
 ######################################################################
 
 velocity <- read.csv("/tmp/ve_velocity.csv")
-velocity$week <- as.Date(velocity$week, "%Y-%m-%d")
+velocity$date <- as.Date(velocity$date, "%Y-%m-%d")
 
 velocity_output <- png(filename = "~/html/ve-velocity.png", width=2000, height=1125, units="px", pointsize=30)
 
-ggplot(velocity, aes(week, velocity)) +
+ggplot(velocity, aes(date, velocity)) +
   labs(title="Velocity per week", y="Story Points") +
   geom_bar(stat="identity") +
   theme(text = element_text(size=30))
@@ -175,10 +175,10 @@ net_growth$date <- as.Date(net_growth$date, "%Y-%m-%d")
 
 net_growth_output <- png(filename = "~/html/ve-net_growth.png", width=2000, height=1125, units="px", pointsize=30)
 
-ggplot() +
+ggplot(net_growth, aes(date, points)) +
   labs(title="Net change in open backlog", y="Story Points") +
-  theme(text = element_text(size=30), legend.title=element_blank())+
-  geom_line(data = net_growth, stat="identity", aes(date, points), size=2)
+  geom_bar(stat="identity") +
+  theme(text = element_text(size=30))
 dev.off()
 
 ## Disabled pending future code cleanup in the SQL
