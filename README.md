@@ -47,7 +47,7 @@ Postgresql database named "phab"   <- data goes here
      * `service nginx restart`
 3. Set up database.
    1. As user postgres,
-     * `createuser phlogiston`
+     * `createuser -s phlogiston`
      * `createdb -O phlogiston phab`
 4. Install virtualenv and packages.  As phlogiston, 
      * `mkdir ~/html`
