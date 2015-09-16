@@ -30,12 +30,12 @@ Postgresql database named "phab"   <- data goes here
    * `exit`
   1. Follow instructions to add Postgresql backport to get 9.4: http://www.postgresql.org/download/linux/ubuntu/
   2. Get access to newer R
-     * ```echo deb http://cran.es.r-project.org/bin/linux/ubuntu trusty/ > /etc/apt/sources.list.d/r.list```
-     * ```gpg --keyserver keyserver.ubuntu.com --recv-key E084DAB9```
-     * ```gpg -a --export E084DAB9 | sudo apt-key add - ```
+     * `echo deb http://cran.es.r-project.org/bin/linux/ubuntu trusty/ > /etc/apt/sources.list.d/r.list`
+     * `gpg --keyserver keyserver.ubuntu.com --recv-key E084DAB9`
+     * `gpg -a --export E084DAB9 | sudo apt-key add - `
   3. Install ubuntu packages
-     * ```apt-get install nginx postgresql-9.4 python3-pip python3-psycopg2 python3-dev```
-     * ```apt-get build-dep python3-psycopg2 r-base-core r-base-script`
+     * `apt-get install nginx postgresql-9.4 python3-pip python3-psycopg2 python3-dev`
+     * `apt-get build-dep python3-psycopg2 r-base-core r-base-script`
   4. Install R packages.
      * `R`
      * `install.packages(c("ggplot2"))`
