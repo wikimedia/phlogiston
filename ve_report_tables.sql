@@ -181,6 +181,15 @@ SELECT date,
   ) as ve_maintenance_fraction
 ) TO '/tmp/ve_maintenance_fraction.csv' DELIMITER ',' CSV HEADER;
 
+COPY (
+SELECT ROUND(100 * maint_points::decimal / (maint_points + new_points),0) as "Total Maintenance Fraction"
+  FROM (SELECT sum(maint_points) as maint_points
+          FROM ve_maintenance_delta) as x
+ CROSS JOIN 
+       (SELECT sum(new_points)  as new_points
+	  FROM ve_maintenance_delta) as y
+) TO '/tmp/ve_maintenance_fraction_total.csv' DELIMITER ',' CSV;
+
 /* ####################################################################
 Burnup and Velocity */
 
@@ -351,5 +360,5 @@ select projectcolumn, sum(points) as open_backlog from ve_task_history where pro
 COPY (
 SELECT MAX(date)
   FROM ve_task_history)
-TO '/tmp/ve_max_date.csv' DELIMITER ',' CSV HEADER;
+TO '/tmp/ve_max_date.csv' DELIMITER ',' CSV;
 
