@@ -343,17 +343,48 @@ since it's the only way to identify recently resolved tasks
 --       ORDER BY week, points)
 -- TO '/tmp/ve_age_of_resolved.csv' DELIMITER ',' CSV HEADER;
 
-/* Queries actually used for forecasting - data is copied to spreadsheet
+/* Queries actually used for forecasting - data is copied to spreadsheet */
 
-select sum(velocity)/3 as min_velocity from (select velocity from ve_velocity where week >= '2015-04-20' and velocity <> 0 order by velocity limit 3) as x;
+COPY (
+SELECT SUM(velocity)/3 AS min_velocity
+  FROM (SELECT velocity 
+          FROM ve_velocity_delta
+         WHERE date >= '2015-04-20' 
+           AND velocity <> 0 
+         ORDER BY velocity 
+         LIMIT 3) as x)
+TO '/tmp/ve_min.csv' DELIMITER ',' CSV;
 
-select sum(velocity)/3 as max_velocity from (select velocity from ve_velocity where week >= '2015-04-20' and velocity <> 0 order by velocity desc limit 3) as x;
+COPY (
+SELECT SUM(velocity)/3 AS max_velocity
+  FROM (SELECT velocity 
+          FROM ve_velocity_delta
+         WHERE date >= '2015-04-20' 
+           AND velocity <> 0 
+         ORDER BY velocity DESC
+         LIMIT 3) as x)
+TO '/tmp/ve_max.csv' DELIMITER ',' CSV;
 
-select avg(velocity) as avg_velocity from (select velocity from ve_velocity where week >= '2015-04-20' and velocity <> 0) as x;
+COPY (
+SELECT AVG(velocity) AS avg_velocity
+  FROM (SELECT velocity 
+          FROM ve_velocity_delta
+         WHERE date >= '2015-04-20' 
+           AND velocity <> 0 
+         ORDER BY velocity)
+         as x)
+TO '/tmp/ve_avg.csv' DELIMITER ',' CSV;
 
-select projectcolumn, sum(points) as open_backlog from ve_task_history where projectcolumn SIMILAR TO '%TR(1|2|3|4)%' and status='"open"' and date='2015-08-13' GROUP BY projectcolumn;
-
-*/
+COPY (
+SELECT projectcolumn,
+       SUM(points) AS open_backlog
+  FROM ve_task_history
+ WHERE projectcolumn SIMILAR TO '%TR(1|2|3|4)%'
+   AND status='"open"'
+   AND date=(SELECT MAX(date)
+               FROM ve_task_history)
+ GROUP BY projectcolumn)
+ TO '/tmp/ve_backlog_current.csv' DELIMITER ',' CSV HEADER;
 
 /* Report on the most recent date to catch some simple errors */
 
