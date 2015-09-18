@@ -126,6 +126,16 @@ SELECT date,
 
 COPY (
 SELECT date,
+       category,
+       SUM(points) as points
+  FROM ve_tall_backlog
+ WHERE status = '"resolved"'
+ GROUP BY date, category
+ ORDER BY date, category
+) to '/tmp/ve_burnup_categories.csv' DELIMITER ',' CSV HEADER;
+
+COPY (
+SELECT date,
        SUM(points) as points
   FROM ve_tall_backlog
  WHERE status = '"resolved"'
@@ -383,7 +393,8 @@ SELECT projectcolumn,
    AND status='"open"'
    AND date=(SELECT MAX(date)
                FROM ve_task_history)
- GROUP BY projectcolumn)
+ GROUP BY projectcolumn
+ ORDER BY projectcolumn)
  TO '/tmp/ve_backlog_current.csv' DELIMITER ',' CSV HEADER;
 
 /* Report on the most recent date to catch some simple errors */

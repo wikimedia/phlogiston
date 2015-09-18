@@ -3,6 +3,7 @@
 ## library(reshape2)
 library(ggplot2)
 library(scales)
+library(RColorBrewer)
 ## library(grid)
 
 ######################################################################
@@ -12,6 +13,8 @@ library(scales)
 backlog <- read.csv("/tmp/ve_backlog.csv")
 backlog$date <- as.Date(backlog$date, "%Y-%m-%d")
 ## manually set ordering of data
+colors = brewer.pal(9, "PuOr")
+
 backlog$category2 <- factor(backlog$category, levels = c("General Backlog", "TR4: Link editor tweaks", "TR3: Language support", "TR2: Mobile MVP", "TR1: Releases", "VisualEditor 2014/15 Q4 blockers", "VisualEditor 2014/15 Q3 blockers", "TR0: Interrupt", "Miscategorized"))
 backlog_output=png(filename = "~/html/ve-backlog_burnup.png", width=2000, height=1125, units="px", pointsize=30)
 
@@ -23,6 +26,7 @@ ggplot(backlog) +
   labs(title="VE backlog", y="Story Point Total") +
   theme(text = element_text(size=30), legend.title=element_blank())+
   geom_area(position='stack', aes(x = date, y = points, group=category2, fill=category2, order=-as.numeric(category2))) +
+  scale_fill_manual(values = colors) +
   scale_x_date(breaks="1 month", label=date_format("%Y-%b"), limits = as.Date(c('2014-12-01', NA))) +
   geom_line(data=burnup, aes(x=date, y=points), size=2)
 dev.off()
@@ -45,95 +49,80 @@ ggplot(backlog_zoomed) +
   theme(text = element_text(size=30), legend.title=element_blank()) +
   geom_area(position='stack', aes(x = date, y = points, group=category2, fill=category2, order=-as.numeric(category2))) +
   scale_x_date(breaks="1 month", label=date_format("%Y-%b"), limits = as.Date(c('2015-02-01', NA))) +
+  scale_fill_manual(values = colors) +
   geom_line(data=burnup_zoomed, aes(x=date, y=points), size=2)
 dev.off()
 
 ######################################################################
+## Tranches
+## Tranches 1 through 4 are Y-scaled for consistency across different charts
+
+burnup_cat <- read.csv("/tmp/ve_burnup_categories.csv")
+burnup_cat$date <- as.Date(burnup_cat$date, "%Y-%m-%d")
+
 ## TR0
 
-## burnup_output <- png(filename = "~/html/ve-tranch0_burnup.png", width=2000, height=1125, units="px", pointsize=30)
+burnup_output <- png(filename = "~/html/ve-tranch0_burnup.png", width=2000, height=1125, units="px", pointsize=30)
+par(las=3) ## vertical labels
+ggplot(backlog[backlog$category=='TR0: Interrupt',]) + 
+   labs(title="VE Interruptions (Tranche 0)", y="Story Point Total") +
+   theme(text = element_text(size=30), legend.title=element_blank())+
+   geom_area(position='stack', aes(x = date, y = points, ymin=0), fill="#8073AC") +
+   scale_x_date(breaks="1 month", label=date_format("%Y-%b-%d"), limits = as.Date(c('2015-06-18', NA))) +
+   geom_line(data=burnup_cat[burnup_cat$category=='TR0: Interrupt',], aes(x=date, y=points), size=2)
+dev.off()
 
-## par(las=3) ## vertical labels
-## ggplot(backlog[backlog$category=='TR0: Interrupt',]) + 
-##   labs(title="VE Interruptions (Tranche 0)", y="Story Point Total") +
-##   theme(text = element_text(size=30), legend.title=element_blank())+
-##   geom_area(position='stack', aes(x = date, y = points, ymin=0), fill="lightblue") +
-##   scale_x_date(breaks="1 week", label=date_format("%Y-%b-%d"), limits = as.Date(c('2015-06-18', NA))) +
-##   scale_y_continuous(limits=c(0, 800)) +
-##   geom_line(data=burnup[burnup$category=='TR0: Interrupt'], aes(x=date, y=points), size=2)
-## dev.off()
+##> colors
+##[1] "#B35806"Gen "#E08214"TR4 "#FDB863"TR3 "#FEE0B6"TR2 "#F7F7F7"TR1 "#D8DAEB"Q4 "#B2ABD2"Q3
+##[8] "#8073AC" "#542788"
 
-## ######################################################################
-## ## TR1
+## TR1
 
-## tr_burnup <- read.csv("/tmp/ve_TR1.csv")
-## tr_burnup$date <- as.Date(tr_burnup$date, "%Y-%m-%d")
-## burnup_output <- png(filename = "~/html/ve-tranch1_burnup.png", width=2000, height=1125, units="px", pointsize=30)
-  
-## ggplot(tr_burnup) +
-##   labs(title="VE Tranch 1 backlog", y="Story Point Total") +
-##   theme(text = element_text(size=30), legend.title=element_blank())+
-##   geom_area(position='stack', aes(x = date, y = points, group=status, fill=status, order=-as.numeric(status))) +
-##   scale_x_date(breaks="1 week", label=date_format("%Y-%b-%d"), limits = as.Date(c('2015-06-18', NA))) +
-##   scale_y_continuous(limits=c(0, 800)) 
-## dev.off()
+burnup_output <- png(filename = "~/html/ve-tranch1_burnup.png", width=2000, height=1125, units="px", pointsize=30)
+ggplot(backlog[backlog$category=='TR1: Releases',]) + 
+   labs(title="TR1: Releases", y="Story Point Total") +
+   theme(text = element_text(size=30), legend.title=element_blank())+
+   geom_area(position='stack', aes(x = date, y = points, ymin=0), fill="#F7F7F7") +
+   scale_x_date(breaks="1 month", label=date_format("%Y-%b-%d"), limits = as.Date(c('2015-06-18', NA))) +
+   scale_y_continuous(limits=c(0, 1000)) +
+   geom_line(data=burnup_cat[burnup_cat$category=='TR1: Releases',], aes(x=date, y=points), size=2)
+dev.off()
 
-## ######################################################################
-## ## TR2
+## TR2
 
-## tr_burnup <- read.csv("/tmp/ve_TR2.csv")
-## tr_burnup$date <- as.Date(tr_burnup$date, "%Y-%m-%d")
-## burnup_output <- png(filename = "~/html/ve-tranch2_burnup.png", width=2000, height=1125, units="px", pointsize=30)
-  
-## ggplot(tr_burnup) +
-##   labs(title="VE Tranch 2 backlog", y="Story Point Total") +
-##   theme(text = element_text(size=30), legend.title=element_blank())+
-##   geom_area(position='stack', aes(x = date, y = points, group=status, fill=status, order=-as.numeric(status))) +
-##   scale_x_date(breaks="1 week", label=date_format("%Y-%b-%d"), limits = as.Date(c('2015-06-18', NA))) +
-##   scale_y_continuous(limits=c(0, 800)) 
-## dev.off()
+burnup_output <- png(filename = "~/html/ve-tranch2_burnup.png", width=2000, height=1125, units="px", pointsize=30)
+ggplot(backlog[backlog$category=='TR2: Mobile MVP',]) + 
+   labs(title="TR2: Mobile MVP", y="Story Point Total") +
+   theme(text = element_text(size=30), legend.title=element_blank())+
+   geom_area(position='stack', aes(x = date, y = points, ymin=0), fill="#FEE0B6") +
+   scale_x_date(breaks="1 month", label=date_format("%Y-%b-%d"), limits = as.Date(c('2015-06-18', NA))) +
+   scale_y_continuous(limits=c(0, 1000)) +
+   geom_line(data=burnup_cat[burnup_cat$category=='TR2: Mobile MVP',], aes(x=date, y=points), size=2)
+dev.off()
 
-## ######################################################################
-## ## TR3
+## TR3
 
-## tr_burnup <- read.csv("/tmp/ve_TR3.csv")
-## tr_burnup$date <- as.Date(tr_burnup$date, "%Y-%m-%d")
-## burnup_output <- png(filename = "~/html/ve-tranch3_burnup.png", width=2000, height=1125, units="px", pointsize=30)
-  
-## ggplot(tr_burnup) +
-##   labs(title="VE Tranch 3 backlog", y="Story Point Total") +
-##   theme(text = element_text(size=30), legend.title=element_blank())+
-##   geom_area(position='stack', aes(x = date, y = points, group=status, fill=status, order=-as.numeric(status))) +
-##   scale_y_continuous(limits=c(0, 800)) 
-## dev.off()
+burnup_output <- png(filename = "~/html/ve-tranch3_burnup.png", width=2000, height=1125, units="px", pointsize=30)
+ggplot(backlog[backlog$category=='TR3: Language support',]) + 
+   labs(title="TR3: Language support", y="Story Point Total") +
+   theme(text = element_text(size=30), legend.title=element_blank())+
+   geom_area(position='stack', aes(x = date, y = points, ymin=0), fill="#FDB863") +
+   scale_x_date(breaks="1 month", label=date_format("%Y-%b-%d"), limits = as.Date(c('2015-06-18', NA))) +
+   scale_y_continuous(limits=c(0, 1000)) +
+   geom_line(data=burnup_cat[burnup_cat$category=='TR3: Language support',], aes(x=date, y=points), size=2)
+dev.off()
 
-## ######################################################################
-## ## TR4
+## TR4
 
-## tr_burnup <- read.csv("/tmp/ve_TR4.csv")
-## tr_burnup$date <- as.Date(tr_burnup$date, "%Y-%m-%d")
-## burnup_output <- png(filename = "~/html/ve-tranch4_burnup.png", width=2000, height=1125, units="px", pointsize=30)
-  
-## ggplot(tr_burnup) +
-##   labs(title="VE Tranch 4 backlog", y="Story Point Total") +
-##   theme(text = element_text(size=30), legend.title=element_blank())+
-##   geom_area(position='stack', aes(x = date, y = points, group=status, fill=status, order=-as.numeric(status))) +
-##   scale_y_continuous(limits=c(0, 800)) 
-## dev.off()
-
-## ######################################################################
-## ## TR5
-
-## tr_burnup <- read.csv("/tmp/ve_TR5.csv")
-## tr_burnup$date <- as.Date(tr_burnup$date, "%Y-%m-%d")
-## burnup_output <- png(filename = "~/html/ve-tranch5_burnup.png", width=2000, height=1125, units="px", pointsize=30)
-  
-## ggplot(tr_burnup) +
-##   labs(title="VE Tranch 5 backlog", y="Story Point Total") +
-##   theme(text = element_text(size=30), legend.title=element_blank())+
-##   geom_area(position='stack', aes(x = date, y = points, group=status, fill=status, order=-as.numeric(status))) +
-##   scale_y_continuous(limits=c(0, 800)) 
-## dev.off()
+burnup_output <- png(filename = "~/html/ve-tranch4_burnup.png", width=2000, height=1125, units="px", pointsize=30)
+ggplot(backlog[backlog$category=='TR4: Link editor tweaks',]) + 
+   labs(title="TR4: Link editor tweaks", y="Story Point Total") +
+   theme(text = element_text(size=30), legend.title=element_blank())+
+   geom_area(position='stack', aes(x = date, y = points, ymin=0), fill="#E08214") +
+   scale_x_date(breaks="1 month", label=date_format("%Y-%b-%d"), limits = as.Date(c('2015-06-18', NA))) +
+   scale_y_continuous(limits=c(0, 1000)) +
+   geom_line(data=burnup_cat[burnup_cat$category=='TR4: Link editor tweaks',], aes(x=date, y=points), size=2)
+dev.off()
 
 ######################################################################
 ## Maintenance Fraction
@@ -147,9 +136,9 @@ status_output <- png(filename = "~/html/ve-maint_frac.png", width=2000, height=1
 ggplot(ve_maint_frac, aes(date, maint_frac)) +
   labs(title="VE Maintenance Fraction", y="Fraction of completed work that is maintenance") +
   geom_bar(stat="identity") +
-      theme(text = element_text(size=30)) +
-          scale_y_continuous(labels=percent, limits=c(0,1))
-dev.off()
+  theme(text = element_text(size=30)) +
+  scale_y_continuous(labels=percent, limits=c(0,1))
+  dev.off()
 
 ######################################################################
 ## Velocity
