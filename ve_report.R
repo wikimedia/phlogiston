@@ -170,6 +170,28 @@ ggplot(net_growth, aes(date, points)) +
   theme(text = element_text(size=30))
 dev.off()
 
+######################################################################
+## Forecast
+######################################################################
+## For now, plot manually collected data.
+
+case <- c("Pess","Nom","Opt","Pess","Nom","Opt")
+foredate <- c("2015-08-12","2015-08-12","2015-08-12","2015-09-21","2015-09-21","2015-09-21")
+date <- c("2016-03-21","2015-10-15","2015-09-25","2015-11-27","2015-10-15","2015-10-01")
+
+forecast <- data.frame(case, foredate, date)
+forecast$foredate <- as.Date(forecast$foredate, format = "%Y-%m-%d")
+forecast$date <- as.Date(forecast$date, format = "%Y-%m-%d")
+
+forecast_output <- png(filename = "~/html/ve-forecast.png", width=2000, height=1125, units="px", pointsize=30)
+
+ggplot(forecast, aes(x=foredate, y=date, group=case)) +
+  geom_line(shape=1) +
+  scale_x_date(limits = c(as.Date("2015-08-01"), as.Date("2016-04-01"))) +
+  scale_y_date(limits = c(as.Date("2015-08-01"), as.Date("2016-04-01"))) +
+  theme(text = element_text(size=30)) 
+dev.off()
+
 ## Disabled pending future code cleanup in the SQL
 ######################################################################
 ## Lead Time
