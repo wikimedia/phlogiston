@@ -157,11 +157,12 @@ SELECT date,
             ELSE 'New Project'
        END as type,
        SUM(points) as points
- INTO ve_maintenance_week
- FROM ve_tall_backlog
- WHERE status = '"resolved"'
+  INTO ve_maintenance_week
+  FROM ve_tall_backlog
+  WHERE status = '"resolved"'
    AND EXTRACT(dow FROM date) = 0
- GROUP BY type, date
+   AND date >= current_date - interval '3 months'
+  GROUP BY type, date
  ORDER BY date, type;
 
 SELECT date,
@@ -208,10 +209,11 @@ DROP TABLE IF EXISTS ve_velocity_delta;
 
 SELECT date,
        SUM(points) AS points
- INTO ve_velocity_week
- FROM ve_tall_backlog
-WHERE status = '"resolved"'
-  AND EXTRACT(dow from date) = 0 
+  INTO ve_velocity_week
+  FROM ve_tall_backlog
+ WHERE status = '"resolved"'
+   AND EXTRACT(dow from date) = 0 
+   AND date >= current_date - interval '3 months'
  GROUP BY date
  ORDER BY date;
 
@@ -243,10 +245,10 @@ DROP TABLE IF EXISTS ve_backlog_size;
 
 SELECT date,
        SUM(points) AS points
- INTO ve_backlog_size
- FROM ve_tall_backlog
-WHERE status != '"resolved"'
-  AND EXTRACT(dow from date) = 0 
+  INTO ve_backlog_size
+  FROM ve_tall_backlog
+ WHERE status != '"resolved"'
+   AND EXTRACT(dow from date) = 0 
  GROUP BY date
  ORDER BY date;
 
@@ -355,11 +357,15 @@ since it's the only way to identify recently resolved tasks
 
 /* Queries actually used for forecasting - data is copied to spreadsheet */
 
+/* Assumes that data is current; in theory we could use max_date in the
+data as the baseline instead of current_data but that's probably
+something for the plpgsql port */
+
 COPY (
 SELECT SUM(velocity)/3 AS min_velocity
   FROM (SELECT velocity 
           FROM ve_velocity_delta
-         WHERE date >= '2015-04-20' 
+         WHERE date >= current_date - interval '3 months'
            AND velocity <> 0 
          ORDER BY velocity 
          LIMIT 3) as x)
@@ -369,7 +375,7 @@ COPY (
 SELECT SUM(velocity)/3 AS max_velocity
   FROM (SELECT velocity 
           FROM ve_velocity_delta
-         WHERE date >= '2015-04-20' 
+         WHERE date >= current_date - interval '3 months'
            AND velocity <> 0 
          ORDER BY velocity DESC
          LIMIT 3) as x)
@@ -379,7 +385,7 @@ COPY (
 SELECT AVG(velocity) AS avg_velocity
   FROM (SELECT velocity 
           FROM ve_velocity_delta
-         WHERE date >= '2015-04-20' 
+         WHERE date >= current_date - interval '3 months'
            AND velocity <> 0 
          ORDER BY velocity)
          as x)
@@ -398,7 +404,6 @@ SELECT projectcolumn,
  TO '/tmp/ve_backlog_current.csv' DELIMITER ',' CSV HEADER;
 
 /* Report on the most recent date to catch some simple errors */
-
 COPY (
 SELECT MAX(date)
   FROM ve_task_history)
