@@ -39,7 +39,7 @@ import configparser
 
 def main(argv):
     try:
-        opts, args = getopt.getopt(argv, "cdhlo:p:rs:v", ["reconstruct", "debug", "help", "load", "output=", "project=", "report", "startdate", "verbose"])
+        opts, args = getopt.getopt(argv, "cdhlo:p:rv", ["reconstruct", "debug", "help", "load", "output=", "project=", "report", "verbose"])
     except getopt.GetoptError as e:
         print(e)
         usage()
@@ -51,7 +51,6 @@ def main(argv):
     VERBOSE = False
     output_file = ''
     default_points = 5
-    start_date = '2015-01-01'
     project_source = ''
     for opt, arg in opts:
         if opt in ("-c", "--reconstruct"):
@@ -69,8 +68,6 @@ def main(argv):
             project_source = arg
         elif opt in ("-r", "--report"):
             run_report = True
-        elif opt in ("-s", "--startdate"):
-            start_date = datetime.datetime.strptime(arg, "%Y-%m-%d").date()
         elif opt in ("-v", "--verbose"):
             VERBOSE = True
     conn = psycopg2.connect("dbname=phab")
@@ -85,13 +82,15 @@ def main(argv):
         prefix = config.get("vars", "prefix")
         default_points = config.get("vars", "default_points")
         project_list = tuple(config.get("vars", "project_list").split(','))
-        report_tables_script = config.get("vars", "report_tables_script")
-        report_script = config.get("vars", "report_script")
+        task_history_table_name = '{0}_task_history'.format(prefix)
+        project_csv_name = '/tmp/{0}_projects.csv'.format(prefix)
+        report_tables_script = '{0}_tables.sql'.format(prefix)
+        report_script = '{0}_report.R'.format(prefix)
         start_date = datetime.datetime.strptime(config.get("vars", "start_date"), "%Y-%m-%d").date()
         
     if reconstruct_data:
         if project_source:
-            reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_list, start_date, prefix)
+            reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_list, start_date, task_history_table_name, project_csv_name)
         else:
             print("Reconstruct specified without a project.  Please specify a project with --project.")
     if run_report:
@@ -181,11 +180,10 @@ def load(conn, VERBOSE, DEBUG):
 
     cur.close()
 
+
     
-def reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_list, start_date, prefix):
+def reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_list, start_date, task_history_table_name, project_csv_name):
     cur = conn.cursor()
-    task_history_table_name = '{0}_task_history'.format(prefix)
-    project_csv_name = '/tmp/{0}_projects.csv'.format(prefix)
     # preload project and column for fast lookup within Python
     cur.execute("SELECT phid, name from phabricator_project")
     project_dict = dict(cur.fetchall())
@@ -242,7 +240,7 @@ def reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_list,
         working_date = cur.fetchone()[0]
 
     if DEBUG:
-        target_date = datetime.date(2015,1,15)
+        target_date = datetime.date(2015,3,3)
     else:
         target_date = datetime.datetime.now().date()
     
@@ -262,9 +260,6 @@ def reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_list,
         else:
             task_on_day_query += """ WHERE """
         task_on_day_query += """ date(mt.date_modified) <= %(query_date)s"""
-
-        if DEBUG:
-            task_on_day_query = """SELECT distinct(object_phid) FROM maniphest_transaction WHERE date(date_modified) <= %(query_date)s AND object_phid = 'PHID-TASK-h27s7yvr62xzheogrrv7'"""
 
         cur.execute(task_on_day_query, {'query_date': query_date , 'project_phid': project_list})
         for row in cur.fetchall():
