@@ -82,16 +82,16 @@ def main(argv):
     if project_source:
         config = configparser.ConfigParser()
         config.read(project_source)
+        prefix = config.get("vars", "prefix")
         default_points = config.get("vars", "default_points")
         project_list = tuple(config.get("vars", "project_list").split(','))
-        task_history_table_name = config.get("vars", "task_history_table_name")
         report_tables_script = config.get("vars", "report_tables_script")
         report_script = config.get("vars", "report_script")
         start_date = datetime.datetime.strptime(config.get("vars", "start_date"), "%Y-%m-%d").date()
         
     if reconstruct_data:
         if project_source:
-            reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_list, start_date, task_history_table_name)
+            reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_list, start_date, prefix)
         else:
             print("Reconstruct specified without a project.  Please specify a project with --project.")
     if run_report:
@@ -182,14 +182,22 @@ def load(conn, VERBOSE, DEBUG):
     cur.close()
 
     
-def reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_list, start_date, task_history_table_name):
+def reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_list, start_date, prefix):
     cur = conn.cursor()
-
+    task_history_table_name = '{0}_task_history'.format(prefix)
+    project_csv_name = '/tmp/{0}_projects.csv'.format(prefix)
     # preload project and column for fast lookup within Python
     cur.execute("SELECT phid, name from phabricator_project")
     project_dict = dict(cur.fetchall())
     cur.execute("SELECT phid, name from phabricator_column")
     column_dict = dict(cur.fetchall())
+
+    f = open(project_csv_name, 'w')
+    # dump project list to reportable file
+    for project_phid in project_list:
+        project_name = project_dict[project_phid]
+        f.write( "{0}\n".format(project_name) )
+    f.close()
 
     ######################################################################
     # Generate denormalized data
@@ -234,7 +242,7 @@ def reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_list,
         working_date = cur.fetchone()[0]
 
     if DEBUG:
-        target_date = datetime.date(2015,3,1)
+        target_date = datetime.date(2015,1,15)
     else:
         target_date = datetime.datetime.now().date()
     
