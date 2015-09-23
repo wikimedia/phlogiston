@@ -15,7 +15,7 @@ backlog$date <- as.Date(backlog$date, "%Y-%m-%d")
 ## manually set ordering of data
 colors = brewer.pal(9, "PuOr")
 
-backlog$category2 <- factor(backlog$category, levels = c("General Backlog", "TR4: Link editor tweaks", "TR3: Language support", "TR2: Mobile MVP", "TR1: Releases", "VisualEditor 2014/15 Q4 blockers", "VisualEditor 2014/15 Q3 blockers", "TR0: Interrupt", "Miscategorized"))
+backlog$category2 <- factor(backlog$category, levels = c("General Backlog", "TR5: Rich media tools", "TR4: Link editor tweaks", "TR3: Language support", "TR2: Mobile MVP", "TR1: Releases", "VisualEditor 2014/15 Q4 blockers", "VisualEditor 2014/15 Q3 blockers", "TR0: Interrupt", "Miscategorized"))
 backlog_output=png(filename = "~/html/ve-backlog_burnup.png", width=2000, height=1125, units="px", pointsize=30)
 
 burnup <- read.csv("/tmp/ve_burnup.csv")
@@ -127,13 +127,13 @@ dev.off()
 ## TR5
 
 burnup_output <- png(filename = "~/html/ve-tranch5_burnup.png", width=2000, height=1125, units="px", pointsize=30)
-ggplot(backlog[backlog$category=='TR5: Rich media tools',]) + 
+ggplot(backlog[backlog$category=='TR5: ????',]) + 
    labs(title="TR5: Rich media tools", y="Story Point Total") +
    theme(text = element_text(size=30), legend.title=element_blank())+
    geom_area(position='stack', aes(x = date, y = points, ymin=0), fill="#E08214") +
    scale_x_date(breaks="1 month", label=date_format("%Y-%b-%d"), limits = as.Date(c('2015-06-18', NA))) +
    scale_y_continuous(limits=c(0, 1000)) +
-   geom_line(data=burnup_cat[burnup_cat$category=='TR5: Rich media tools',], aes(x=date, y=points), size=2)
+   geom_line(data=burnup_cat[burnup_cat$category=='TR5: ????',], aes(x=date, y=points), size=2)
 dev.off()
 
 ######################################################################

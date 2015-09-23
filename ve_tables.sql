@@ -395,7 +395,7 @@ COPY (
 SELECT projectcolumn,
        SUM(points) AS open_backlog
   FROM ve_task_history
- WHERE projectcolumn SIMILAR TO '%TR(1|2|3|4)%'
+ WHERE projectcolumn SIMILAR TO 'TR%'
    AND status='"open"'
    AND date=(SELECT MAX(date)
                FROM ve_task_history)
