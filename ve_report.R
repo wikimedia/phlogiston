@@ -124,6 +124,18 @@ ggplot(backlog[backlog$category=='TR4: Link editor tweaks',]) +
    geom_line(data=burnup_cat[burnup_cat$category=='TR4: Link editor tweaks',], aes(x=date, y=points), size=2)
 dev.off()
 
+## TR5
+
+burnup_output <- png(filename = "~/html/ve-tranch5_burnup.png", width=2000, height=1125, units="px", pointsize=30)
+ggplot(backlog[backlog$category=='TR5: Rich media tools',]) + 
+   labs(title="TR5: Rich media tools", y="Story Point Total") +
+   theme(text = element_text(size=30), legend.title=element_blank())+
+   geom_area(position='stack', aes(x = date, y = points, ymin=0), fill="#E08214") +
+   scale_x_date(breaks="1 month", label=date_format("%Y-%b-%d"), limits = as.Date(c('2015-06-18', NA))) +
+   scale_y_continuous(limits=c(0, 1000)) +
+   geom_line(data=burnup_cat[burnup_cat$category=='TR5: Rich media tools',], aes(x=date, y=points), size=2)
+dev.off()
+
 ######################################################################
 ## Maintenance Fraction
 ######################################################################
