@@ -81,7 +81,7 @@ def main(argv):
         config.read(project_source)
         prefix = config.get("vars", "prefix")
         default_points = config.get("vars", "default_points")
-        project_list = tuple(config.get("vars", "project_list").split(','))
+        project_name_list = tuple(config.get("vars", "project_list").split(','))
         task_history_table_name = '{0}_task_history'.format(prefix)
         project_csv_name = '/tmp/{0}_projects.csv'.format(prefix)
         report_tables_script = '{0}_tables.sql'.format(prefix)
@@ -90,7 +90,7 @@ def main(argv):
         
     if reconstruct_data:
         if project_source:
-            reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_list, start_date, task_history_table_name, project_csv_name)
+            reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_name_list, start_date, task_history_table_name, project_csv_name)
         else:
             print("Reconstruct specified without a project.  Please specify a project with --project.")
     if run_report:
@@ -182,21 +182,23 @@ def load(conn, VERBOSE, DEBUG):
 
 
     
-def reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_list, start_date, task_history_table_name, project_csv_name):
+def reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_name_list, start_date, task_history_table_name, project_csv_name):
     cur = conn.cursor()
     # preload project and column for fast lookup within Python
-    cur.execute("SELECT phid, name from phabricator_project")
-    project_dict = dict(cur.fetchall())
+    cur.execute("SELECT name, phid from phabricator_project")
+    project_name_to_phid_dict = dict(cur.fetchall())
+    project_phid_to_name_dict = {value: key for key, value in project_name_to_phid_dict.items()}
+
     cur.execute("SELECT phid, name from phabricator_column")
     column_dict = dict(cur.fetchall())
 
+    project_phid_list = list()
     f = open(project_csv_name, 'w')
-    # dump project list to reportable file
-    for project_phid in project_list:
-        project_name = project_dict[project_phid]
+    for project_name in project_name_list:
         f.write( "{0}\n".format(project_name) )
+        project_phid_list.append(project_name_to_phid_dict[project_name])
     f.close()
-
+    
     ######################################################################
     # Generate denormalized data
     ######################################################################
@@ -240,7 +242,7 @@ def reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_list,
         working_date = cur.fetchone()[0]
 
     if DEBUG:
-        target_date = datetime.date(2015,3,3)
+        target_date = datetime.date(2015,10,24)
     else:
         target_date = datetime.datetime.now().date()
     
@@ -251,17 +253,13 @@ def reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_list,
         if VERBOSE:
             print(working_date)
         task_on_day_query = """SELECT distinct(mt.object_phid) 
-                                 FROM maniphest_transaction mt"""
-        if project_list:
-            task_on_day_query += """, maniphest_edge me
+                                 FROM maniphest_transaction mt, 
+                                      maniphest_edge me
                                 WHERE mt.object_phid = me.task_phid 
-                                  AND me.project_phid IN %(project_phid)s
-                                  AND """
-        else:
-            task_on_day_query += """ WHERE """
-        task_on_day_query += """ date(mt.date_modified) <= %(query_date)s"""
+                                  AND me.project_phid = ANY(%(project_phid)s)
+                                  AND date(mt.date_modified) <= %(query_date)s"""
 
-        cur.execute(task_on_day_query, {'query_date': query_date , 'project_phid': project_list})
+        cur.execute(task_on_day_query, {'query_date': query_date , 'project_phid': project_phid_list})
         for row in cur.fetchall():
             object_phid = row[0]
             # ----------------------------------------------------------------------
@@ -310,26 +308,23 @@ def reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_list,
              WHERE me.task_phid = %(object_phid)s
                AND date(me.date_modified) <= %(query_date)s
             """
-            cur.execute(edge_query, {'object_phid': object_phid, 'query_date': query_date, 'transaction_type': 'status', 'project_list': project_list})
+            cur.execute(edge_query, {'object_phid': object_phid, 'query_date': query_date})
             edges = cur.fetchall()
             edges_list = [i[0] for i in edges]
             pretty_project = ""
-            reportable_edges = []
 
-            if project_list:
-                # if a list of projects is specified, reduce the list
-                # of edges to only the single best match, where best =
-                # earliest in the specified project list
-                for project in project_list:
-                    if project in edges_list:
-                        reportable_edges.append(project)
-                        break
-            else:
-                reportable_edges = edges_list
+            reportable_edges = list()
+            # if a list of projects is specified, reduce the list
+            # of edges to only the single best match, where best =
+            # earliest in the specified project list
+            for project in project_phid_list:
+                if project in edges_list:
+                    reportable_edges.append(project)
+                    break
 
             for edge in reportable_edges:
                 project_phid = edge
-                pretty_project = project_dict[project_phid]
+                pretty_project = project_phid_to_name_dict[project_phid]
                 pretty_column = ''
                 # ----------------------------------------------------------------------
                 # Column

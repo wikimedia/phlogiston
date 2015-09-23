@@ -37,7 +37,7 @@ dev.off()
 backlog_zoomed <- read.csv("/tmp/ve_backlog_zoomed.csv")
 backlog_zoomed$date <- as.Date(backlog_zoomed$date, "%Y-%m-%d")
 ## manually set ordering of data
-backlog_zoomed$category2 <- factor(backlog_zoomed$category, levels = c("TR4: Link editor tweaks", "TR3: Language support", "TR2: Mobile MVP", "TR1: Releases", "VisualEditor 2014/15 Q4 blockers", "VisualEditor 2014/15 Q3 blockers"))
+backlog_zoomed$category2 <- factor(backlog_zoomed$category, levels = c("TR5: Rich media tools", "TR4: Link editor tweaks", "TR3: Language support", "TR2: Mobile MVP", "TR1: Releases", "VisualEditor 2014/15 Q4 blockers", "VisualEditor 2014/15 Q3 blockers"))
 burnup_zoom_output=png(filename = "~/html/ve-backlog_burnup_zoom.png", width=2000, height=1125, units="px", pointsize=30)
 
 burnup_zoomed <- read.csv("/tmp/ve_burnup_zoomed.csv")
@@ -55,7 +55,7 @@ dev.off()
 
 ######################################################################
 ## Tranches
-## Tranches 1 through 4 are Y-scaled for consistency across different charts
+## Tranches 1+ are Y-scaled for consistency across different charts
 
 burnup_cat <- read.csv("/tmp/ve_burnup_categories.csv")
 burnup_cat$date <- as.Date(burnup_cat$date, "%Y-%m-%d")
@@ -71,6 +71,7 @@ ggplot(backlog[backlog$category=='TR0: Interrupt',]) +
    scale_x_date(breaks="1 month", label=date_format("%Y-%b-%d"), limits = as.Date(c('2015-06-18', NA))) +
    geom_line(data=burnup_cat[burnup_cat$category=='TR0: Interrupt',], aes(x=date, y=points), size=2)
 dev.off()
+
 
 ##> colors
 ##[1] "#B35806"Gen "#E08214"TR4 "#FDB863"TR3 "#FEE0B6"TR2 "#F7F7F7"TR1 "#D8DAEB"Q4 "#B2ABD2"Q3

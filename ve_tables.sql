@@ -39,7 +39,7 @@ SELECT date,
 
 /* Prior to 18 June 2015, VE work in the VisualEditor project was not
 organized around the interrupt or maintenance, so all work in that
-project prior to that date can be considered General Backlog,
+project prior to that date can be considered Uncategorized,
 regardless of state or column.  The nested select is required to
 accurately group by category, after category is forced to a constant
 in the inner select. */
@@ -51,7 +51,7 @@ SELECT date,
        SUM(points) as points
   FROM (
 SELECT date,
-       CAST('General Backlog' AS text) as category,
+       CAST('Uncategorized' AS text) as category,
        status,
        points
   FROM ve_task_history
@@ -76,7 +76,7 @@ GROUP BY status, category, date);
 
 /* Any other tasks in the VisualEditor project (i.e., any task after
 June 18th and not in a tranche) should be old data getting cleaned up.
-We will essentially ignore them by placing them in General Backlog.
+We will essentially ignore them by placing them in Uncategorized.
 */
 
 INSERT INTO ve_tall_backlog (date, category, status, points) (
@@ -86,7 +86,7 @@ SELECT date,
        SUM(points) as points
   FROM (
 SELECT date,
-       CAST('General Backlog' AS text) as category,
+       CAST('Uncategorized' AS text) as category,
        status,
        points
   FROM ve_task_history
@@ -109,7 +109,7 @@ SELECT date,
        category,
        SUM(points) as points
   FROM ve_tall_backlog
- WHERE category <> 'General Backlog'
+ WHERE category <> 'Uncategorized'
    AND category NOT SIMILAR TO 'TR0%'
  GROUP BY date, category
  ORDER BY date, category
@@ -140,7 +140,7 @@ SELECT date,
   FROM ve_tall_backlog
  WHERE status = '"resolved"'
    AND category NOT LIKE 'TR0%'
-   AND category NOT LIKE 'General Backlog'
+   AND category NOT LIKE 'Uncategorized'
 GROUP BY date
  ORDER BY date
 ) to '/tmp/ve_burnup_zoomed.csv' DELIMITER ',' CSV HEADER;
