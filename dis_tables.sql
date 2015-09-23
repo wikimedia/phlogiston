@@ -17,8 +17,6 @@ projectcolumn and status  */
 
 DROP TABLE IF EXISTS dis_tall_backlog;
 
-/* For Collaboration, each project = 1 sprint = 1 category */
-
 SELECT date,
        project as category,
        status,

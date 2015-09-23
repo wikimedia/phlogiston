@@ -1,10 +1,8 @@
-## Convert a historical transaction file from Phab into a burnup report
+## Graph Phlogiston csv reports as charts
 
-## library(reshape2)
 library(ggplot2)
 library(scales)
 library(RColorBrewer)
-## library(grid)
 
 ######################################################################
 ## Backlog
