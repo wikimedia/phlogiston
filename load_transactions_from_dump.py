@@ -39,7 +39,7 @@ import configparser
 
 def main(argv):
     try:
-        opts, args = getopt.getopt(argv, "cdhlo:p:rv", ["reconstruct", "debug", "help", "load", "output=", "project=", "report", "verbose"])
+        opts, args = getopt.getopt(argv, "cde:hlo:p:rv", ["reconstruct", "debug", "enddate", "help", "load", "output=", "project=", "report", "verbose"])
     except getopt.GetoptError as e:
         print(e)
         usage()
@@ -52,11 +52,14 @@ def main(argv):
     output_file = ''
     default_points = 5
     project_source = ''
+    end_date = datetime.datetime.now().date()
     for opt, arg in opts:
         if opt in ("-c", "--reconstruct"):
             reconstruct_data = True
         elif opt in ("-d", "--debug"):
             DEBUG = True
+        elif opt in ("-e", "--end-date"):
+            end_date = arg
         elif opt in ("-h", "--help"):
             usage()
             sys.exit()
@@ -74,7 +77,7 @@ def main(argv):
     conn.autocommit = True
 
     if load_data:
-        load(conn, VERBOSE, DEBUG)
+        load(conn, end_date, VERBOSE, DEBUG)
 
     if project_source:
         config = configparser.ConfigParser()
@@ -87,10 +90,10 @@ def main(argv):
         report_tables_script = '{0}_tables.sql'.format(prefix)
         report_script = '{0}_report.R'.format(prefix)
         start_date = datetime.datetime.strptime(config.get("vars", "start_date"), "%Y-%m-%d").date()
-        
+
     if reconstruct_data:
         if project_source:
-            reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_name_list, start_date, task_history_table_name, project_csv_name)
+            reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_name_list, start_date, end_date, task_history_table_name, project_csv_name)
         else:
             print("Reconstruct specified without a project.  Please specify a project with --project.")
     if run_report:
@@ -103,6 +106,7 @@ def main(argv):
 def usage():
    print("""Usage:\n
   --debug to work on a small subset of data\n
+  --enddate ending date for loading and reconstruction; defaults to now\n
   --help for this message.\n
   --load to load data.  This will wipe existing data in the reporting database.\n
   --output FILE.  This will produce a csv dump of the fully denormalized data (one line per task per projectcolumn per day).\n
@@ -112,54 +116,14 @@ def usage():
   --reconstruct Reprocess the loaded data to reconstruct a historical record day by day, in the database\n
   --startdate The date reconstruction should start, as YYYY-MM-DD""")
   
-def load(conn, VERBOSE, DEBUG):
+def load(conn, end_date, VERBOSE, DEBUG):
     cur = conn.cursor()
-
-    with open('../phabricator_public.dump') as dump_file:
-       data = json.load(dump_file)
 
     # reload the database tables
     cur.execute(open("rebuild_working_tables.sql", "r").read())
 
-    ######################################################################
-    # Load transactions and edges
-    ######################################################################
-    
-    if VERBOSE:
-        print("Trying to load tasks, transactions, and edges for {count} tasks".
-              format(count=len(data['task'].keys())))
-
-    for task_id in data['task'].keys():
-        task = data['task'][task_id]
-        task_phid = ''
-        title = ''
-        story_points = None
-        if task['info']:
-            task_phid = task['info'][1]
-            title = task['info'][7]
-        if task['storypoints']:
-            story_points = task['storypoints'][2]
-        task_insert = (""" INSERT INTO maniphest_task (id, phid, title, story_points)
-                                VALUES (%(task_id)s, %(phid)s, %(title)s, %(story_points)s) """)
-        cur.execute(task_insert, {'task_id': task_id, 'phid': task_phid, 'title': title, 'story_points': story_points})
-        edges = task['edge']
-
-        for edge in edges:
-        # edge is membership in a project.  This ought to be transactional, but until the data is better understood,
-        # this only records adding of a project to a task, not removing
-            edge_insert = (
-                """INSERT INTO maniphest_edge (task_phid, project_phid, date_modified)
-                        VALUES (%(task_phid)s, %(project_phid)s, %(date_modified)s)""")
-            cur.execute(edge_insert, {'task_phid':task_phid , 'project_phid':edge[2], 'date_modified': time.strftime('%m/%d/%Y %H:%M:%S', time.gmtime(edge[3])) })
-
-        transactions = task['transactions']
-        for trans_key in list(transactions.keys()):
-            if transactions[trans_key]:
-                for trans in transactions[trans_key]:
-                    transaction_insert = (
-                        """INSERT INTO maniphest_transaction (id, phid, task_id, object_phid, transaction_type, new_value, date_modified)
-                        VALUES (%(id)s, %(phid)s, %(task_id)s, %(object_phid)s, %(transaction_type)s, %(new_value)s, %(date_modified)s)""")
-                    cur.execute(transaction_insert, {'id':trans[0] , 'phid':trans[1], 'task_id': task_id, 'object_phid':trans[3], 'transaction_type':trans[6], 'new_value':trans[8], 'date_modified': time.strftime('%m/%d/%Y %H:%M:%S', time.gmtime(trans[11])) })
+    with open('../phabricator_public.dump') as dump_file:
+       data = json.load(dump_file)
 
     ######################################################################
     # Load project and project column data
@@ -171,18 +135,104 @@ def load(conn, VERBOSE, DEBUG):
     for row in data['project']['projects']:
        cur.execute(project_insert, {'id':row[0] , 'name':row[1], 'phid':row[2] })
 
+    cur.execute("SELECT phid, id from phabricator_project")
+    project_phid_to_id_dict = dict(cur.fetchall())
+
     column_insert = ("""INSERT INTO phabricator_column (id, name, phid, project_phid)
                 VALUES (%(id)s, %(name)s, %(phid)s, %(project_phid)s)""")
     if VERBOSE:
         print("Trying to load {count} projectcolumns".format(count=len(data['project']['columns'])))
     for row in data['project']['columns']:
-       cur.execute(column_insert, {'id':row[0] , 'name':row[2], 'phid':row[1], 'project_phid':row[5] })
+        cur.execute(column_insert, {'id':row[0] , 'name':row[2], 'phid':row[1], 'project_phid':row[5] 
+                     })
+    ######################################################################
+    # Load transactions and edges
+    ######################################################################
+    
+    if VERBOSE:
+        print("Trying to load tasks, transactions, and edges for {count} tasks".
+              format(count=len(data['task'].keys())))
 
+    transaction_insert = ("""
+      INSERT INTO maniphest_transaction (
+             id, phid, task_id, object_phid, transaction_type, 
+             new_value, date_modified, active_projects)
+      VALUES (%(id)s, %(phid)s, %(task_id)s, %(object_phid)s, %(transaction_type)s,
+              %(new_value)s, %(date_modified)s, %(active_projects)s)""")
+
+    task_insert = (""" 
+      INSERT INTO maniphest_task (id, phid, title, story_points)
+      VALUES (%(task_id)s, %(phid)s, %(title)s, %(story_points)s) """)
+
+    for task_id in data['task'].keys():
+        if DEBUG:
+            if task_id != '85782':
+                continue
+            else:
+                print(task_id)
+
+        task = data['task'][task_id]
+        if task['info']:
+            task_phid = task['info'][1]
+            title = task['info'][7]
+        else:
+            task_phid = ''
+            title = ''
+        if task['storypoints']:
+            story_points = task['storypoints'][2]
+        else:
+            story_points = None            
+        cur.execute(task_insert, {'task_id': task_id,
+                                  'phid': task_phid,
+                                  'title': title,
+                                  'story_points': story_points})
+
+        transactions = task['transactions']
+        for trans_key in list(transactions.keys()):
+            if transactions[trans_key]:
+                for trans in transactions[trans_key]:
+                    trans_type = trans[6]
+                    new_value = trans[8]
+                    date_mod = time.strftime('%m/%d/%Y %H:%M:%S', time.gmtime(trans[11]))
+                    active_proj = list()
+                    # If this is an edge transaction, parse out the list of transactions
+                    # 
+                    if trans_type == 'core:edge':
+                        jblob = json.loads(new_value)
+                        if jblob:
+                            for key in jblob.keys():
+                                try:
+                                    if jblob[key]['type'] == 41:
+                                        proj_id = project_phid_to_id_dict[key]
+                                        active_proj.append(proj_id)
+                                except:
+                                    print("Error loading {0}".format(jblob))
+                    
+                    cur.execute(transaction_insert,
+                                {'id': trans[0] ,
+                                 'phid': trans[1],
+                                 'task_id': task_id,
+                                 'object_phid': trans[3],
+                                 'transaction_type': trans_type,
+                                 'new_value': new_value,
+                                 'date_modified': date_mod,
+                                 'active_projects': active_proj})
+
+    ######################################################################
+    # generate denormalized transaction/edge data
+    ######################################################################
+
+    cur.execute("SELECT build_edges()")
     cur.close()
 
+    #    oldest_data_query = """SELECT date(min(date_modified)) from maniphest_transaction"""
+    #    cur.execute(oldest_data_query)
+    #    working_date = cur.fetchone()[0]
+    #    while working_date <= end_date:
+    #        query_date = working_date + datetime.timedelta(days=1)
 
-    
-def reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_name_list, start_date, task_history_table_name, project_csv_name):
+        
+def reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_name_list, start_date, end_date, task_history_table_name, project_csv_name):
     cur = conn.cursor()
     # preload project and column for fast lookup within Python
     cur.execute("SELECT name, phid from phabricator_project")
@@ -215,7 +265,8 @@ def reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_name_
                                  status text,
                                  project text,
                                  projectcolumn text,
-                                 points int
+                                 points int,
+                                 maint_type text
                           )     ;
 
                           CREATE INDEX ON {0} (project) ;
@@ -234,19 +285,28 @@ def reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_name_
         csvwriter = csv.writer(open(output_file, 'w'), delimiter=',')
         csvwriter.writerow(header)
 
-    if start_date:
-        working_date = start_date
-    else:
+    if not start_date:
         oldest_data_query = """SELECT date(min(date_modified)) from maniphest_transaction"""
         cur.execute(oldest_data_query)
-        working_date = cur.fetchone()[0]
+        start_date = cur.fetchone()[0]
+    working_date = start_date
+        
+    transaction_values_query = """
+        SELECT mt.new_value 
+          FROM maniphest_transaction mt 
+         WHERE date(mt.date_modified) <= %(query_date)s
+           AND mt.transaction_type = %(transaction_type)s 
+           AND mt.object_phid = %(object_phid)s
+         ORDER BY date_modified DESC """
 
-    if DEBUG:
-        target_date = datetime.date(2015,10,24)
-    else:
-        target_date = datetime.datetime.now().date()
-    
-    while working_date <= target_date:
+    edge_values_query = """
+        SELECT mt.active_projects
+          FROM maniphest_transaction mt 
+         WHERE date(mt.date_modified) <= %(query_date)s
+           AND mt.object_phid = %(object_phid)s
+         ORDER BY date_modified DESC """
+
+    while working_date <= end_date:
         # because working_date is midnight at the beginning of the day, use a date at
         # the midnight at the end of the day to make the queries line up with the date label
         query_date = working_date + datetime.timedelta(days=1)
@@ -282,13 +342,6 @@ def reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_name_
             # for each relevant variable of the task, use the most recent value
             # that is no later than that day.  (So, if that variable didn't change that day,
             # use the last time it was changed.  If it changed multiple times, use the final value)
-            transaction_values_query = """
-                SELECT mt.new_value 
-                  FROM maniphest_transaction mt 
-                 WHERE date(mt.date_modified) <= %(query_date)s
-                   AND mt.transaction_type = %(transaction_type)s 
-                   AND mt.object_phid = %(object_phid)s
-              ORDER BY date_modified DESC """
 
             # ----------------------------------------------------------------------
             # Status
@@ -300,28 +353,34 @@ def reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_name_
                 pretty_status = status_raw[0]
 
             # ----------------------------------------------------------------------
-            # Project
+            # Project & Maintenance Type
             # ----------------------------------------------------------------------
-            edge_query = """
-            SELECT me.project_phid
-              FROM maniphest_edge me
-             WHERE me.task_phid = %(object_phid)s
-               AND date(me.date_modified) <= %(query_date)s
-            """
-            cur.execute(edge_query, {'object_phid': object_phid, 'query_date': query_date})
+            cur.execute(edge_values_query, {'object_phid': object_phid, 'query_date': query_date})
             edges = cur.fetchall()
-            edges_list = [i[0] for i in edges]
-            pretty_project = ""
+            import ipdb; ipdb.set_trace()
+            edges_list = list()
+            proj_dict = ""
 
+            for trans_project in proj_dict:
+                edges_list.append(trans_project)
+            pretty_project = ""
+            if 'PHID-PROJ-mm2dn7n5cs42tainm2rs' in edges_list:
+                maint_type = 'New Functionality'
+            elif 'PHID-PROJ-mcew7gqzloqahg6qgt2j' in edges_list:
+                maint_type = 'Maintenance'
+            else:
+                maint_type = ''
+            
             reportable_edges = list()
-            # if a list of projects is specified, reduce the list
-            # of edges to only the single best match, where best =
-            # earliest in the specified project list
+            # Reduce the list of edges to only the single best match,
+            # where best = earliest in the specified project list
             for project in project_phid_list:
                 if project in edges_list:
                     reportable_edges.append(project)
                     break
 
+            if len(reportable_edges)>1:
+                print("DEBUG: object {0}, reportable_edges{1}".format(object_phid, reportable_edges))
             for edge in reportable_edges:
                 project_phid = edge
                 pretty_project = project_phid_to_name_dict[project_phid]
@@ -347,10 +406,11 @@ def reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_name_
                     %(status)s,
                     %(project)s,
                     %(projectcolumn)s,
-                    %(points)s)"""
+                    %(points)s,
+                    %(maint_type)s)"""
 
                 unsafe_denorm_query = denorm_query.format(task_history_table_name)
-                cur.execute(unsafe_denorm_query, {'query_date': query_date, 'id': task_id, 'title': pretty_title, 'status': pretty_status, 'project': pretty_project, 'projectcolumn': pretty_column, 'points': pretty_points })
+                cur.execute(unsafe_denorm_query, {'query_date': query_date, 'id': task_id, 'title': pretty_title, 'status': pretty_status, 'project': pretty_project, 'projectcolumn': pretty_column, 'points': pretty_points, 'maint_type': maint_type })
 
                 if output_file:
                     csvwriter.writerow(output_row)
