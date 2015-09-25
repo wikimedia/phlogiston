@@ -33,6 +33,7 @@ CREATE TABLE maniphest_transaction (
        old_value text,
        new_value text,
        date_modified timestamp,
+       has_edge_data boolean,
        active_projects int array
 );
 
@@ -50,25 +51,39 @@ CREATE INDEX ON maniphest_edge (task);
 CREATE INDEX ON maniphest_edge (project);
 
 CREATE OR REPLACE FUNCTION build_edges() RETURNS void AS $$
+DECLARE
+  dayrow record;
+  taskrow record;
+  projrow record;
+  project_id int;
 BEGIN
 
-FOR day IN SELECT DISTINCT date_modified
-              FROM maniphest_transaction
-	     ORDER BY date_modified LOOP
-    FOR task IN SELECT ID
-                  FROM maniphest_task LOOP
-        FOR project_list IN SELECT active_projects
-	                 FROM maniphest_transaction
-			WHERE date(date_modified) <= day
-			  AND mt.id = task
-			ORDER BY date_modified DESC
-			LIMIT 1 LOOP
-	    FOREACH project IN ARRAY project_list LOOP
-      	        INSERT task, project, day
- 	          INTO maniphest_edge
-	    END LOOP;
-        END LOOP;
-    END LOOP;    
+FOR dayrow IN SELECT DISTINCT date_modified::timestamp::date as date
+                         FROM maniphest_transaction
+                     ORDER BY date
+LOOP
+    RAISE NOTICE 'dayrow: %', dayrow.date;
+    FOR taskrow IN SELECT id
+                     FROM maniphest_task
+                    ORDER BY id
+    LOOP
+        FOR projrow IN SELECT active_projects
+                         FROM maniphest_transaction
+                        WHERE date_modified <= dayrow.date
+                          AND task_id = taskrow.id
+                          AND has_edge_data IS TRUE
+                     ORDER BY date_modified DESC
+                        LIMIT 1
+        LOOP
+            FOREACH project_id IN ARRAY projrow.active_projects
+            LOOP
+                RAISE NOTICE 'project: %', project_id;
+                INSERT INTO maniphest_edge
+                     VALUES (taskrow.id, project_id, dayrow.date);
+            END LOOP;
+END LOOP;
+
+    END LOOP;     
 END LOOP;
     RETURN;
 END;
