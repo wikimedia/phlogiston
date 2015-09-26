@@ -37,7 +37,7 @@ CREATE TABLE maniphest_transaction (
        active_projects int array
 );
 
-CREATE INDEX ON maniphest_transaction (object_phid, date(date_modified));
+CREATE INDEX ON maniphest_transaction (task_id, date_modified, has_edge_data);
 
 CREATE TABLE maniphest_edge (
        task int references maniphest_task,
@@ -50,7 +50,7 @@ CREATE INDEX ON maniphest_edge (task, project, edge_date);
 CREATE INDEX ON maniphest_edge (task);
 CREATE INDEX ON maniphest_edge (project);
 
-CREATE OR REPLACE FUNCTION build_edges() RETURNS void AS $$
+CREATE OR REPLACE FUNCTION build_edges(run_date date) RETURNS void AS $$
 DECLARE
   dayrow record;
   taskrow record;
@@ -58,18 +58,13 @@ DECLARE
   project_id int;
 BEGIN
 
-FOR dayrow IN SELECT DISTINCT date_modified::timestamp::date as date
-                         FROM maniphest_transaction
-                     ORDER BY date
-LOOP
-    RAISE NOTICE 'dayrow: %', dayrow.date;
     FOR taskrow IN SELECT id
                      FROM maniphest_task
                     ORDER BY id
     LOOP
         FOR projrow IN SELECT active_projects
                          FROM maniphest_transaction
-                        WHERE date_modified <= dayrow.date
+                        WHERE date_modified <= run_date
                           AND task_id = taskrow.id
                           AND has_edge_data IS TRUE
                      ORDER BY date_modified DESC
@@ -77,14 +72,12 @@ LOOP
         LOOP
             FOREACH project_id IN ARRAY projrow.active_projects
             LOOP
-                RAISE NOTICE 'project: %', project_id;
                 INSERT INTO maniphest_edge
-                     VALUES (taskrow.id, project_id, dayrow.date);
+                     VALUES (taskrow.id, project_id, run_date);
             END LOOP;
-END LOOP;
-
+        END LOOP;
     END LOOP;     
-END LOOP;
+
     RETURN;
 END;
 $$ LANGUAGE plpgsql;

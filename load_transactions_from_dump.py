@@ -22,7 +22,6 @@
 #
 # Things that might be worth refactoring
 #  - status fields are all double-quote-delimited in the database, which makes the sql look stupid
-#  - should probably rip out the --output option and related code since current workflow doesn't use it
 #  - automate retrieving the dump
 #  - softcode the rest of the file and database locations (what is best practice?)
 #  - refactor the .R and .SQL to obey DRY; currently copy-pasted from VE example
@@ -39,7 +38,7 @@ import configparser
 
 def main(argv):
     try:
-        opts, args = getopt.getopt(argv, "cde:hlo:p:rv", ["reconstruct", "debug", "enddate", "help", "load", "output=", "project=", "report", "verbose"])
+        opts, args = getopt.getopt(argv, "cde:hlp:rv", ["reconstruct", "debug", "enddate", "help", "load", "project=", "report", "verbose"])
     except getopt.GetoptError as e:
         print(e)
         usage()
@@ -49,7 +48,6 @@ def main(argv):
     run_report = False
     DEBUG = False
     VERBOSE = False
-    output_file = ''
     default_points = 5
     project_source = ''
     end_date = datetime.datetime.now().date()
@@ -65,8 +63,6 @@ def main(argv):
             sys.exit()
         elif opt in ("-l", "--load"):
             load_data = True
-        elif opt in ("-o", "--output"):
-            output_file = arg
         elif opt in ("-p", "--project"):
             project_source = arg
         elif opt in ("-r", "--report"):
@@ -93,7 +89,7 @@ def main(argv):
 
     if reconstruct_data:
         if project_source:
-            reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_name_list, start_date, end_date, task_history_table_name, project_csv_name)
+            reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_date, end_date, task_history_table_name, project_csv_name)
         else:
             print("Reconstruct specified without a project.  Please specify a project with --project.")
     if run_report:
@@ -109,7 +105,6 @@ def usage():
   --enddate ending date for loading and reconstruction; defaults to now\n
   --help for this message.\n
   --load to load data.  This will wipe existing data in the reporting database.\n
-  --output FILE.  This will produce a csv dump of the fully denormalized data (one line per task per projectcolumn per day).\n
   --project Name of a Python file containing metadata specific to the project to be analyzed.  Reconstruct and report will not function without a project.\n
   --report Process data in SQL, generate graphs in R, and output a set of png files.\n
   --verbose to show extra messages\n
@@ -122,6 +117,8 @@ def load(conn, end_date, VERBOSE, DEBUG):
     # reload the database tables
     cur.execute(open("rebuild_working_tables.sql", "r").read())
 
+    if VERBOSE:
+        print("Loading dump file")
     with open('../phabricator_public.dump') as dump_file:
        data = json.load(dump_file)
 
@@ -156,9 +153,9 @@ def load(conn, end_date, VERBOSE, DEBUG):
     transaction_insert = ("""
       INSERT INTO maniphest_transaction (
              id, phid, task_id, object_phid, transaction_type, 
-             new_value, date_modified, active_projects)
+             new_value, date_modified, has_edge_data, active_projects)
       VALUES (%(id)s, %(phid)s, %(task_id)s, %(object_phid)s, %(transaction_type)s,
-              %(new_value)s, %(date_modified)s, %(active_projects)s)""")
+              %(new_value)s, %(date_modified)s, %(has_edge_data)s, %(active_projects)s)""")
 
     task_insert = (""" 
       INSERT INTO maniphest_task (id, phid, title, story_points)
@@ -194,15 +191,16 @@ def load(conn, end_date, VERBOSE, DEBUG):
                     trans_type = trans[6]
                     new_value = trans[8]
                     date_mod = time.strftime('%m/%d/%Y %H:%M:%S', time.gmtime(trans[11]))
-                    active_proj = list()
                     # If this is an edge transaction, parse out the list of transactions
-                    # 
+                    has_edge_data = False
+                    active_proj = list()
                     if trans_type == 'core:edge':
                         jblob = json.loads(new_value)
                         if jblob:
                             for key in jblob.keys():
                                 try:
                                     if jblob[key]['type'] == 41:
+                                        has_edge_data = True
                                         proj_id = project_phid_to_id_dict[key]
                                         active_proj.append(proj_id)
                                 except:
@@ -216,45 +214,55 @@ def load(conn, end_date, VERBOSE, DEBUG):
                                  'transaction_type': trans_type,
                                  'new_value': new_value,
                                  'date_modified': date_mod,
-                                 'active_projects': active_proj})
+                                 'has_edge_data': has_edge_data,
+                                 'active_projects': active_proj                                 
+                             })
 
     ######################################################################
     # generate denormalized transaction/edge data
     ######################################################################
 
-    cur.execute("SELECT build_edges()")
+#    oldest_data_query = """SELECT date(min(date_modified)) from maniphest_transaction"""
+    oldest_data_query = """SELECT date(min(date_modified)) from maniphest_transaction where date_modified>'2015-01-08'"""
+    cur.execute(oldest_data_query)
+    working_date = cur.fetchone()[0]
+
+    while working_date <= end_date:
+        query_date = working_date + datetime.timedelta(days=1)
+        if VERBOSE:
+            print('{0}: Making maniphest_edge for {1}'.format(datetime.datetime.now(), query_date))
+        cur.execute('SELECT * from build_edges(%(date)s)', { 'date': query_date} )
+        working_date += datetime.timedelta(days=1)
+
     cur.close()
 
-    #    oldest_data_query = """SELECT date(min(date_modified)) from maniphest_transaction"""
-    #    cur.execute(oldest_data_query)
-    #    working_date = cur.fetchone()[0]
-    #    while working_date <= end_date:
-    #        query_date = working_date + datetime.timedelta(days=1)
-
         
-def reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_name_list, start_date, end_date, task_history_table_name, project_csv_name):
+def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_date, end_date, task_history_table_name, project_csv_name):
     cur = conn.cursor()
     # preload project and column for fast lookup within Python
     cur.execute("SELECT name, phid from phabricator_project")
     project_name_to_phid_dict = dict(cur.fetchall())
     project_phid_to_name_dict = {value: key for key, value in project_name_to_phid_dict.items()}
+    cur.execute("SELECT name, id from phabricator_project")
+    project_name_to_id_dict = dict(cur.fetchall())
 
     cur.execute("SELECT phid, name from phabricator_column")
     column_dict = dict(cur.fetchall())
 
     project_phid_list = list()
+    project_id_list = list()
     f = open(project_csv_name, 'w')
     for project_name in project_name_list:
         f.write( "{0}\n".format(project_name) )
         project_phid_list.append(project_name_to_phid_dict[project_name])
+        project_id_list.append(project_name_to_id_dict[project_name])
     f.close()
-    
+
     ######################################################################
     # Generate denormalized data
     ######################################################################
     # get the oldest date in the data and walk forward day by day from there
 
-    header= ["Date","ID", "Title", "Status", "Project", "Column", "Points"]
     # reload the database tables
     task_history_ddl = """DROP TABLE IF EXISTS {0} ;
 
@@ -280,10 +288,6 @@ def reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_name_
     # variable we're adding is from the config file so exposure is limited
     unsafe_ddl = task_history_ddl.format(task_history_table_name)
     cur.execute(unsafe_ddl)
-
-    if output_file:
-        csvwriter = csv.writer(open(output_file, 'w'), delimiter=',')
-        csvwriter.writerow(header)
 
     if not start_date:
         oldest_data_query = """SELECT date(min(date_modified)) from maniphest_transaction"""
@@ -312,14 +316,12 @@ def reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_name_
         query_date = working_date + datetime.timedelta(days=1)
         if VERBOSE:
             print(working_date)
-        task_on_day_query = """SELECT distinct(mt.object_phid) 
-                                 FROM maniphest_transaction mt, 
-                                      maniphest_edge me
-                                WHERE mt.object_phid = me.task_phid 
-                                  AND me.project_phid = ANY(%(project_phid)s)
-                                  AND date(mt.date_modified) <= %(query_date)s"""
+        task_on_day_query = """SELECT DISTINCT task
+                                 FROM maniphest_edge
+                                WHERE project = ANY(%(project_ids)s)
+                                  AND edge_date = %(query_date)s"""
 
-        cur.execute(task_on_day_query, {'query_date': query_date , 'project_phid': project_phid_list})
+        cur.execute(task_on_day_query, {'query_date': query_date , 'project_ids': project_id_list})
         for row in cur.fetchall():
             object_phid = row[0]
             # ----------------------------------------------------------------------
@@ -397,7 +399,6 @@ def reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_name_
                         pretty_column = column_dict[column_phid]
                         break
 
-                output_row = [query_date, object_phid, pretty_title, pretty_status, pretty_project, pretty_column, pretty_points]
                 denorm_query = """
                     INSERT INTO {0} VALUES (
                     %(query_date)s,
@@ -411,9 +412,6 @@ def reconstruct(conn, VERBOSE, DEBUG, output_file, default_points, project_name_
 
                 unsafe_denorm_query = denorm_query.format(task_history_table_name)
                 cur.execute(unsafe_denorm_query, {'query_date': query_date, 'id': task_id, 'title': pretty_title, 'status': pretty_status, 'project': pretty_project, 'projectcolumn': pretty_column, 'points': pretty_points, 'maint_type': maint_type })
-
-                if output_file:
-                    csvwriter.writerow(output_row)
 
         working_date += datetime.timedelta(days=1)
     cur.close()
