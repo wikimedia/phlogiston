@@ -28,7 +28,6 @@
 #  - optimize so the whole thing doesn't take 2+ hours for VE
 
 import psycopg2
-import csv
 import json
 import time
 import datetime
@@ -242,10 +241,10 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_d
     # preload project and column for fast lookup within Python
     cur.execute("SELECT name, phid from phabricator_project")
     project_name_to_phid_dict = dict(cur.fetchall())
-    project_phid_to_name_dict = {value: key for key, value in project_name_to_phid_dict.items()}
     cur.execute("SELECT name, id from phabricator_project")
     project_name_to_id_dict = dict(cur.fetchall())
-
+    project_id_to_name_dict = {value: key for key, value in project_name_to_id_dict.items()}
+    
     cur.execute("SELECT phid, name from phabricator_column")
     column_dict = dict(cur.fetchall())
 
@@ -300,15 +299,17 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_d
           FROM maniphest_transaction mt 
          WHERE date(mt.date_modified) <= %(query_date)s
            AND mt.transaction_type = %(transaction_type)s 
-           AND mt.object_phid = %(object_phid)s
+           AND mt.task_id = %(task_id)s
          ORDER BY date_modified DESC """
 
     edge_values_query = """
         SELECT mt.active_projects
           FROM maniphest_transaction mt 
          WHERE date(mt.date_modified) <= %(query_date)s
-           AND mt.object_phid = %(object_phid)s
-         ORDER BY date_modified DESC """
+           AND mt.task_id = %(task_id)s
+           AND mt.has_edge_data IS TRUE
+         ORDER BY date_modified DESC
+         LIMIT 1 """
 
     while working_date <= end_date:
         # because working_date is midnight at the beginning of the day, use a date at
@@ -316,6 +317,7 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_d
         query_date = working_date + datetime.timedelta(days=1)
         if VERBOSE:
             print(working_date)
+
         task_on_day_query = """SELECT DISTINCT task
                                  FROM maniphest_edge
                                 WHERE project = ANY(%(project_ids)s)
@@ -323,20 +325,20 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_d
 
         cur.execute(task_on_day_query, {'query_date': query_date , 'project_ids': project_id_list})
         for row in cur.fetchall():
-            object_phid = row[0]
+            task_id = row[0]
+
             # ----------------------------------------------------------------------
             # Title and Points
             # currently points are a separate field not in transaction data
             # this means historical points charts are actually retroactive
             # Title could be tracked retroactively but this code doesn't make that effort
             # ----------------------------------------------------------------------
-            task_query = """SELECT title, story_points, id
+            task_query = """SELECT title, story_points
                               FROM maniphest_task
-                             WHERE phid = %(object_phid)s"""
-            cur.execute(task_query, {'object_phid': object_phid, 'query_date': query_date, 'transaction_type': 'status'})
+                             WHERE id = %(task_id)s"""
+            cur.execute(task_query, {'task_id': task_id, 'query_date': query_date, 'transaction_type': 'status'})
             task_info = cur.fetchone()
             pretty_title = task_info[0]
-            task_id = task_info[2]
             try:
                 pretty_points = int(task_info[1])
             except:
@@ -348,7 +350,7 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_d
             # ----------------------------------------------------------------------
             # Status
             # ----------------------------------------------------------------------
-            cur.execute(transaction_values_query, {'object_phid': object_phid, 'query_date': query_date, 'transaction_type': 'status'})
+            cur.execute(transaction_values_query, {'task_id': task_id, 'query_date': query_date, 'transaction_type': 'status'})
             status_raw= cur.fetchone()
             pretty_status = ""
             if status_raw:
@@ -357,62 +359,63 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_d
             # ----------------------------------------------------------------------
             # Project & Maintenance Type
             # ----------------------------------------------------------------------
-            cur.execute(edge_values_query, {'object_phid': object_phid, 'query_date': query_date})
-            edges = cur.fetchall()
-            import ipdb; ipdb.set_trace()
-            edges_list = list()
-            proj_dict = ""
+            cur.execute(edge_values_query, {'task_id': task_id, 'query_date': query_date})
+            edges = cur.fetchall()[0][0]
+            pretty_project = ''
 
-            for trans_project in proj_dict:
-                edges_list.append(trans_project)
-            pretty_project = ""
-            if 'PHID-PROJ-mm2dn7n5cs42tainm2rs' in edges_list:
+            if 'WorkType-NewFunctionality' in edges:
                 maint_type = 'New Functionality'
-            elif 'PHID-PROJ-mcew7gqzloqahg6qgt2j' in edges_list:
+            elif 'WorkType-Maintenance' in edges:
                 maint_type = 'Maintenance'
             else:
                 maint_type = ''
             
-            reportable_edges = list()
+            best_edge = ''
             # Reduce the list of edges to only the single best match,
             # where best = earliest in the specified project list
-            for project in project_phid_list:
-                if project in edges_list:
-                    reportable_edges.append(project)
+            for project in edges:
+                if project in project_id_list:
+                    best_edge = project
                     break
 
-            if len(reportable_edges)>1:
-                print("DEBUG: object {0}, reportable_edges{1}".format(object_phid, reportable_edges))
-            for edge in reportable_edges:
-                project_phid = edge
-                pretty_project = project_phid_to_name_dict[project_phid]
-                pretty_column = ''
-                # ----------------------------------------------------------------------
-                # Column
-                # ----------------------------------------------------------------------
-                cur.execute(transaction_values_query, {'object_phid': object_phid, 'query_date': query_date, 'transaction_type': 'projectcolumn'})
-                pc_trans_list = cur.fetchall()
-                for pc_trans in pc_trans_list:
-                    jblob = json.loads(pc_trans[0])
-                    if project_phid in jblob['projectPHID']:
-                        column_phid = jblob['columnPHIDs'][0]
-                        pretty_column = column_dict[column_phid]
-                        break
+            if not best_edge:
+                # There is a transaction that is mis-parsed that
+                # indicates that the task belongs only to one or more
+                # projects that are not in the project list.  This
+                # will be skipped, which by definition should be
+                # correct since we don't care about these projects for this
+                # report.
+                print("DEBUG: failed to load task {0} on day {1}.  Bad data: {2}".format(task_id, working_date, edges))
+                continue
+            pretty_project = project_id_to_name_dict[best_edge]
+            project_phid = project_name_to_phid_dict[pretty_project]
+            pretty_column = ''
+            # ----------------------------------------------------------------------
+            # Column
+            # ----------------------------------------------------------------------
+            cur.execute(transaction_values_query, {'task_id': task_id, 'query_date': query_date, 'transaction_type': 'projectcolumn'})
+            pc_trans_list = cur.fetchall()
+            for pc_trans in pc_trans_list:
+                jblob = json.loads(pc_trans[0])
+                if project_phid in jblob['projectPHID']:
+                    column_phid = jblob['columnPHIDs'][0]
+                    pretty_column = column_dict[column_phid]
+                    break
 
-                denorm_query = """
-                    INSERT INTO {0} VALUES (
-                    %(query_date)s,
-                    %(id)s,
-                    %(title)s,
-                    %(status)s,
-                    %(project)s,
-                    %(projectcolumn)s,
-                    %(points)s,
-                    %(maint_type)s)"""
+            denorm_query = """
+                INSERT INTO {0} VALUES (
+                %(query_date)s,
+                %(id)s,
+                %(title)s,
+                %(status)s,
+                %(project)s,
+                %(projectcolumn)s,
+                %(points)s,
+                %(maint_type)s)"""
 
-                unsafe_denorm_query = denorm_query.format(task_history_table_name)
-                cur.execute(unsafe_denorm_query, {'query_date': query_date, 'id': task_id, 'title': pretty_title, 'status': pretty_status, 'project': pretty_project, 'projectcolumn': pretty_column, 'points': pretty_points, 'maint_type': maint_type })
-
+            unsafe_denorm_query = denorm_query.format(task_history_table_name)
+            cur.execute(unsafe_denorm_query, {'query_date': query_date, 'id': task_id, 'title': pretty_title, 'status': pretty_status, 'project': pretty_project, 'projectcolumn': pretty_column, 'points': pretty_points, 'maint_type': maint_type })
+    
         working_date += datetime.timedelta(days=1)
     cur.close()
 
