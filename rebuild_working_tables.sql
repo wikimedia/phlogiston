@@ -46,6 +46,7 @@ CREATE TABLE maniphest_edge (
        PRIMARY KEY (task, project, edge_date)
 );
 
+-- TODO: maybe add the indexes after all rows are added?
 CREATE INDEX ON maniphest_edge (task, project, edge_date);
 CREATE INDEX ON maniphest_edge (task);
 CREATE INDEX ON maniphest_edge (project);
