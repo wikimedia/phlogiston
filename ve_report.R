@@ -28,7 +28,10 @@ ggplot(backlog) +
   geom_area(position='stack', aes(x = date, y = points, group=category2, fill=category2, order=-as.numeric(category2))) +
   scale_fill_manual(values = colors) +
   scale_x_date(breaks="1 month", label=date_format("%Y-%b"), limits = as.Date(c('2014-12-01', NA))) +
-  geom_line(data=burnup, aes(x=date, y=points), size=2)
+  geom_line(data=burnup, aes(x=date, y=points), size=2) +
+  geom_vline(aes(xintercept=as.numeric(as.Date(c('2015-01-01'))), color="gray")) +
+  geom_vline(aes(xintercept=as.numeric(as.Date(c('2015-04-01'))), color="gray")) +
+  geom_vline(aes(xintercept=as.numeric(as.Date(c('2015-07-01'))), color="gray"))
 dev.off()
 
 ######################################################################
@@ -50,7 +53,10 @@ ggplot(backlog_zoomed) +
   geom_area(position='stack', aes(x = date, y = points, group=category2, fill=category2, order=-as.numeric(category2))) +
   scale_x_date(breaks="1 month", label=date_format("%Y-%b"), limits = as.Date(c('2015-02-01', NA))) +
   scale_fill_manual(values = colors) +
-  geom_line(data=burnup_zoomed, aes(x=date, y=points), size=2)
+  geom_line(data=burnup_zoomed, aes(x=date, y=points), size=2) + 
+  geom_vline(aes(xintercept=as.numeric(as.Date(c('2015-01-01'))), color="gray")) +
+  geom_vline(aes(xintercept=as.numeric(as.Date(c('2015-04-01'))), color="gray")) +
+  geom_vline(aes(xintercept=as.numeric(as.Date(c('2015-07-01'))), color="gray"))
 dev.off()
 
 ######################################################################
@@ -59,6 +65,16 @@ dev.off()
 
 burnup_cat <- read.csv("/tmp/ve_burnup_categories.csv")
 burnup_cat$date <- as.Date(burnup_cat$date, "%Y-%m-%d")
+
+burnup_tranches <- png(filename = "~/html/ve-alltranches_burnup.png", width=2000, height=1125, units="px", pointsize=30)
+
+ggplot(burnup_cat) +
+  labs(title="VE Work Completed (Burnup)", y="Story Point Total") +
+  theme(text = element_text(size=30), legend.title=element_blank()) +
+  geom_area(position='stack', aes(x = date, y = points, group=category, fill=category, order=-as.numeric(category))) +
+  scale_x_date(breaks="1 month", label=date_format("%Y-%b"), limits = as.Date(c('2015-02-01', NA))) +
+  scale_fill_manual(values = colors)
+dev.off()
 
 ## TR0
 
@@ -167,6 +183,9 @@ ggplot(velocity, aes(date, velocity)) +
   geom_bar(stat="identity") +
   theme(text = element_text(size=30))
 dev.off()
+
+
+
 
 ######################################################################
 ## Velocity vs backlog

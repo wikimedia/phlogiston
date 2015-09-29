@@ -1,6 +1,5 @@
-/* This script assumes that all tasks in the database are relevant to the VisualEditor team */
-
-/* Apply some filtering to the raw data */
+/* ##################################################################
+Apply some filtering to the raw data */
 
 UPDATE ve_task_history
    SET status = '"open"'
