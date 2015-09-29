@@ -214,8 +214,13 @@ def load(conn, end_date, VERBOSE, DEBUG):
                                  'new_value': new_value,
                                  'date_modified': date_mod,
                                  'has_edge_data': has_edge_data,
-                                 'active_projects': active_proj                                 
-                             })
+                                 'active_projects': active_proj})
+
+    cur.close()
+
+
+def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_date, end_date, task_history_table_name, project_csv_name):
+    cur = conn.cursor()
 
     ######################################################################
     # generate denormalized transaction/edge data
@@ -233,19 +238,27 @@ def load(conn, end_date, VERBOSE, DEBUG):
         cur.execute('SELECT * from build_edges(%(date)s)', { 'date': query_date} )
         working_date += datetime.timedelta(days=1)
 
-    cur.close()
-
-        
-def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_date, end_date, task_history_table_name, project_csv_name):
-    cur = conn.cursor()
+    ######################################################################
     # preload project and column for fast lookup within Python
-    cur.execute("SELECT name, phid from phabricator_project")
+    ######################################################################
+
+    cur.execute("""SELECT name, phid 
+                   FROM phabricator_project
+                  WHERE name = ANY(%(project_name_list)s)""",
+                { 'project_name_list': project_name_list } )
     project_name_to_phid_dict = dict(cur.fetchall())
-    cur.execute("SELECT name, id from phabricator_project")
+    cur.execute("""SELECT name, id 
+                     FROM phabricator_project
+                    WHERE name =  ANY(%(project_name_list)s)""",
+                { 'project_name_list': project_name_list } )
     project_name_to_id_dict = dict(cur.fetchall())
     project_id_to_name_dict = {value: key for key, value in project_name_to_id_dict.items()}
-    
-    cur.execute("SELECT phid, name from phabricator_column")
+    cur.execute("""SELECT phid, name
+                     FROM phabricator_column pc,
+                          phabricator_project pp
+                    WHERE pc.project_phid = pp.phid
+                      AND pp.id = ANY(%(project_name_list)s)""",
+                { 'project_name_list': project_name_list } )
     column_dict = dict(cur.fetchall())
 
     project_phid_list = list()
