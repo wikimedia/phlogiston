@@ -82,13 +82,14 @@ def main(argv):
         project_name_list = tuple(config.get("vars", "project_list").split(','))
         task_history_table_name = '{0}_task_history'.format(prefix)
         project_csv_name = '/tmp/{0}_projects.csv'.format(prefix)
+        default_points_csv_name = '/tmp/{0}_default_points.csv'.format(prefix)
         report_tables_script = '{0}_tables.sql'.format(prefix)
         report_script = '{0}_report.R'.format(prefix)
         start_date = datetime.datetime.strptime(config.get("vars", "start_date"), "%Y-%m-%d").date()
 
     if reconstruct_data:
         if project_source:
-            reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_date, end_date, task_history_table_name, project_csv_name)
+            reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_date, end_date, task_history_table_name, project_csv_name, default_points_csv_name)
         else:
             print("Reconstruct specified without a project.  Please specify a project with --project.")
     if run_report:
@@ -163,11 +164,6 @@ def load(conn, end_date, VERBOSE, DEBUG):
       VALUES (%(task_id)s, %(phid)s, %(title)s, %(story_points)s) """)
 
     for task_id in data['task'].keys():
-        if DEBUG:
-            if task_id != '85782':
-                continue
-            else:
-                print(task_id)
 
         task = data['task'][task_id]
         if task['info']:
@@ -205,7 +201,7 @@ def load(conn, end_date, VERBOSE, DEBUG):
                                         proj_id = project_phid_to_id_dict[key]
                                         active_proj.append(proj_id)
                                 except:
-                                    print("Error loading {0}".format(jblob))
+                                    print("Error loading {0}".format(trans))
                     
                     cur.execute(transaction_insert,
                                 {'id': trans[0] ,
@@ -221,7 +217,7 @@ def load(conn, end_date, VERBOSE, DEBUG):
     cur.close()
 
 
-def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_date, end_date, task_history_table_name, project_csv_name):
+def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_date, end_date, task_history_table_name, project_csv_name, default_points_csv_name):
     cur = conn.cursor()
 
     ######################################################################
@@ -249,6 +245,10 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_d
         project_id_list.append(project_name_to_id_dict[project_name])
     f.close()
 
+    f = open(default_points_csv_name, 'w')
+    f.write( "{0}\n".format(default_points) )
+    f.close()
+    
     cur.execute("""SELECT pc.phid, pc.name
                      FROM phabricator_column pc,
                           phabricator_project pp
@@ -270,12 +270,15 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_d
         start_date = cur.fetchone()[0]
     working_date = start_date
 
+    # In addition to project-specific projects, include WorkType tags
+    id_list_with_worktypes = list(project_id_list)
+    id_list_with_worktypes.extend([1453, 1454])
     while working_date <= end_date:
         query_date = working_date + datetime.timedelta(days=1)
         if VERBOSE:
             print('{0}: Making maniphest_edge for {1}'.format(datetime.datetime.now(), query_date))
         cur.execute('SELECT * FROM build_edges(%(date)s, %(project_id_list)s)',
-                    { 'date': query_date, 'project_id_list': project_id_list  } )
+                    { 'date': query_date, 'project_id_list': id_list_with_worktypes } )
         working_date += datetime.timedelta(days=1)
 
     ######################################################################
@@ -331,7 +334,7 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_d
         # the midnight at the end of the day to make the queries line up with the date label
         query_date = working_date + datetime.timedelta(days=1)
         if VERBOSE:
-            print(working_date)
+            print("Reconstructing data for {0}".format(working_date))
 
         task_on_day_query = """SELECT DISTINCT task
                                  FROM maniphest_edge
@@ -378,9 +381,9 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_d
             edges = cur.fetchall()[0][0]
             pretty_project = ''
 
-            if 'WorkType-NewFunctionality' in edges:
+            if 1453 in edges:
                 maint_type = 'New Functionality'
-            elif 'WorkType-Maintenance' in edges:
+            elif 1454 in edges:
                 maint_type = 'Maintenance'
             else:
                 maint_type = ''

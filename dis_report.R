@@ -23,26 +23,53 @@ ggplot(backlog) +
   labs(title="Discovery backlog", y="Story Point Total") +
   theme(text = element_text(size=30), legend.title=element_blank())+
   geom_area(position='stack', aes(x = date, y = points, group=category, fill=category, order=-as.numeric(category))) +
-  scale_x_date(breaks="1 month", label=date_format("%Y-%b"), limits = as.Date(c('2014-12-01', NA))) +
+  scale_x_date(breaks="1 month", label=date_format("%Y-%b")) +
   geom_line(data=burnup, aes(x=date, y=points), size=2)
 dev.off()
 
+backlog_count <- read.csv("/tmp/dis_backlog_count.csv")
+backlog_count$date <- as.Date(backlog_count$date, "%Y-%m-%d")
+backlog_count_output=png(filename = "~/html/dis_backlog_count_burnup.png", width=2000, height=1125, units="px", pointsize=30)
 
-## ######################################################################
-## ## Maintenance Fraction
-## ######################################################################
+burnup_count <- read.csv("/tmp/dis_burnup_count.csv")
+burnup_count$date <- as.Date(burnup_count$date, "%Y-%m-%d")
 
-## dis_maint_frac <- read.csv("/tmp/dis_maintenance_fraction.csv")
-## dis_maint_frac$date <- as.Date(dis_maint_frac$date, "%Y-%m-%d")
+ggplot(backlog_count) +
+  labs(title="Discovery backlog", y="Task Count") +
+  theme(text = element_text(size=30), legend.title=element_blank())+
+  geom_area(position='stack', aes(x = date, y = count, group=category, fill=category, order=-as.numeric(category))) +
+  scale_x_date(breaks="1 month", label=date_format("%Y-%b")) +
+  geom_line(data=burnup_count, aes(x=date, y=count), size=2)
+dev.off()
 
-## status_output <- png(filename = "~/html/dis_maint_frac.png", width=2000, height=1125, units="px", pointsize=30)
+
+######################################################################
+## Maintenance Fraction
+######################################################################
+
+dis_maint_frac <- read.csv("/tmp/dis_maintenance_fraction.csv")
+dis_maint_frac$date <- as.Date(dis_maint_frac$date, "%Y-%m-%d")
+
+status_output <- png(filename = "~/html/dis_maint_frac.png", width=2000, height=1125, units="px", pointsize=30)
   
-## ggplot(dis_maint_frac, aes(date, maint_frac)) +
-##   labs(title="VE Maintenance Fraction", y="Fraction of completed work that is maintenance") +
-##   geom_bar(stat="identity") +
-##   theme(text = element_text(size=30)) +
-##   scale_y_continuous(labels=percent, limits=c(0,1))
-##   dev.off()
+ggplot(dis_maint_frac, aes(date, maint_frac)) +
+  labs(title="VE Maintenance Fraction", y="Fraction of completed work that is maintenance") +
+  geom_bar(stat="identity") +
+  theme(text = element_text(size=30)) +
+  scale_y_continuous(labels=percent, limits=c(0,1))
+dev.off()
+
+dis_maint_count_frac <- read.csv("/tmp/dis_maintenance_count_fraction.csv")
+dis_maint_count_frac$date <- as.Date(dis_maint_count_frac$date, "%Y-%m-%d")
+
+status_output_count <- png(filename = "~/html/dis_maint_count_frac.png", width=2000, height=1125, units="px", pointsize=30)
+  
+ggplot(dis_maint_count_frac, aes(date, maint_frac)) +
+  labs(title="VE Maintenance Fraction (by count instead of points)", y="Fraction of completed work that is maintenance") +
+  geom_bar(stat="identity") +
+  theme(text = element_text(size=30)) +
+  scale_y_continuous(labels=percent, limits=c(0,1))
+dev.off()
 
 ######################################################################
 ## Velocity
@@ -55,6 +82,17 @@ velocity_output <- png(filename = "~/html/dis_velocity.png", width=2000, height=
 
 ggplot(velocity, aes(date, velocity)) +
   labs(title="Velocity per week", y="Story Points") +
+  geom_bar(stat="identity") +
+  theme(text = element_text(size=30))
+dev.off()
+
+velocity_count <- read.csv("/tmp/dis_velocity_count.csv")
+velocity_count$date <- as.Date(velocity_count$date, "%Y-%m-%d")
+
+velocity_count_output <- png(filename = "~/html/dis_velocity_count.png", width=2000, height=1125, units="px", pointsize=30)
+
+ggplot(velocity_count, aes(date, velocity)) +
+  labs(title="Velocity per week", y="Tasks") +
   geom_bar(stat="identity") +
   theme(text = element_text(size=30))
 dev.off()
