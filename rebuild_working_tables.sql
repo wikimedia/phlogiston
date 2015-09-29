@@ -1,3 +1,5 @@
+CREATE EXTENSION IF NOT EXISTS intarray;
+
 DROP TABLE IF EXISTS maniphest_edge;
 DROP TABLE IF EXISTS maniphest_transaction;
 DROP TABLE IF EXISTS maniphest_task;
@@ -51,7 +53,9 @@ CREATE INDEX ON maniphest_edge (task, project, edge_date);
 CREATE INDEX ON maniphest_edge (task);
 CREATE INDEX ON maniphest_edge (project);
 
-CREATE OR REPLACE FUNCTION build_edges(run_date date) RETURNS void AS $$
+CREATE OR REPLACE FUNCTION build_edges(
+       run_date date,
+       project_id_list int array) RETURNS void AS $$
 DECLARE
   dayrow record;
   taskrow record;
@@ -71,7 +75,7 @@ BEGIN
                      ORDER BY date_modified DESC
                         LIMIT 1
         LOOP
-            FOREACH project_id IN ARRAY projrow.active_projects
+            FOREACH project_id IN ARRAY projrow.active_projects & project_id_list
             LOOP
                 INSERT INTO maniphest_edge
                      VALUES (taskrow.id, project_id, run_date);

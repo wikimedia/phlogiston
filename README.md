@@ -34,7 +34,7 @@ Postgresql database named "phab"   <- data goes here
      * `gpg --keyserver keyserver.ubuntu.com --recv-key E084DAB9`
      * `gpg -a --export E084DAB9 | sudo apt-key add - `
   3. Install ubuntu packages
-     * `apt-get install nginx postgresql-9.4 python3-pip python3-psycopg2 python3-dev`
+     * `apt-get install nginx postgresql-9.4 python3-pip python3-psycopg2 python3-dev postgresql-contrib`
      * `apt-get build-dep python3-psycopg2 r-base-core r-base-script`
   4. Install R packages.
      * `R`
