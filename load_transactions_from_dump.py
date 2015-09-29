@@ -280,7 +280,6 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_d
 
     ######################################################################
     # Reconstruct historical state of tasks
-    # get the oldest date in the data and walk forward day by day from there
 
     # reload the project-specific database tables
     task_history_ddl = """DROP TABLE IF EXISTS {0} ;
@@ -395,14 +394,15 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_d
                     break
 
             if not best_edge:
-                # There is a transaction that is mis-parsed that
-                # indicates that the task belongs only to one or more
-                # projects that are not in the project list.  This
-                # will be skipped, which by definition should be
-                # correct since we don't care about these projects for this
-                # report.
-                print("DEBUG: failed to load task {0} on day {1}.  Bad data: {2}".format(task_id, working_date, edges))
+                # This should be impossible since by this point we
+                # only see tasks that have edges in the desired list.
+                # However, certain transactions (gerrit Conduit
+                # transactions) aren't properly parsed by Phlogiston.
+                # See https://phabricator.wikimedia.org/T114021.  Not
+                # sure how badly, if at all, this workaround damages
+                # the data.
                 continue
+
             pretty_project = project_id_to_name_dict[best_edge]
             project_phid = project_name_to_phid_dict[pretty_project]
             pretty_column = ''
