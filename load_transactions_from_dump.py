@@ -124,10 +124,11 @@ def load(conn, end_date, VERBOSE, DEBUG):
     ######################################################################
     # Load project and project column data
     ######################################################################
-    project_insert = ("""INSERT INTO phabricator_project (id, name, phid)
-                VALUES (%(id)s, %(name)s, %(phid)s)""")
     if VERBOSE:
         print("Trying to load {count} projects".format(count=len(data['project']['projects'])))
+
+    project_insert = ("""INSERT INTO phabricator_project (id, name, phid)
+                VALUES (%(id)s, %(name)s, %(phid)s)""")
     for row in data['project']['projects']:
        cur.execute(project_insert, {'id':row[0] , 'name':row[1], 'phid':row[2] })
 
@@ -141,6 +142,7 @@ def load(conn, end_date, VERBOSE, DEBUG):
     for row in data['project']['columns']:
         cur.execute(column_insert, {'id':row[0] , 'name':row[2], 'phid':row[1], 'project_phid':row[5] 
                      })
+
     ######################################################################
     # Load transactions and edges
     ######################################################################
@@ -223,43 +225,20 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_d
     cur = conn.cursor()
 
     ######################################################################
-    # generate denormalized transaction/edge data
-    ######################################################################
-
-#    oldest_data_query = """SELECT date(min(date_modified)) from maniphest_transaction"""
-    oldest_data_query = """SELECT date(min(date_modified)) from maniphest_transaction where date_modified>'2015-01-08'"""
-    cur.execute(oldest_data_query)
-    working_date = cur.fetchone()[0]
-
-    while working_date <= end_date:
-        query_date = working_date + datetime.timedelta(days=1)
-        if VERBOSE:
-            print('{0}: Making maniphest_edge for {1}'.format(datetime.datetime.now(), query_date))
-        cur.execute('SELECT * from build_edges(%(date)s)', { 'date': query_date} )
-        working_date += datetime.timedelta(days=1)
-
-    ######################################################################
-    # preload project and column for fast lookup within Python
+    # preload project and column for fast lookup
     ######################################################################
 
     cur.execute("""SELECT name, phid 
                    FROM phabricator_project
-                  WHERE name = ANY(%(project_name_list)s)""",
+                  WHERE name IN %(project_name_list)s""",
                 { 'project_name_list': project_name_list } )
     project_name_to_phid_dict = dict(cur.fetchall())
     cur.execute("""SELECT name, id 
                      FROM phabricator_project
-                    WHERE name =  ANY(%(project_name_list)s)""",
+                    WHERE name IN %(project_name_list)s""",
                 { 'project_name_list': project_name_list } )
     project_name_to_id_dict = dict(cur.fetchall())
     project_id_to_name_dict = {value: key for key, value in project_name_to_id_dict.items()}
-    cur.execute("""SELECT phid, name
-                     FROM phabricator_column pc,
-                          phabricator_project pp
-                    WHERE pc.project_phid = pp.phid
-                      AND pp.id = ANY(%(project_name_list)s)""",
-                { 'project_name_list': project_name_list } )
-    column_dict = dict(cur.fetchall())
 
     project_phid_list = list()
     project_id_list = list()
@@ -270,12 +249,40 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_d
         project_id_list.append(project_name_to_id_dict[project_name])
     f.close()
 
+    cur.execute("""SELECT pc.phid, pc.name
+                     FROM phabricator_column pc,
+                          phabricator_project pp
+                    WHERE pc.project_phid = pp.phid
+                      AND pp.id = ANY(%(project_id_list)s)""",
+                { 'project_id_list': project_id_list } )
+    column_dict = dict(cur.fetchall())
+
     ######################################################################
     # Generate denormalized data
     ######################################################################
+    # Generate denormalized edge data.  This is edge data for only the
+    # projects of interest, but goes into a shared table for
+    # simplicity.
+    
+    if not start_date:
+        oldest_data_query = """SELECT date(min(date_modified)) from maniphest_transaction"""
+        cur.execute(oldest_data_query)
+        start_date = cur.fetchone()[0]
+    working_date = start_date
+
+    while working_date <= end_date:
+        query_date = working_date + datetime.timedelta(days=1)
+        if VERBOSE:
+            print('{0}: Making maniphest_edge for {1}'.format(datetime.datetime.now(), query_date))
+        cur.execute('SELECT * FROM build_edges(%(date)s, %(project_id_list)s)',
+                    { 'date': query_date, 'project_id_list': project_id_list  } )
+        working_date += datetime.timedelta(days=1)
+
+    ######################################################################
+    # Reconstruct historical state of tasks
     # get the oldest date in the data and walk forward day by day from there
 
-    # reload the database tables
+    # reload the project-specific database tables
     task_history_ddl = """DROP TABLE IF EXISTS {0} ;
 
                           CREATE TABLE {0} (
@@ -301,10 +308,6 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_d
     unsafe_ddl = task_history_ddl.format(task_history_table_name)
     cur.execute(unsafe_ddl)
 
-    if not start_date:
-        oldest_data_query = """SELECT date(min(date_modified)) from maniphest_transaction"""
-        cur.execute(oldest_data_query)
-        start_date = cur.fetchone()[0]
     working_date = start_date
         
     transaction_values_query = """
