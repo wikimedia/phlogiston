@@ -1,5 +1,3 @@
-/* This script assumes that all tasks in the database are relevant to the VisualEditor team */
-
 /* Apply some filtering to the raw data */
 
 UPDATE col_task_history
@@ -19,16 +17,15 @@ projectcolumn and status  */
 
 DROP TABLE IF EXISTS col_tall_backlog;
 
-/* For Collaboration, each project = 1 sprint = 1 category */
-
 SELECT date,
        project as category,
        status,
        COUNT(title) as count,
-       SUM(points) as points
+       SUM(points) as points,
+       maint_type
   INTO col_tall_backlog
   FROM col_task_history
- GROUP BY status, category, date;
+ GROUP BY status, category, maint_type, date;
 
 COPY (
 SELECT date,
@@ -56,6 +53,15 @@ SELECT date,
  GROUP BY date
  ORDER BY date
 ) to '/tmp/col_burnup.csv' DELIMITER ',' CSV HEADER;
+
+COPY (
+SELECT date,
+       SUM(count) as count
+  FROM col_tall_backlog
+ WHERE status = '"resolved"'
+ GROUP BY date
+ ORDER BY date
+) to '/tmp/col_burnup_count.csv' DELIMITER ',' CSV HEADER;
 
 COPY (
 SELECT date,
@@ -114,6 +120,39 @@ SELECT date,
   FROM col_velocity_delta
 ) TO '/tmp/col_velocity.csv' DELIMITER ',' CSV HEADER;
 
+DROP TABLE IF EXISTS col_velocity_count_week;
+DROP TABLE IF EXISTS col_velocity_count_delta;
+
+SELECT date,
+       sum(count) as count
+  INTO col_velocity_count_week
+  FROM col_tall_backlog
+ WHERE status = '"resolved"'
+   AND EXTRACT(dow from date) = 0 
+   AND date >= current_date - interval '3 months'
+ GROUP BY date
+ ORDER BY date;
+
+SELECT date,
+       (count - lag(count) OVER (ORDER BY date)) as count,
+       NULL::int as velocity
+  INTO col_velocity_count_delta
+  FROM col_velocity_count_week
+ ORDER BY date;
+
+UPDATE col_velocity_count_delta a
+   SET velocity = (SELECT count
+                       FROM (SELECT date,
+                                    count - lag(count) OVER (ORDER BY date) as count
+                               FROM col_velocity_count_week
+                             ) as b
+                      WHERE a.date = b.date);
+
+COPY (
+SELECT date,
+       velocity
+  FROM col_velocity_count_delta
+) TO '/tmp/col_velocity_count.csv' DELIMITER ',' CSV HEADER;
 
 /* ####################################################################
 Backlog growth calculations */
@@ -136,7 +175,6 @@ SELECT date,
  ORDER BY date
 ) to '/tmp/col_net_growth.csv' DELIMITER ',' CSV HEADER;
 
-/*
 /* ####################################################################
    Maintenance fraction
 Divide all resolved work into Maintenance or New Project, by week. */
@@ -145,33 +183,31 @@ DROP TABLE IF EXISTS col_maintenance_week;
 DROP TABLE IF EXISTS col_maintenance_delta;
 
 SELECT date,
-       CASE WHEN category = 'TR0: Interrupt' then 'Maintenance'
-            ELSE 'New Project'
-       END as type,
+       maint_type,
        SUM(points) as points
   INTO col_maintenance_week
   FROM col_tall_backlog
   WHERE status = '"resolved"'
    AND EXTRACT(dow FROM date) = 0
    AND date >= current_date - interval '3 months'
-  GROUP BY type, date
- ORDER BY date, type;
+ GROUP BY maint_type, date
+ ORDER BY date, maint_type;
 
 SELECT date,
-       type,
+       maint_type,
        (points - lag(points) OVER (ORDER BY date)) as maint_points,
        NULL::int as new_points
   INTO col_maintenance_delta
   FROM col_maintenance_week
- WHERE type='Maintenance'
- ORDER BY date, type;
+ WHERE maint_type='Maintenance'
+ ORDER BY date, maint_type;
 
 UPDATE col_maintenance_delta a
    SET new_points = (SELECT points
                        FROM (SELECT date,
                                     points - lag(points) OVER (ORDER BY date) as points
                                FROM col_maintenance_week
-                              WHERE type='New Project') as b
+                              WHERE maint_type='New Functionality') as b
                       WHERE a.date = b.date);
 
 COPY (
@@ -179,7 +215,7 @@ SELECT date,
        maint_frac
   FROM (
 SELECT date,
-       maint_points::float / (maint_points + new_points) as maint_frac
+       maint_points::float / nullif((maint_points + new_points),0) as maint_frac
   FROM col_maintenance_delta
   ) as col_maintenance_fraction
 ) TO '/tmp/col_maintenance_fraction.csv' DELIMITER ',' CSV HEADER;
@@ -193,102 +229,57 @@ SELECT ROUND(100 * maint_points::decimal / (maint_points + new_points),0) as "To
 	  FROM col_maintenance_delta) as y
 ) TO '/tmp/col_maintenance_fraction_total.csv' DELIMITER ',' CSV;
 
-/* ####################################################################
-Lead Time
+/* by count */
 
-These queries are for a variety of age-of-backlog charts.  They are slow,
-and not essential and so disabled for the moment.
+DROP TABLE IF EXISTS col_maintenance_count_week;
+DROP TABLE IF EXISTS col_maintenance_count_delta;
 
-This is also used for statistics of recently resolved tasks (histo-whatever)
-since it's the only way to identify recently resolved tasks 
- */
+SELECT date,
+       maint_type,
+       count(date) as count
+  INTO col_maintenance_count_week
+  FROM col_tall_backlog
+  WHERE status = '"resolved"'
+   AND EXTRACT(dow FROM date) = 0
+   AND date >= current_date - interval '3 months'
+ GROUP BY maint_type, date
+ ORDER BY date, maint_type;
 
--- DROP TABLE IF EXISTS col_leadtime;
--- DROP TABLE IF EXISTS col_statushist;
--- DROP TABLE IF EXISTS col_openage_specific;
+SELECT date,
+       maint_type,
+       (count - lag(count) OVER (ORDER BY date)) as maint_count,
+       NULL::int as new_count
+  INTO col_maintenance_count_delta
+  FROM col_maintenance_count_week
+ WHERE maint_type='Maintenance'
+ ORDER BY date, maint_type;
 
--- SELECT th.date,
---        th.points,
---        th.id,
---        lag(th.id) OVER (ORDER BY th.id, th.date ASC) as prev_id,
---        th.status,
---        lag(th.status) OVER (ORDER BY th.id, th.date ASC) as prev_status
---   INTO col_statushist
---   FROM col_task_history th
---  ORDER BY th.id, th.date ASC;
+UPDATE col_maintenance_count_delta a
+   SET new_count = (SELECT count
+                       FROM (SELECT date,
+                                    count - lag(count) OVER (ORDER BY date) as count
+                               FROM col_maintenance_count_week
+                              WHERE maint_type='New Functionality') as b
+                      WHERE a.date = b.date);
 
--- SELECT id,
---        status,
---        prev_status,
---        points,
---        date AS resolcol_date,
---        (SELECT min(date)
---           FROM col_task_history th2
---          WHERE th2.id = th1.id
---            AND status = '"open"') as open_date
---   INTO col_leadtime
---   FROM col_statushist as th1
---  WHERE prev_status = '"open"'
---    AND status = '"resolved"'
---    AND id = prev_id;
+COPY (
+SELECT date,
+       maint_frac
+  FROM (
+SELECT date,
+       maint_count::float / nullif((maint_count + new_count),0) as maint_frac
+  FROM col_maintenance_count_delta
+  ) as col_maintenance_count_fraction
+) TO '/tmp/col_maintenance_count_fraction.csv' DELIMITER ',' CSV HEADER;
 
--- /* This takes forever and the data isn't very useful.
--- DROP TABLE IF EXISTS col_openage;
--- SELECT id,
---        points,
---        date,
---        (SELECT min(date)
---           FROM col_task_history th2
---          WHERE th2.id = th1.id
---            AND status = '"open"') as open_date
---   INTO col_openage
---   FROM col_task_history as th1
---  WHERE status = '"open"'; */
-
--- SELECT id,
---        points,
---        date,
---        (SELECT min(date)
---           FROM col_task_history th2
---          WHERE th2.id = th1.id
---            AND status = '"open"') as open_date
---   INTO col_openage_specific
---   FROM col_task_history as th1
---  WHERE status = '"open"'
---    AND NOT (project='VisualEditor' AND projectcolumn NOT SIMILAR TO 'TR%');
-
--- COPY (SELECT SUM(points)/7 as points,
---              width_bucket(extract(days from (current_date - open_date)),1,365,12) as age,
---              date_trunc('week', date) as week
---         FROM col_openage_specific
---        GROUP BY age, week
---        ORDER by week, age)
--- TO '/tmp/col_age_of_backlog_specific.csv' DELIMITER ',' CSV HEADER;
-
--- COPY (SELECT SUM(points) as points,
---              width_bucket(extract(days from (resolcol_date - open_date)),1,70,7) as leadtime,
---              date_trunc('week', resolcol_date) AS week
---         FROM col_leadtime
---        GROUP BY leadtime, week
---        ORDER by week, leadtime)
--- TO '/tmp/col_leadtime.csv' DELIMITER ',' CSV HEADER;
-
--- COPY (SELECT date_trunc('week', resolcol_date) AS week,
---             count(points) as count,
---             points
---        FROM col_leadtime
---       GROUP BY points, week
---       ORDER BY week, points)
--- TO '/tmp/col_age_of_resolved_count.csv' DELIMITER ',' CSV HEADER;
-
--- COPY (SELECT date_trunc('week', resolcol_date) AS week,
---             sum(points) as sumpoints,
---             points
---        FROM col_leadtime
---       GROUP BY points, week
---       ORDER BY week, points)
--- TO '/tmp/col_age_of_resolved.csv' DELIMITER ',' CSV HEADER;
-*/
+COPY (
+SELECT ROUND(100 * maint_count::decimal / (maint_count + new_count),0) as "Total Maintenance Fraction"
+  FROM (SELECT sum(maint_count) as maint_count
+          FROM col_maintenance_count_delta) as x
+ CROSS JOIN 
+       (SELECT sum(new_count)  as new_count
+	  FROM col_maintenance_count_delta) as y
+) TO '/tmp/col_maintenance_count_fraction_total.csv' DELIMITER ',' CSV;
 
 /* Queries actually used for forecasting - data is copied to spreadsheet */
 
