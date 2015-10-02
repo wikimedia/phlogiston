@@ -86,3 +86,67 @@ BEGIN
     RETURN;
 END;
 $$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION find_recently_closed(
+    source_table regclass,
+    target_table regclass) RETURNS void AS $$
+DECLARE
+  weekrow record;
+BEGIN
+
+    EXECUTE format('
+    FOR weekrow IN SELECT DISTINCT date
+                     FROM %I
+                    WHERE EXTRACT(dow from date_modified) = 0
+                    ORDER BY date
+    LOOP
+
+        INSERT INTO %I (
+            SELECT date,
+                   projectcolumn,
+                   sum(points),
+                   sum(title)
+              FROM %I
+             WHERE status = ''"resolved"''
+               AND date = weekrow.date
+               AND id NOT IN (SELECT id
+                                FROM %I
+                               WHERE status = ''"resolved"''
+                                 AND date = weekrow.date - interval ''1 week'' )
+             GROUP BY date, projectcolumn
+             )
+    END LOOP', source_table, target_table, source_table, source_table);
+
+    RETURN;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION ve_find_recently_closed() RETURNS void AS $$
+DECLARE
+  weekrow record;
+BEGIN
+
+    FOR weekrow IN SELECT DISTINCT date
+                     FROM ve_task_history
+                    WHERE EXTRACT(day from date) = 1
+                    ORDER BY date
+    LOOP
+
+        INSERT INTO ve_recently_closed (
+            SELECT date,
+                   project || ' ' || projectcolumn as category,
+                   sum(points),
+                   count(title)
+              FROM ve_task_history
+             WHERE status = '"resolved"'
+               AND date = weekrow.date
+               AND id NOT IN (SELECT id
+                                FROM ve_task_history
+                               WHERE status = '"resolved"'
+                                 AND date = weekrow.date - interval '1 month' )
+             GROUP BY date, project, projectcolumn);
+    END LOOP;
+
+    RETURN;
+END;
+$$ LANGUAGE plpgsql;

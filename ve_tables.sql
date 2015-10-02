@@ -259,6 +259,40 @@ SELECT date,
 ) to '/tmp/ve_net_growth.csv' DELIMITER ',' CSV HEADER;
 
 /* ####################################################################
+Recently Closed */
+
+DROP TABLE IF EXISTS ve_recently_closed;
+
+CREATE TABLE ve_recently_closed (
+    date date,
+    category text,
+    points int,
+    count int
+);
+
+SELECT * FROM ve_find_recently_closed();
+
+
+UPDATE ve_recently_closed
+   SET category = CASE WHEN category LIKE '%Q3%' THEN 'VE is usable and has acceptable performance'
+                       WHEN category LIKE '%Q4%' THEN 'VE is more stable and A/B tested'
+                       WHEN category LIKE '%TR1%' THEN 'VE defaults on for wp_en new users and IPs'
+                       WHEN category LIKE '%TR2%' THEN 'Mobile MVP released'
+                       WHEN category LIKE '%TR3%' THEN 'Language support good enough that it now defaults to on in ja, ko, ar, fa, hi, zh_yue'
+                       WHEN category LIKE '%TR4%' THEN 'Link Editor is better'
+                       WHEN category LIKE '%TR5%' THEN 'Charts, formulae, sheet music, and media available or improved in VE'
+                       ELSE 'Other'
+                       END;
+
+COPY (
+SELECT date,
+       category,
+       points
+  FROM ve_recently_closed
+ ORDER BY date, category
+) to '/tmp/ve_recently_closed.csv' DELIMITER ',' CSV HEADER;
+
+/* ####################################################################
 Lead Time
 
 These queries are for a variety of age-of-backlog charts.  They are slow,
