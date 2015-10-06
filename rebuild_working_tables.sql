@@ -44,8 +44,7 @@ CREATE INDEX ON maniphest_transaction (task_id, date_modified, has_edge_data);
 CREATE TABLE maniphest_edge (
        task int references maniphest_task,
        project int references phabricator_project,
-       edge_date date,
-       PRIMARY KEY (task, project, edge_date)
+       edge_date date
 );
 
 -- TODO: maybe add the indexes after all rows are added?
@@ -128,7 +127,7 @@ BEGIN
 
     FOR weekrow IN SELECT DISTINCT date
                      FROM ve_task_history
-                    WHERE EXTRACT(day from date) = 1
+                    WHERE EXTRACT(day from date) IN (1,15)
                     ORDER BY date
     LOOP
 

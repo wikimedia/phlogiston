@@ -272,7 +272,6 @@ CREATE TABLE ve_recently_closed (
 
 SELECT * FROM ve_find_recently_closed();
 
-
 UPDATE ve_recently_closed
    SET category = CASE WHEN category LIKE '%Q3%' THEN 'VE is usable and has acceptable performance'
                        WHEN category LIKE '%Q4%' THEN 'VE is more stable and A/B tested'
