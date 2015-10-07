@@ -31,7 +31,9 @@ ggplot(backlog) +
   geom_line(data=burnup, aes(x=date, y=points), size=2) +
   geom_vline(aes(xintercept=as.numeric(as.Date(c('2015-01-01'))), color="gray")) +
   geom_vline(aes(xintercept=as.numeric(as.Date(c('2015-04-01'))), color="gray")) +
-  geom_vline(aes(xintercept=as.numeric(as.Date(c('2015-07-01'))), color="gray"))
+  geom_vline(aes(xintercept=as.numeric(as.Date(c('2015-07-01'))), color="gray")) +
+  geom_vline(aes(xintercept=as.numeric(as.Date(c('2015-10-01'))), color="gray"))
+##  geom_vline(aes(xintercept=as.numeric(as.Date(c('2016-01-01'))), color="gray"))
 dev.off()
 
 ######################################################################
@@ -190,13 +192,13 @@ dev.off()
 
 done <- read.csv("/tmp/ve_recently_closed.csv")
 done$date <- as.Date(done$date, "%Y-%m-%d")
-done$category2 <- factor(done$category, levels = c('Other', 'Charts, formulae, sheet music, and media available or improved in VE',  'Language support good enough that it now defaults to on in ja, ko, ar, fa, hi, zh_yue', 'Link Editor is better', 'Mobile MVP released', 'VE defaults on for wp_en new users and IPs', 'VE is more stable and A/B tested', 'VE is usable and has acceptable performance' ))
+done$category2 <- factor(done$category, levels = c('Other', 'Charts, formulae, sheet music, and media available or improved in VE', 'Language support defaults on for ja, ko, ar, fa, hi, zh_yue', 'Link Editor is better', 'Mobile MVP released', 'VE defaults on for wp_en new users and IPs', 'VE is more stable and A/B tested', 'VE is usable and has acceptable performance' ))
 
 done_output <- png(filename = "~/html/ve-done.png", width=2000, height=1125, units="px", pointsize=30)
 ggplot(done, aes(x=date, y=points, fill=factor(category2), order=-as.numeric(category2))) +
   labs(title="VE Completed work", y="Points", x="Month", aesthetic='Milestone') +
   theme(text = element_text(size=30)) +
-  geom_bar(stat="identity") +
+  geom_bar(stat="identity", width=17) +
   scale_fill_discrete(name="Milestones")
 dev.off()
 
