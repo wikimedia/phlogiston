@@ -335,4 +335,24 @@ SELECT MAX(date)
   FROM dis_task_history)
 TO '/tmp/dis_max_date.csv' DELIMITER ',' CSV;
 
+/* ####################################################################
+Recently Closed */
 
+DROP TABLE IF EXISTS dis_recently_closed;
+
+CREATE TABLE dis_recently_closed (
+    date date,
+    category text,
+    points int,
+    count int
+);
+
+SELECT * FROM dis_find_recently_closed();
+
+COPY (
+SELECT date,
+       category,
+       points
+  FROM dis_recently_closed
+ ORDER BY date, category
+) to '/tmp/dis_recently_closed.csv' DELIMITER ',' CSV HEADER;

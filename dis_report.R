@@ -65,7 +65,7 @@ dis_maint_count_frac$date <- as.Date(dis_maint_count_frac$date, "%Y-%m-%d")
 status_output_count <- png(filename = "~/html/dis_maint_count_frac.png", width=2000, height=1125, units="px", pointsize=30)
   
 ggplot(dis_maint_count_frac, aes(date, maint_frac)) +
-  labs(title="VE Maintenance Fraction (by count instead of points)", y="Fraction of completed work that is maintenance") +
+  labs(title="Discovery Maintenance Fraction (by count instead of points)", y="Fraction of completed work that is maintenance") +
   geom_bar(stat="identity") +
   theme(text = element_text(size=30)) +
   scale_y_continuous(labels=percent, limits=c(0,1))
@@ -135,7 +135,7 @@ forecast_output <- png(filename = "~/html/dis_forecast.png", width=2000, height=
 
 ggplot(forecast, aes(x=foredate, y=date, group=case)) +
   geom_line(shape=1) +
-  labs(title="VE Forecasting History (Tranche 1)", x="Now", y="Forecast Completion") +
+  labs(title="Discovery Forecasting History", x="Now", y="Forecast Completion") +
   scale_x_date(limits = c(as.Date("2015-08-01"), as.Date("2016-04-01"))) +
   scale_y_date(limits = c(as.Date("2015-08-01"), as.Date("2016-04-01"))) +
   theme(text = element_text(size=30))  + 
@@ -203,3 +203,18 @@ dev.off()
 ##   geom_bar(stat="identity") +
 ##   scale_fill_continuous(name="Age in months")
 ## dev.off()
+
+######################################################################
+## Recently Closed
+######################################################################
+
+done <- read.csv("/tmp/dis_recently_closed.csv")
+done$date <- as.Date(done$date, "%Y-%m-%d")
+
+done_output <- png(filename = "~/html/dis-done.png", width=2000, height=1125, units="px", pointsize=30)
+ggplot(done, aes(x=date, y=points, fill=factor(category), order=-as.numeric(category))) +
+  labs(title="Discovery Completed work", y="Points", x="Month", aesthetic='Milestone') +
+  theme(text = element_text(size=30)) +
+  geom_bar(stat="identity", width=17) +
+  scale_fill_discrete(name="Milestones")
+dev.off()

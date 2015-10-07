@@ -187,7 +187,7 @@ ggplot(velocity, aes(date, velocity)) +
 dev.off()
 
 ######################################################################
-## Done
+## Recently Closed
 ######################################################################
 
 done <- read.csv("/tmp/ve_recently_closed.csv")

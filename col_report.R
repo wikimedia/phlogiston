@@ -49,7 +49,7 @@ col_maint_frac$date <- as.Date(col_maint_frac$date, "%Y-%m-%d")
 status_output <- png(filename = "~/html/col_maint_frac.png", width=2000, height=1125, units="px", pointsize=30)
   
 ggplot(col_maint_frac, aes(date, maint_frac)) +
-  labs(title="VE Maintenance Fraction", y="Fraction of completed work that is maintenance") +
+  labs(title="Collaboration Maintenance Fraction", y="Fraction of completed work that is maintenance") +
   geom_bar(stat="identity") +
   theme(text = element_text(size=30)) +
   scale_y_continuous(labels=percent, limits=c(0,1))
@@ -61,7 +61,7 @@ col_maint_count_frac$date <- as.Date(col_maint_count_frac$date, "%Y-%m-%d")
 status_output_count <- png(filename = "~/html/col_maint_count_frac.png", width=2000, height=1125, units="px", pointsize=30)
   
 ggplot(col_maint_count_frac, aes(date, maint_frac)) +
-  labs(title="VE Maintenance Fraction (by count instead of points)", y="Fraction of completed work that is maintenance") +
+  labs(title="Collaboration Maintenance Fraction (by count instead of points)", y="Fraction of completed work that is maintenance") +
   geom_bar(stat="identity") +
   theme(text = element_text(size=30)) +
   scale_y_continuous(labels=percent, limits=c(0,1))
@@ -106,4 +106,19 @@ ggplot(net_growth, aes(date, points)) +
   labs(title="Net change in open backlog", y="Story Points") +
   geom_bar(stat="identity") +
   theme(text = element_text(size=30))
+dev.off()
+
+######################################################################
+## Recently Closed
+######################################################################
+
+done <- read.csv("/tmp/col_recently_closed.csv")
+done$date <- as.Date(done$date, "%Y-%m-%d")
+
+done_output <- png(filename = "~/html/col-done.png", width=2000, height=1125, units="px", pointsize=30)
+ggplot(done, aes(x=date, y=points, fill=factor(category), order=-as.numeric(category))) +
+  labs(title="Collaboration Completed work", y="Points", x="Month", aesthetic='Milestone') +
+  theme(text = element_text(size=30)) +
+  geom_bar(stat="identity", width=17) +
+  scale_fill_discrete(name="Milestones")
 dev.off()
