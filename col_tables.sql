@@ -272,8 +272,9 @@ SELECT date,
   ) as col_maintenance_count_fraction
 ) TO '/tmp/col_maintenance_count_fraction.csv' DELIMITER ',' CSV HEADER;
 
+
 COPY (
-SELECT ROUND(100 * maint_count::decimal / (maint_count + new_count),0) as "Total Maintenance Fraction"
+SELECT ROUND(100 * maint_count::decimal / nullif((maint_count + new_count),0),0) as "Total Maintenance Fraction"
   FROM (SELECT sum(maint_count) as maint_count
           FROM col_maintenance_count_delta) as x
  CROSS JOIN 
@@ -334,5 +335,4 @@ COPY (
 SELECT MAX(date)
   FROM col_task_history)
 TO '/tmp/col_max_date.csv' DELIMITER ',' CSV;
-
 

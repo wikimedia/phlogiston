@@ -221,7 +221,7 @@ SELECT date,
 ) TO '/tmp/dis_maintenance_fraction.csv' DELIMITER ',' CSV HEADER;
 
 COPY (
-SELECT ROUND(100 * maint_points::decimal / (maint_points + new_points),0) as "Total Maintenance Fraction"
+SELECT ROUND(100 * maint_points::decimal / nullif((maint_points + new_points),0),0) as "Total Maintenance Fraction"
   FROM (SELECT sum(maint_points) as maint_points
           FROM dis_maintenance_delta) as x
  CROSS JOIN 
