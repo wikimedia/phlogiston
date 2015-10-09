@@ -1,0 +1,35 @@
+<html>
+  <head><title>Discovery Cirrus Burnup Charts</title></head>
+  <style>
+    img {width:80%}
+    </style>
+<body>
+<h1>Discovery Cirrus Charts</h1>
+<p>Most recent data: <!--# include file="discir_max_date.csv" -->.</p>
+<p>Unpointed stories are defaulted to: <!--# include file="discir_default_points.csv" -->.</p>
+<p>These charts include data from the following projects, in this priority order:</p>
+<pre><!--# include file="discir_projects.csv" --></pre>
+<p>Tasks included in several of these projects are only counted in the first matching project.</p>
+<h2>Burnups</h2>
+<p>The complete backlog and burnup for all VE work.  The black line represents total completed tasks, and since it includes tasks from various tranches, does not exactly correlate to the tranches.</p>
+<a href="discir_backlog_burnup.png"><img src="discir_backlog_burnup.png"/></a>
+<a href="discir_backlog_count_burnup.png"><img src="discir_backlog_count_burnup.png"/></a>
+<h2>Velocity</h2>
+<a href="discir_velocity.png"><img src="discir_velocity.png"/></a>
+<a href="discir_velocity_count.png"><img src="discir_velocity_count.png"/></a>
+<p>What has been completed.</p>
+<a href="discir_done.png"><img src="discir_done.png"/></a>
+<h2>Analysis</h2>
+<!--<p>The percentage of completed Discovery Cirrus work per week that was spent on "maintenance" work.  The total fraction since June 18, 2015 is <!--# include file="discir_maintenance_fraction_total.csv" -->%.</p>
+<a href="discir_maint_frac.png"><img src="discir_maint_frac.png"/></a>
+<a href="discir_maint_count_frac.png"><img src="discir_maint_count_frac.png"/></a>-->
+<p>The size of the Discovery Cirrus Backlog, that is, work that is planned or requested for Discovery Cirrus and not completed.</p>
+<a href="discir_net_growth.png"><img src="discir_net_growth.png"/></a>
+<p>Raw inputs for forecasts:</p>
+<p>Worst 3 weeks: <!--# include file="discir_min.csv" --></p>
+<p>Best 3 weeks: <!--# include file="discir_max.csv" --></p>
+<p>Average: <!--# include file="discir_avg.csv" --></p>
+<p>Size of backlog:</p>
+  <pre><!--# include file="discir_backlog_current.csv" --></pre>
+</body>
+</html>
