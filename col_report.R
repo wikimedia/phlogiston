@@ -64,7 +64,7 @@ ggplot(col_maint_count_frac, aes(date, maint_frac)) +
   labs(title="Collaboration Maintenance Fraction (by count instead of points)", y="Fraction of completed work that is maintenance") +
   geom_bar(stat="identity") +
   theme(text = element_text(size=30)) +
-  scale_y_continuous(labels=percent, limits=c(0,1))
+  scale_y_continuous(labels=percent, limits=c(0,1), breaks=NULL)
 dev.off()
 
 ######################################################################

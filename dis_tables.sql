@@ -273,7 +273,7 @@ SELECT date,
 ) TO '/tmp/dis_maintenance_count_fraction.csv' DELIMITER ',' CSV HEADER;
 
 COPY (
-SELECT ROUND(100 * maint_count::decimal / (maint_count + new_count),0) as "Total Maintenance Fraction"
+SELECT ROUND(100 * maint_count::decimal / nullif((maint_count + new_count),0),0) as "Total Maintenance Fraction"
   FROM (SELECT sum(maint_count) as maint_count
           FROM dis_maintenance_count_delta) as x
  CROSS JOIN 
