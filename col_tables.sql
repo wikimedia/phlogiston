@@ -1,3 +1,33 @@
+CREATE OR REPLACE FUNCTION col_find_recently_closed() RETURNS void AS $$
+DECLARE
+  weekrow record;
+BEGIN
+
+    FOR weekrow IN SELECT DISTINCT date
+                     FROM col_task_history
+                    WHERE EXTRACT(day from date) IN (1,15)
+                    ORDER BY date
+    LOOP
+
+        INSERT INTO col_recently_closed (
+            SELECT date,
+                   project || ' ' || projectcolumn as category,
+                   sum(points),
+                   count(title)
+              FROM col_task_history
+             WHERE status = '"resolved"'
+               AND date = weekrow.date
+               AND id NOT IN (SELECT id
+                                FROM col_task_history
+                               WHERE status = '"resolved"'
+                                 AND date = weekrow.date - interval '1 month' )
+             GROUP BY date, project, projectcolumn);
+    END LOOP;
+
+    RETURN;
+END;
+$$ LANGUAGE plpgsql;
+
 /* Apply some filtering to the raw data */
 
 UPDATE col_task_history

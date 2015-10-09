@@ -1,3 +1,33 @@
+CREATE OR REPLACE FUNCTION dismap_find_recently_closed() RETURNS void AS $$
+DECLARE
+  weekrow record;
+BEGIN
+
+    FOR weekrow IN SELECT DISTINCT date
+                     FROM dismap_task_history
+                    WHERE EXTRACT(day from date) IN (1,15)
+                    ORDER BY date
+    LOOP
+
+        INSERT INTO dismap_recently_closed (
+            SELECT date,
+                   project || ' ' || projectcolumn as category,
+                   sum(points),
+                   count(title)
+              FROM dismap_task_history
+             WHERE status = '"resolved"'
+               AND date = weekrow.date
+               AND id NOT IN (SELECT id
+                                FROM dismap_task_history
+                               WHERE status = '"resolved"'
+                                 AND date = weekrow.date - interval '1 month' )
+             GROUP BY date, project, projectcolumn);
+    END LOOP;
+
+    RETURN;
+END;
+$$ LANGUAGE plpgsql;
+
 /* Apply some filtering to the raw data */
 
 UPDATE dismap_task_history
