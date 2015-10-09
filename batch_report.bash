@@ -7,7 +7,7 @@ cd ~/phlogiston
 git pull
 python3 load_transactions_from_dump.py --load 
 # python3 load_transactions_from_dump.py --reconstruct --report --project an_source.py
-# python3 load_transactions_from_dump.py --reconstruct --report --project and_source.py 
+python3 load_transactions_from_dump.py --reconstruct --report --project and_source.py 
 python3 load_transactions_from_dump.py --reconstruct --report --project col_source.py
 python3 load_transactions_from_dump.py --reconstruct --report --project dis_source.py
 python3 load_transactions_from_dump.py --reconstruct --report --project discir_source.py
