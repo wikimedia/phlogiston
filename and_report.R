@@ -18,7 +18,7 @@ burnup$date <- as.Date(burnup$date, "%Y-%m-%d")
 ggplot(backlog) +
   labs(title="Android backlog", y="Story Point Total") +
   theme(text = element_text(size=30), legend.title=element_blank())+
-  geom_area(position='stack', aes(x = date, y = points, group=category, fill=category, order=-as.numeric(category))) +
+  geom_area(position='stack', aes(x = date, y = points, group=category, fill=category, order=as.numeric(category))) +
   scale_x_date(breaks="1 month", label=date_format("%Y-%b")) +
   geom_line(data=burnup, aes(x=date, y=points), size=2)
 dev.off()
@@ -33,7 +33,7 @@ burnup_count$date <- as.Date(burnup_count$date, "%Y-%m-%d")
 ggplot(backlog_count) +
   labs(title="Android backlog", y="Task Count") +
   theme(text = element_text(size=30), legend.title=element_blank())+
-  geom_area(position='stack', aes(x = date, y = count, group=category, fill=category, order=-as.numeric(category))) +
+  geom_area(position='stack', aes(x = date, y = count, group=category, fill=category, order=as.numeric(category))) +
   scale_x_date(breaks="1 month", label=date_format("%Y-%b")) +
   geom_line(data=burnup_count, aes(x=date, y=count), size=2)
 dev.off()
