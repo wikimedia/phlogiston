@@ -39,33 +39,33 @@ ggplot(backlog_count) +
 dev.off()
 
 
-## ######################################################################
-## ## Maintenance Fraction
-## ######################################################################
+######################################################################
+## Maintenance Fraction
+######################################################################
 
-## discir_maint_frac <- read.csv("/tmp/discir_maintenance_fraction.csv")
-## discir_maint_frac$date <- as.Date(discir_maint_frac$date, "%Y-%m-%d")
+discir_maint_frac <- read.csv("/tmp/discir_maintenance_fraction.csv")
+discir_maint_frac$date <- as.Date(discir_maint_frac$date, "%Y-%m-%d")
 
-## status_output <- png(filename = "~/html/discir_maint_frac.png", width=2000, height=1125, units="px", pointsize=30)
+status_output <- png(filename = "~/html/discir_maint_frac.png", width=2000, height=1125, units="px", pointsize=30)
   
-## ggplot(discir_maint_frac, aes(date, maint_frac)) +
-##   labs(title="VE Maintenance Fraction", y="Fraction of completed work that is maintenance") +
-##   geom_bar(stat="identity") +
-##   theme(text = element_text(size=30)) +
-##   scale_y_continuous(labels=percent, limits=c(0,1))
-## dev.off()
+ggplot(discir_maint_frac, aes(date, maint_frac)) +
+  labs(title="VE Maintenance Fraction", y="Fraction of completed work that is maintenance") +
+  geom_bar(stat="identity") +
+  theme(text = element_text(size=30)) +
+  scale_y_continuous(labels=percent, limits=c(0,1))
+dev.off()
 
-## discir_maint_count_frac <- read.csv("/tmp/discir_maintenance_count_fraction.csv")
-## discir_maint_count_frac$date <- as.Date(discir_maint_count_frac$date, "%Y-%m-%d")
+discir_maint_count_frac <- read.csv("/tmp/discir_maintenance_count_fraction.csv")
+discir_maint_count_frac$date <- as.Date(discir_maint_count_frac$date, "%Y-%m-%d")
 
-## status_output_count <- png(filename = "~/html/discir_maint_count_frac.png", width=2000, height=1125, units="px", pointsize=30)
+status_output_count <- png(filename = "~/html/discir_maint_count_frac.png", width=2000, height=1125, units="px", pointsize=30)
   
-## ggplot(discir_maint_count_frac, aes(date, maint_frac)) +
-##   labs(title="Discovery Cirrus Maintenance Fraction (by count instead of points)", y="Fraction of completed work that is maintenance") +
-##   geom_bar(stat="identity") +
-##   theme(text = element_text(size=30)) +
-##   scale_y_continuous(labels=percent, limits=c(0,1))
-## dev.off()
+ggplot(discir_maint_count_frac, aes(date, maint_frac)) +
+  labs(title="Discovery Cirrus Maintenance Fraction (by count instead of points)", y="Fraction of completed work that is maintenance") +
+  geom_bar(stat="identity") +
+  theme(text = element_text(size=30)) +
+  scale_y_continuous(labels=percent, limits=c(0,1))
+dev.off()
 
 ######################################################################
 ## Velocity
