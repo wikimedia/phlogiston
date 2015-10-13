@@ -266,7 +266,7 @@ DROP TABLE IF EXISTS discir_maintenance_count_delta;
 
 SELECT date,
        maint_type,
-       count(date) as count
+       sum(count) as count
   INTO discir_maintenance_count_week
   FROM discir_tall_backlog
   WHERE status = '"resolved"'
