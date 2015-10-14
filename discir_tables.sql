@@ -311,8 +311,6 @@ SELECT ROUND(100 * maint_count::decimal / nullif((maint_count + new_count),0),0)
 	  FROM discir_maintenance_count_delta) as y
 ) TO '/tmp/discir_maintenance_count_fraction_total.csv' DELIMITER ',' CSV;
 
-/* Queries actually used for forecasting - data is copied to spreadsheet */
-
 /* Assumes that data is current; in theory we could use max_date in the
 data as the baseline instead of current_data but that's probably
 something for the plpgsql port */

@@ -20,7 +20,7 @@ BEGIN
                AND id NOT IN (SELECT id
                                 FROM phl_task_history
                                WHERE status = '"resolved"'
-                                 AND date = weekrow.date - interval '1 month' )
+                                 AND date = weekrow.date - interval '15 days' )
              GROUP BY date, project, projectcolumn);
     END LOOP;
 
@@ -190,7 +190,8 @@ Backlog growth calculations */
 DROP TABLE IF EXISTS phl_backlog_size;
 
 SELECT date,
-       SUM(points) AS points
+       SUM(points) AS points,
+       SUM(count) as count
   INTO phl_backlog_size
   FROM phl_tall_backlog
  WHERE status != '"resolved"'
@@ -204,6 +205,13 @@ SELECT date,
   FROM phl_backlog_size
  ORDER BY date
 ) to '/tmp/phl_net_growth.csv' DELIMITER ',' CSV HEADER;
+
+COPY (
+SELECT date,
+       (count - lag(count) OVER (ORDER BY date)) as count
+  FROM phl_backlog_size
+ ORDER BY date
+) to '/tmp/phl_net_growth_count.csv' DELIMITER ',' CSV HEADER;
 
 /* ####################################################################
    Maintenance fraction
@@ -381,7 +389,8 @@ SELECT * FROM phl_find_recently_closed();
 COPY (
 SELECT date,
        category,
-       points
+       points,
+       count
   FROM phl_recently_closed
  ORDER BY date, category
 ) to '/tmp/phl_recently_closed.csv' DELIMITER ',' CSV HEADER;

@@ -117,7 +117,15 @@ done$date <- as.Date(done$date, "%Y-%m-%d")
 
 done_output <- png(filename = "~/html/phl_done.png", width=2000, height=1125, units="px", pointsize=30)
 ggplot(done, aes(x=date, y=points, fill=factor(category), order=-as.numeric(category))) +
-  labs(title="Phlogiston Completed work", y="Points", x="Month", aesthetic='Milestone') +
+  labs(title="Phlogiston Completed work", y="Points", x="Month", aesthetic="Milestone") +
+  theme(text = element_text(size=30)) +
+  geom_bar(stat="identity", width=17) +
+  scale_fill_discrete(name="Milestones")
+dev.off()
+
+done_count_output <- png(filename = "~/html/phl_done_count.png", width=2000, height=1125, units="px", pointsize=30)
+ggplot(done, aes(x=date, y=count, fill=factor(category), order=-as.numeric(category))) +
+  labs(title="Phlogiston Completed work", y="Count", x="Month", aesthetic="Milestone") +
   theme(text = element_text(size=30)) +
   geom_bar(stat="identity", width=17) +
   scale_fill_discrete(name="Milestones")
