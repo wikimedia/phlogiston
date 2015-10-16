@@ -38,7 +38,7 @@ Postgresql database named "phab"   <- data goes here
      * `apt-get build-dep python3-psycopg2 r-base-core r-base-script`
   4. Install R packages.
      * `R`
-     * `install.packages(c("ggplot2"))`
+     * `install.packages(c("ggplot2", "ggthemes"))`
      * `quit()`
   5. Set up Nginx website
      * `cp ~phlogiston/phlogiston /etc/nginx/sites-available`

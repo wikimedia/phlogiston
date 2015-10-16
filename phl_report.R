@@ -3,6 +3,25 @@
 library(ggplot2)
 library(scales)
 library(RColorBrewer)
+library(ggthemes)
+
+# common theme from https://github.com/Ironholds/wmf/blob/master/R/dataviz.R
+theme_fivethirtynine <- function(base_size = 12, base_family = "sans"){
+  (theme_foundation(base_size = base_size, base_family = base_family) +
+     theme(line = element_line(), rect = element_rect(fill = ggthemes::ggthemes_data$fivethirtyeight["ltgray"],
+                                                      linetype = 0, colour = NA),
+           text = element_text(size=30, colour = ggthemes::ggthemes_data$fivethirtyeight["dkgray"]),
+           axis.title.y = element_text(size = rel(1.5), angle = 90, vjust = 1.5), axis.text = element_text(),
+           axis.title.x = element_text(size = rel(1.5)),
+           axis.ticks = element_blank(), axis.line = element_blank(),
+           legend.background = element_rect(), legend.position = "bottom",
+           legend.direction = "horizontal", legend.box = "vertical",
+           panel.grid = element_line(colour = NULL),
+           panel.grid.major = element_line(colour = ggthemes_data$fivethirtyeight["medgray"]),
+           panel.grid.minor = element_blank(),
+           plot.title = element_text(hjust = 0, size = rel(1.5), face = "bold"),
+           strip.background = element_rect()))
+}
 
 ######################################################################
 ## Backlog
@@ -16,11 +35,11 @@ burnup <- read.csv("/tmp/phl_burnup.csv")
 burnup$date <- as.Date(burnup$date, "%Y-%m-%d")
 
 ggplot(backlog) +
-  labs(title="Phlogiston backlog", y="Story Point Total") +
-  theme(text = element_text(size=30), legend.title=element_blank())+
   geom_area(position='stack', aes(x = date, y = points, group=category, fill=category, order=-as.numeric(category))) +
-  scale_x_date(breaks="1 month", label=date_format("%Y-%b")) +
-  geom_line(data=burnup, aes(x=date, y=points), size=2)
+  geom_line(data=burnup, aes(x=date, y=points), size=2) + 
+  theme_fivethirtynine() + 
+  labs(title="Phlogiston backlog", y="Story Point Total") +
+  theme(legend.position="none")
 dev.off()
 
 backlog_count <- read.csv("/tmp/phl_backlog_count.csv")
@@ -31,11 +50,10 @@ burnup_count <- read.csv("/tmp/phl_burnup_count.csv")
 burnup_count$date <- as.Date(burnup_count$date, "%Y-%m-%d")
 
 ggplot(backlog_count) +
-  labs(title="Phlogiston backlog", y="Task Count") +
-  theme(text = element_text(size=30), legend.title=element_blank())+
   geom_area(position='stack', aes(x = date, y = count, group=category, fill=category, order=-as.numeric(category))) +
-  scale_x_date(breaks="1 month", label=date_format("%Y-%b")) +
-  geom_line(data=burnup_count, aes(x=date, y=count), size=2)
+  geom_line(data=burnup_count, aes(x=date, y=count), size=2) +
+  theme_fivethirtynine() +
+  labs(title="Phlogiston backlog", y="Task Count")
 dev.off()
 
 
@@ -49,10 +67,10 @@ phl_maint_frac$date <- as.Date(phl_maint_frac$date, "%Y-%m-%d")
 status_output <- png(filename = "~/html/phl_maint_frac.png", width=2000, height=1125, units="px", pointsize=30)
   
 ggplot(phl_maint_frac, aes(date, maint_frac)) +
-  labs(title="Phlogiston Maintenance Fraction", y="Fraction of completed work that is maintenance") +
   geom_bar(stat="identity") +
-  theme(text = element_text(size=30)) +
-  scale_y_continuous(labels=percent, limits=c(0,1))
+  scale_y_continuous(labels=percent, limits=c(0,1)) +
+  theme_fivethirtynine() +
+  labs(title="Phlogiston Maintenance Fraction", y="Fraction of completed work that is maintenance")
 dev.off()
 
 phl_maint_count_frac <- read.csv("/tmp/phl_maintenance_count_fraction.csv")
@@ -61,10 +79,10 @@ phl_maint_count_frac$date <- as.Date(phl_maint_count_frac$date, "%Y-%m-%d")
 status_output_count <- png(filename = "~/html/phl_maint_count_frac.png", width=2000, height=1125, units="px", pointsize=30)
   
 ggplot(phl_maint_count_frac, aes(date, maint_frac)) +
-  labs(title="Phlogiston Maintenance Fraction (by count instead of points)", y="Fraction of completed work that is maintenance") +
   geom_bar(stat="identity") +
-  theme(text = element_text(size=30)) +
-  scale_y_continuous(labels=percent, limits=c(0,1), breaks=NULL)
+  scale_y_continuous(labels=percent, limits=c(0,1), breaks=NULL) + 
+  theme_fivethirtynine() +
+  labs(title="Phlogiston Maintenance Fraction (by count instead of points)", y="Fraction of completed work that is maintenance")
 dev.off()
 
 ######################################################################
@@ -77,9 +95,9 @@ velocity$date <- as.Date(velocity$date, "%Y-%m-%d")
 velocity_output <- png(filename = "~/html/phl_velocity.png", width=2000, height=1125, units="px", pointsize=30)
 
 ggplot(velocity, aes(date, velocity)) +
-  labs(title="Velocity per week", y="Story Points") +
   geom_bar(stat="identity") +
-  theme(text = element_text(size=30))
+  theme_fivethirtynine() +
+  labs(title="Velocity per week", y="Story Points")
 dev.off()
 
 velocity_count <- read.csv("/tmp/phl_velocity_count.csv")
@@ -88,9 +106,9 @@ velocity_count$date <- as.Date(velocity_count$date, "%Y-%m-%d")
 velocity_count_output <- png(filename = "~/html/phl_velocity_count.png", width=2000, height=1125, units="px", pointsize=30)
 
 ggplot(velocity_count, aes(date, velocity)) +
-  labs(title="Velocity per week", y="Tasks") +
   geom_bar(stat="identity") +
-  theme(text = element_text(size=30))
+  theme_fivethirtynine() +
+  labs(title="Velocity per week", y="Tasks")
 dev.off()
 
 ######################################################################
@@ -103,9 +121,9 @@ net_growth$date <- as.Date(net_growth$date, "%Y-%m-%d")
 net_growth_output <- png(filename = "~/html/phl_net_growth.png", width=2000, height=1125, units="px", pointsize=30)
 
 ggplot(net_growth, aes(date, points)) +
-  labs(title="Net change in open backlog", y="Story Points") +
   geom_bar(stat="identity") +
-  theme(text = element_text(size=30))
+  theme_fivethirtynine() +
+  labs(title="Net change in open backlog", y="Story Points")
 dev.off()
 
 ######################################################################
@@ -117,16 +135,16 @@ done$date <- as.Date(done$date, "%Y-%m-%d")
 
 done_output <- png(filename = "~/html/phl_done.png", width=2000, height=1125, units="px", pointsize=30)
 ggplot(done, aes(x=date, y=points, fill=factor(category), order=-as.numeric(category))) +
-  labs(title="Phlogiston Completed work", y="Points", x="Month", aesthetic="Milestone") +
-  theme(text = element_text(size=30)) +
   geom_bar(stat="identity", width=17) +
-  scale_fill_discrete(name="Milestones")
+  scale_fill_discrete(name="Milestones") + 
+  theme_fivethirtynine() +
+  labs(title="Phlogiston Completed work", y="Points", x="Month", aesthetic="Milestone")
 dev.off()
 
 done_count_output <- png(filename = "~/html/phl_done_count.png", width=2000, height=1125, units="px", pointsize=30)
 ggplot(done, aes(x=date, y=count, fill=factor(category), order=-as.numeric(category))) +
-  labs(title="Phlogiston Completed work", y="Count", x="Month", aesthetic="Milestone") +
-  theme(text = element_text(size=30)) +
   geom_bar(stat="identity", width=17) +
-  scale_fill_discrete(name="Milestones")
+  scale_fill_discrete(name="Milestones") +
+  theme_fivethirtynine() +
+  labs(title="Phlogiston Completed work", y="Count", x="Month", aesthetic="Milestone")
 dev.off()
