@@ -383,7 +383,8 @@ SELECT * FROM col_find_recently_closed();
 COPY (
 SELECT date,
        category,
-       points
+       points,
+       count
   FROM col_recently_closed
  ORDER BY date, category
 ) to '/tmp/col_recently_closed.csv' DELIMITER ',' CSV HEADER;

@@ -24,8 +24,6 @@ theme_fivethirtynine <- function(base_size = 12, base_family = "sans"){
            axis.title.y = element_text(size = rel(1.5), angle = 90, vjust = 1.5), axis.text = element_text(),
            axis.title.x = element_text(size = rel(1.5)),
            axis.ticks = element_blank(), axis.line = element_blank(),
-           legend.background = element_rect(), legend.position = "bottom",
-           legend.direction = "horizontal", legend.box = "vertical",
            panel.grid = element_line(colour = NULL),
            panel.grid.major = element_line(colour = ggthemes_data$fivethirtyeight["medgray"]),
            panel.grid.minor = element_blank(),
@@ -48,8 +46,7 @@ ggplot(backlog) +
   geom_area(position='stack', aes(x = date, y = points, group=category, fill=category, order=-as.numeric(category))) +
   geom_line(data=burnup, aes(x=date, y=points), size=2) + 
   theme_fivethirtynine() + 
-  labs(title=sprintf("%s backlog", args$title), y="Story Point Total") +
-  theme(legend.position="none")
+  labs(title=sprintf("%s backlog", args$title), y="Story Point Total")
 dev.off()
 
 backlog_count <- read.csv(sprintf("/tmp/%s_backlog_count.csv", args$project))

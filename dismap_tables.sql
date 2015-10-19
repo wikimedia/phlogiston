@@ -382,7 +382,8 @@ SELECT * FROM dismap_find_recently_closed();
 COPY (
 SELECT date,
        category,
-       points
+       points,
+       count
   FROM dismap_recently_closed
  ORDER BY date, category
 ) to '/tmp/dismap_recently_closed.csv' DELIMITER ',' CSV HEADER;
