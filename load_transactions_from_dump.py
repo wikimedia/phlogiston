@@ -78,13 +78,13 @@ def main(argv):
         config = configparser.ConfigParser()
         config.read(project_source)
         prefix = config.get("vars", "prefix")
+        title = config.get("vars", "title")
         default_points = config.get("vars", "default_points")
         project_name_list = tuple(config.get("vars", "project_list").split(','))
         task_history_table_name = '{0}_task_history'.format(prefix)
         project_csv_name = '/tmp/{0}_projects.csv'.format(prefix)
         default_points_csv_name = '/tmp/{0}_default_points.csv'.format(prefix)
         report_tables_script = '{0}_tables.sql'.format(prefix)
-        report_script = '{0}_report.R'.format(prefix)
         start_date = datetime.datetime.strptime(config.get("vars", "start_date"), "%Y-%m-%d").date()
 
     if reconstruct_data:
@@ -94,9 +94,9 @@ def main(argv):
             print("Reconstruct specified without a project.  Please specify a project with --project.")
     if run_report:
         if project_source:
-            report(conn, VERBOSE, DEBUG, report_tables_script, report_script)
+            report(conn, VERBOSE, DEBUG, report_tables_script, prefix, title)
         else:
-            print("Reconstruct specified without a project.  Please specify a project with --project.")
+            print("Report specified without a project.  Please specify a project with --project.")
     conn.close()
 
 def usage():
@@ -438,10 +438,10 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_d
         working_date += datetime.timedelta(days=1)
     cur.close()
 
-def report(conn, VERBOSE, DEBUG, report_tables_script, report_script):
+def report(conn, VERBOSE, DEBUG, report_tables_script, prefix, title):
     cur = conn.cursor()
     cur.execute(open(report_tables_script, "r").read())
-    subprocess.Popen("Rscript {0}".format(report_script), shell = True)
+    subprocess.Popen("Rscript make_charts.R {0} {1}".format(prefix, title), shell = True)
 
 if __name__ == "__main__":
     main(sys.argv[1:])
