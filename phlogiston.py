@@ -1,31 +1,4 @@
 #!/usr/bin/python3
-# This script does
-# --load
-#  - reads a JSON file produced by https://gerrit.wikimedia.org/r/#/c/214398/2/wmfphablib/phabdb.py
-#  - loads a postgresql database containing the data (or outputs a CSV file)
-# --reconstruct
-#  - Calls a project-specific SQL script to reconstruct the historical state
-#    of the project day by day
-# --report
-#  - Calls a project-specific SQL script to process the data and generate csv files,
-#    and an R file to graph the data as PNG files
-#
-# Data is available at  http://dumps.wikimedia.org/other/misc/phabricator_public.dump
-# It assumes this file is saved to the parent directory
-# it works in the "phab" postgresql database
-# it outputs CSV and PNG to /tmp
-# 
-#  The reason it inputs from the parent directory and outputs to /tmp,
-#  rather that the current directory, is so that these temporary files
-#  don't get caught up in source control.  This should be refactored
-#  to whatever is best practice.
-#
-# Things that might be worth refactoring
-#  - status fields are all double-quote-delimited in the database, which makes the sql look stupid
-#  - automate retrieving the dump
-#  - softcode the rest of the file and database locations (what is best practice?)
-#  - refactor the .R and .SQL to obey DRY; currently copy-pasted from VE example
-#  - optimize so the whole thing doesn't take 2+ hours for VE
 
 import psycopg2
 import json
@@ -401,9 +374,9 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_d
                 # only see tasks that have edges in the desired list.
                 # However, certain transactions (gerrit Conduit
                 # transactions) aren't properly parsed by Phlogiston.
-                # See https://phabricator.wikimedia.org/T114021.  Not
-                # sure how badly, if at all, this workaround damages
-                # the data.
+                # See https://phabricator.wikimedia.org/T114021.  Skipping
+                # these transactions should not affect the data for
+                # our purposes.
                 continue
 
             pretty_project = project_id_to_name_dict[best_edge]
