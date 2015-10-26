@@ -35,58 +35,86 @@ SELECT date,
    Maintenance fraction
 Divide all resolved work into Maintenance or New Project, by week. */
 
-DROP TABLE IF EXISTS maintenance_week;
-DROP TABLE IF EXISTS maintenance_delta;
-
-SELECT date,
-       CASE WHEN category = 'TR0: Interrupt' then 'Maintenance'
-            ELSE 'New Project'
-       END as type,
-       SUM(points) as points
-  INTO maintenance_week
+INSERT INTO maintenance_week (
+SELECT source,
+       date,
+       maint_type,
+       SUM(points) as points,
+       SUM(count) as count
   FROM tall_backlog
   WHERE status = '"resolved"'
    AND EXTRACT(dow FROM date) = 0
    AND date >= current_date - interval '3 months'
    AND source = :'prefix'
- GROUP BY type, date
- ORDER BY date, type;
+ GROUP BY maint_type, date, source
+);
 
-SELECT date,
-       type,
+INSERT INTO maintenance_delta (
+SELECT source,
+       date,
+       maint_type,
        (points - lag(points) OVER (ORDER BY date)) as maint_points,
-       NULL::int as new_points
-  INTO maintenance_delta
+       (count - lag(count) OVER (ORDER BY date)) as maint_count
   FROM maintenance_week
- WHERE type='Maintenance'
- ORDER BY date, type;
-
+ WHERE maint_type='Maintenance'
+   AND source = :'prefix'
+ ORDER BY date, maint_type, source
+);
+ 
 UPDATE maintenance_delta a
    SET new_points = (SELECT points
                        FROM (SELECT date,
                                     points - lag(points) OVER (ORDER BY date) as points
                                FROM maintenance_week
-                              WHERE type='New Project') as b
-                      WHERE a.date = b.date);
+                              WHERE maint_type='New Project'
+                                AND source = :'prefix') as b
+                      WHERE a.date = b.date
+                        AND source = :'prefix');
+
+UPDATE maintenance_delta a
+   SET new_count = (SELECT count
+                       FROM (SELECT date,
+                                    count - lag(count) OVER (ORDER BY date) as count
+                               FROM maintenance_week
+                              WHERE maint_type='New Project'
+                                AND source = :'prefix') as b
+                      WHERE a.date = b.date
+                        AND source = :'prefix');
 
 COPY (
 SELECT date,
-       maint_frac
+       maint_frac_points,
+       maint_frac_count
   FROM (
 SELECT date,
-       maint_points::float / (maint_points + new_points) as maint_frac
+       maint_points::float / nullif((maint_points + new_points),0) as maint_frac_points,
+       maint_count::float / nullif((maint_count + new_count),0) as maint_frac_count
   FROM maintenance_delta
+ WHERE source = :'prefix'
   ) as maintenance_fraction
 ) TO '/tmp/phlog/maintenance_fraction.csv' DELIMITER ',' CSV HEADER;
 
 COPY (
-SELECT ROUND(100 * maint_points::decimal / (maint_points + new_points),0) as "Total Maintenance Fraction"
+SELECT ROUND(100 * maint_points::decimal / nullif((maint_points + new_points),0),0) as "Total Maintenance Fraction by Points"
   FROM (SELECT sum(maint_points) as maint_points
-          FROM maintenance_delta) as x
+          FROM maintenance_delta
+         WHERE source = :'prefix') as x
  CROSS JOIN 
        (SELECT sum(new_points)  as new_points
-	  FROM maintenance_delta) as y
-) TO '/tmp/phlog/maintenance_fraction_total.csv' DELIMITER ',' CSV;
+	     FROM maintenance_delta
+         WHERE source = :'prefix') as y
+) TO '/tmp/phlog/maintenance_fraction_total_points.csv' DELIMITER ',' CSV;
+
+COPY (
+SELECT ROUND(100 * maint_count::decimal / nullif((maint_count + new_count),0),0) as "Total Maintenance Fraction by Count"
+  FROM (SELECT sum(maint_count) as maint_count
+          FROM maintenance_delta
+         WHERE source = :'prefix') as x
+ CROSS JOIN 
+       (SELECT sum(new_count)  as new_count
+	     FROM maintenance_delta
+         WHERE source = :'prefix') as y
+) TO '/tmp/phlog/maintenance_fraction_total_count.csv' DELIMITER ',' CSV;
 
 /* ####################################################################
 Burnup and Velocity */
@@ -161,19 +189,13 @@ SELECT date,
 /* ####################################################################
 Recently Closed */
 
-DROP TABLE IF EXISTS recently_closed;
-
-CREATE TABLE recently_closed (
-    date date,
-    category text,
-    points int,
-    task_count int
-);
+SELECT find_recently_closed(:'prefix'::varchar(5));
 
 COPY (
 SELECT date,
        category,
-       points
+       points,
+       count
   FROM recently_closed
  ORDER BY date, category
 ) to '/tmp/phlog/recently_closed.csv' DELIMITER ',' CSV HEADER;

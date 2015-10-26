@@ -35,11 +35,11 @@ theme_fivethirtynine <- function(base_size = 12, base_family = "sans"){
 ## Backlog
 ######################################################################
 
-backlog <- read.csv(sprintf("/tmp/%s_backlog.csv", args$project))
+backlog <- read.csv(sprintf("/tmp/%s/backlog.csv", args$project))
 backlog$date <- as.Date(backlog$date, "%Y-%m-%d")
 backlog_output=png(filename = sprintf("~/html/%s_backlog_burnup.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 
-burnup <- read.csv(sprintf("/tmp/%s_burnup.csv", args$project))
+burnup <- read.csv(sprintf("/tmp/%s/burnup.csv", args$project))
 burnup$date <- as.Date(burnup$date, "%Y-%m-%d")
 
 ggplot(backlog) +
@@ -49,16 +49,11 @@ ggplot(backlog) +
   labs(title=sprintf("%s backlog", args$title), y="Story Point Total")
 dev.off()
 
-backlog_count <- read.csv(sprintf("/tmp/%s_backlog_count.csv", args$project))
-backlog_count$date <- as.Date(backlog_count$date, "%Y-%m-%d")
 backlog_count_output=png(filename = sprintf("~/html/%s_backlog_count_burnup.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 
-burnup_count <- read.csv(sprintf("/tmp/%s_burnup_count.csv", args$project))
-burnup_count$date <- as.Date(burnup_count$date, "%Y-%m-%d")
-
-ggplot(backlog_count) +
+ggplot(backlog) +
   geom_area(position='stack', aes(x = date, y = count, group=category, fill=category, order=-as.numeric(category))) +
-  geom_line(data=burnup_count, aes(x=date, y=count), size=2) +
+  geom_line(data=burnup, aes(x=date, y=count), size=2) +
   theme_fivethirtynine() +
   labs(title=sprintf("%s backlog", args$title), y="Task Count")
 dev.off()
@@ -67,24 +62,21 @@ dev.off()
 ## Maintenance Fraction
 ######################################################################
 
-maint_frac <- read.csv(sprintf("/tmp/%s_maintenance_fraction.csv", args$project))
+maint_frac <- read.csv(sprintf("/tmp/%s/maintenance_fraction.csv", args$project))
 maint_frac$date <- as.Date(maint_frac$date, "%Y-%m-%d")
 
 status_output <- png(filename = sprintf("~/html/%s_maint_frac.png", args$project), width=2000, height=1125, units="px", pointsize=30)
   
-ggplot(maint_frac, aes(date, maint_frac)) +
+ggplot(maint_frac, aes(date, maint_frac_points)) +
   geom_bar(stat="identity") +
   scale_y_continuous(labels=percent, limits=c(0,1)) +
   theme_fivethirtynine() +
   labs(title=sprintf("%s Maintenance Fraction", args$title), y="Fraction of completed work that is maintenance")
 dev.off()
 
-maint_count_frac <- read.csv(sprintf("/tmp/%s_maintenance_count_fraction.csv", args$project))
-maint_count_frac$date <- as.Date(maint_count_frac$date, "%Y-%m-%d")
-
 status_output_count <- png(filename = sprintf("~/html/%s_maint_count_frac.png", args$project), width=2000, height=1125, units="px", pointsize=30)
   
-ggplot(maint_count_frac, aes(date, maint_frac)) +
+ggplot(maint_frac, aes(date, maint_frac_count)) +
   geom_bar(stat="identity") +
   scale_y_continuous(labels=percent, limits=c(0,1), breaks=NULL) + 
   theme_fivethirtynine() +
@@ -95,23 +87,20 @@ dev.off()
 ## Velocity
 ######################################################################
 
-velocity <- read.csv(sprintf("/tmp/%s_velocity.csv", args$project))
+velocity <- read.csv(sprintf("/tmp/%s/velocity.csv", args$project))
 velocity$date <- as.Date(velocity$date, "%Y-%m-%d")
 
 velocity_output <- png(filename = sprintf("~/html/%s_velocity.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 
-ggplot(velocity, aes(date, velocity)) +
+ggplot(velocity, aes(date, velocity_points)) +
   geom_bar(stat="identity") +
   theme_fivethirtynine() +
   labs(title=sprintf("%s Velocity per week", args$title), y="Story Points")
 dev.off()
 
-velocity_count <- read.csv(sprintf("/tmp/%s_velocity_count.csv", args$project))
-velocity_count$date <- as.Date(velocity_count$date, "%Y-%m-%d")
-
 velocity_count_output <- png(filename = sprintf("~/html/%s_velocity_count.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 
-ggplot(velocity_count, aes(date, velocity)) +
+ggplot(velocity, aes(date, velocity_count)) +
   geom_bar(stat="identity") +
   theme_fivethirtynine() +
   labs(title=sprintf("%s Velocity per week", args$title), y="Tasks")
@@ -121,7 +110,7 @@ dev.off()
 ## Velocity vs backlog
 ######################################################################
 
-net_growth <- read.csv(sprintf("/tmp/%s_net_growth.csv", args$project))
+net_growth <- read.csv(sprintf("/tmp/%s/net_growth.csv", args$project))
 net_growth$date <- as.Date(net_growth$date, "%Y-%m-%d")
 
 net_growth_output <- png(filename = sprintf("~/html/%s_net_growth.png", args$project), width=2000, height=1125, units="px", pointsize=30)
@@ -136,20 +125,19 @@ dev.off()
 ## Recently Closed
 ######################################################################
 
-done <- read.csv(sprintf("/tmp/%s_recently_closed.csv", args$project))
+done <- read.csv(sprintf("/tmp/%s/recently_closed.csv", args$project))
 done$date <- as.Date(done$date, "%Y-%m-%d")
 
 done_output <- png(filename = sprintf("~/html/%s_done.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 ggplot(done, aes(x=date, y=points, fill=factor(category), order=-as.numeric(category))) +
-  geom_bar(stat="identity", width=17) +
+  geom_bar(stat="identity", width=7) +
   scale_fill_discrete(name="Milestones") + 
   theme_fivethirtynine() +
   labs(title=sprintf("%s Completed work", args$title), y="Points", x="Month", aesthetic="Milestone")
 dev.off()
-
 done_count_output <- png(filename = sprintf("~/html/%s_done_count.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 ggplot(done, aes(x=date, y=count, fill=factor(category), order=-as.numeric(category))) +
-  geom_bar(stat="identity", width=17) +
+  geom_bar(stat="identity", width=7) +
   scale_fill_discrete(name="Milestones") +
   theme_fivethirtynine() +
   labs(title=sprintf("%s Completed work", args$title), y="Count", x="Month", aesthetic="Milestone")

@@ -1,3 +1,5 @@
+-- Tables for loading
+
 CREATE EXTENSION IF NOT EXISTS intarray;
 
 DROP TABLE IF EXISTS maniphest_edge;
@@ -32,7 +34,6 @@ CREATE TABLE maniphest_transaction (
        task_id int,
        object_phid text,
        transaction_type text,
-       old_value text,
        new_value text,
        date_modified timestamp,
        has_edge_data boolean,
@@ -51,6 +52,94 @@ CREATE TABLE maniphest_edge (
 CREATE INDEX ON maniphest_edge (task, project, edge_date);
 CREATE INDEX ON maniphest_edge (task);
 CREATE INDEX ON maniphest_edge (project);
+
+-- Tables for reconstructing
+
+DROP TABLE IF EXISTS task_history;
+
+CREATE TABLE task_history (
+       source varchar(5),
+       date timestamp,
+       id int,
+       title text,
+       status text,
+       project text,
+       projectcolumn text,
+       points int,
+       maint_type text
+);
+
+CREATE INDEX ON task_history (project) ;
+CREATE INDEX ON task_history (projectcolumn) ;
+CREATE INDEX ON task_history (status) ;
+CREATE INDEX ON task_history (date) ;
+CREATE INDEX ON task_history (id) ;
+CREATE INDEX ON task_history (date,id) ;
+
+
+CREATE OR REPLACE FUNCTION wipe_reconstruction(
+       source_param varchar(5)
+) RETURNS void AS $$
+BEGIN
+    DELETE FROM task_history
+     WHERE source = source_param;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Tables for reporting
+
+DROP TABLE IF EXISTS tall_backlog;
+
+CREATE TABLE tall_backlog (
+       source varchar(5),
+       date timestamp,
+       category text,
+       status text,
+       points int,
+       count int,
+       maint_type text
+);
+
+DROP TABLE IF EXISTS recently_closed;
+
+CREATE TABLE recently_closed (
+    source varchar(5),
+    date date,
+    category text,
+    points int,
+    count int
+);
+
+DROP TABLE IF EXISTS maintenance_week;
+DROP TABLE IF EXISTS maintenance_delta;
+
+CREATE TABLE maintenance_week (
+    source varchar(5),
+    date timestamp,
+    maint_type text,
+    points int,
+    count int
+);
+
+CREATE TABLE maintenance_delta (
+    source varchar(5),
+    date timestamp,
+    maint_type text,
+    maint_points int,
+    new_points int,
+    maint_count int,
+    new_count int
+);
+
+CREATE OR REPLACE FUNCTION wipe_reporting(
+       source_param varchar(5)
+) RETURNS void AS $$
+BEGIN
+    DELETE FROM tall_backlog
+     WHERE source = source_param;
+
+END;
+$$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION build_edges(
        run_date date,
@@ -86,66 +175,36 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-/* obviously it would be better to get this working than to use cut and paste */
-
 CREATE OR REPLACE FUNCTION find_recently_closed(
-    source_table regclass,
-    target_table regclass) RETURNS void AS $$
-DECLARE
-  weekrow record;
-BEGIN
-
-    EXECUTE format('
-    FOR weekrow IN SELECT DISTINCT date
-                     FROM %I
-                    WHERE EXTRACT(dow from date_modified) = 0
-                    ORDER BY date
-    LOOP
-
-        INSERT INTO %I (
-            SELECT date,
-                   projectcolumn,
-                   sum(points),
-                   sum(title)
-              FROM %I
-             WHERE status = ''"resolved"''
-               AND date = weekrow.date
-               AND id NOT IN (SELECT id
-                                FROM %I
-                               WHERE status = ''"resolved"''
-                                 AND date = weekrow.date - interval ''1 week'' )
-             GROUP BY date, projectcolumn
-             )
-    END LOOP', source_table, target_table, source_table, source_table);
-
-    RETURN;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE OR REPLACE FUNCTION ve_find_recently_closed() RETURNS void AS $$
+    source_prefix varchar(5)
+    ) RETURNS void AS $$
 DECLARE
   weekrow record;
 BEGIN
 
     FOR weekrow IN SELECT DISTINCT date
-                     FROM ve_task_history
-                    WHERE EXTRACT(day from date) IN (1,15)
+                     FROM task_history
+                    WHERE EXTRACT(dow from date) IN (1, 15)
                     ORDER BY date
     LOOP
 
-        INSERT INTO ve_recently_closed (
-            SELECT date,
+        INSERT INTO recently_closed (
+            SELECT source_prefix as source,
+                   date,
                    project || ' ' || projectcolumn as category,
-                   sum(points),
-                   count(title)
-              FROM ve_task_history
+                   sum(points) AS points,
+                   count(title) as count
+              FROM task_history
              WHERE status = '"resolved"'
                AND date = weekrow.date
+               AND source = source_prefix
                AND id NOT IN (SELECT id
-                                FROM ve_task_history
+                                FROM task_history
                                WHERE status = '"resolved"'
-                                 AND date = weekrow.date - interval '1 month' )
-             GROUP BY date, project, projectcolumn);
+                                 AND source = source_prefix
+                                 AND date = weekrow.date - interval '15 days' )
+             GROUP BY date, project, projectcolumn
+             );
     END LOOP;
 
     RETURN;

@@ -61,6 +61,9 @@ Postgresql database named "phab"   <- data goes here
      * rm /etc/nginx/sites-enabled/default
      * `ln -s /etc/nginx/sites-available/phlogiston /etc/nginx/sites-enabled`
      * `service nginx restart`
+  6. Change permissions so that the postgres user can share files with phlogiston
+     * `usermod -a -G phlogiston postgres`
+     * restart postgres so that this takes effect
 3. Set up database.
    1. As user postgres,
      * `createuser -s phlogiston`

@@ -7,6 +7,7 @@ import datetime
 import sys, getopt
 import subprocess
 import configparser
+import os.path
 
 def main(argv):
     try:
@@ -50,24 +51,20 @@ def main(argv):
     if project_source:
         config = configparser.ConfigParser()
         config.read(project_source)
-        prefix = config.get("vars", "prefix")
-        title = config.get("vars", "title")
+        source_prefix = config.get("vars", "source_prefix")
+        source_title = config.get("vars", "source_title")
         default_points = config.get("vars", "default_points")
         project_name_list = tuple(config.get("vars", "project_list").split(','))
-        task_history_table_name = '{0}_task_history'.format(prefix)
-        project_csv_name = '/tmp/{0}_projects.csv'.format(prefix)
-        default_points_csv_name = '/tmp/{0}_default_points.csv'.format(prefix)
-        report_tables_script = '{0}_tables.sql'.format(prefix)
         start_date = datetime.datetime.strptime(config.get("vars", "start_date"), "%Y-%m-%d").date()
 
     if reconstruct_data:
         if project_source:
-            reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_date, end_date, task_history_table_name, project_csv_name, default_points_csv_name)
+            reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_date, end_date, source_prefix)
         else:
             print("Reconstruct specified without a project.  Please specify a project with --project.")
     if run_report:
         if project_source:
-            report(conn, VERBOSE, DEBUG, report_tables_script, prefix, title)
+            report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, project_name_list)
         else:
             print("Report specified without a project.  Please specify a project with --project.")
     conn.close()
@@ -99,7 +96,7 @@ def load(conn, end_date, VERBOSE, DEBUG):
     # Load project and project column data
     ######################################################################
     if VERBOSE:
-        print("Trying to load {count} projects".format(count=len(data['project']['projects'])))
+        print("Load {count} projects".format(count=len(data['project']['projects'])))
 
     project_insert = ("""INSERT INTO phabricator_project (id, name, phid)
                 VALUES (%(id)s, %(name)s, %(phid)s)""")
@@ -112,7 +109,7 @@ def load(conn, end_date, VERBOSE, DEBUG):
     column_insert = ("""INSERT INTO phabricator_column (id, name, phid, project_phid)
                 VALUES (%(id)s, %(name)s, %(phid)s, %(project_phid)s)""")
     if VERBOSE:
-        print("Trying to load {count} projectcolumns".format(count=len(data['project']['columns'])))
+        print("Load {count} projectcolumns".format(count=len(data['project']['columns'])))
     for row in data['project']['columns']:
         cur.execute(column_insert, {'id':row[0] , 'name':row[2], 'phid':row[1], 'project_phid':row[5] 
                      })
@@ -121,10 +118,6 @@ def load(conn, end_date, VERBOSE, DEBUG):
     # Load transactions and edges
     ######################################################################
     
-    if VERBOSE:
-        print("Trying to load tasks, transactions, and edges for {count} tasks".
-              format(count=len(data['task'].keys())))
-
     transaction_insert = ("""
       INSERT INTO maniphest_transaction (
              id, phid, task_id, object_phid, transaction_type, 
@@ -136,7 +129,16 @@ def load(conn, end_date, VERBOSE, DEBUG):
       INSERT INTO maniphest_task (id, phid, title, story_points)
       VALUES (%(task_id)s, %(phid)s, %(title)s, %(story_points)s) """)
 
+    if VERBOSE:
+        print("Load tasks, transactions, and edges for {count} tasks".
+              format(count=len(data['task'].keys())))
+        if DEBUG:
+            print("DEBUG: loading only tasks ending in 01")
+
     for task_id in data['task'].keys():
+
+        if DEBUG and int(task_id) % 100 != 1:
+            continue
 
         task = data['task'][task_id]
         if task['info']:
@@ -187,10 +189,18 @@ def load(conn, end_date, VERBOSE, DEBUG):
                                  'has_edge_data': has_edge_data,
                                  'active_projects': active_proj})
 
+    max_date_query = """SELECT MAX(date_modified)
+                          FROM maniphest_transaction"""
+
+    cur.execute(max_date_query)
+    max_date = cur.fetchone()[0]
+    script_dir = os.path.dirname(__file__)
+    f = open('{0}../html/max_date.csv'.format(script_dir), 'w')
+    f.write(max_date.strftime('%c'))
     cur.close()
 
 
-def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_date, end_date, task_history_table_name, project_csv_name, default_points_csv_name):
+def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_date, end_date, source_prefix):
     cur = conn.cursor()
 
     ######################################################################
@@ -209,18 +219,9 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_d
     project_name_to_id_dict = dict(cur.fetchall())
     project_id_to_name_dict = {value: key for key, value in project_name_to_id_dict.items()}
 
-    project_phid_list = list()
-    project_id_list = list()
-    f = open(project_csv_name, 'w')
+    project_id_list = list() 
     for project_name in project_name_list:
-        f.write( "{0}\n".format(project_name) )
-        project_phid_list.append(project_name_to_phid_dict[project_name])
         project_id_list.append(project_name_to_id_dict[project_name])
-    f.close()
-
-    f = open(default_points_csv_name, 'w')
-    f.write( "{0}\n".format(default_points) )
-    f.close()
     
     cur.execute("""SELECT pc.phid, pc.name
                      FROM phabricator_column pc,
@@ -250,38 +251,14 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_d
         query_date = working_date + datetime.timedelta(days=1)
         if VERBOSE:
             print('{0}: Making maniphest_edge for {1}'.format(datetime.datetime.now(), query_date))
-        cur.execute('SELECT * FROM build_edges(%(date)s, %(project_id_list)s)',
+        cur.execute('SELECT build_edges(%(date)s, %(project_id_list)s)',
                     { 'date': query_date, 'project_id_list': id_list_with_worktypes } )
         working_date += datetime.timedelta(days=1)
 
     ######################################################################
     # Reconstruct historical state of tasks
 
-    # reload the project-specific database tables
-    task_history_ddl = """DROP TABLE IF EXISTS {0} ;
-
-                          CREATE TABLE {0} (
-                                 date timestamp,
-                                 id int,
-                                 title text,
-                                 status text,
-                                 project text,
-                                 projectcolumn text,
-                                 points int,
-                                 maint_type text
-                          )     ;
-
-                          CREATE INDEX ON {0} (project) ;
-                          CREATE INDEX ON {0} (projectcolumn) ;
-                          CREATE INDEX ON {0} (status) ;
-                          CREATE INDEX ON {0} (date) ;
-                          CREATE INDEX ON {0} (id) ;
-                          CREATE INDEX ON {0} (date,id) ;"""
-
-    # Putting variables directly into SQL without escaping is vulnerable, but the only
-    # variable we're adding is from the config file so exposure is limited
-    unsafe_ddl = task_history_ddl.format(task_history_table_name)
-    cur.execute(unsafe_ddl)
+    cur.execute('SELECT wipe_reconstruction(%(source_prefix)s)', { 'source_prefix': source_prefix})
 
     working_date = start_date
         
@@ -341,7 +318,7 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_d
             # ----------------------------------------------------------------------
             # Status
             # ----------------------------------------------------------------------
-            cur.execute(transaction_values_query, {'task_id': task_id, 'query_date': query_date, 'transaction_type': 'status'})
+            cur.execute(transaction_values_query, {'query_date': query_date, 'transaction_type': 'status', 'task_id': task_id})
             status_raw= cur.fetchone()
             pretty_status = ""
             if status_raw:
@@ -385,7 +362,7 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_d
             # ----------------------------------------------------------------------
             # Column
             # ----------------------------------------------------------------------
-            cur.execute(transaction_values_query, {'task_id': task_id, 'query_date': query_date, 'transaction_type': 'projectcolumn'})
+            cur.execute(transaction_values_query, {'query_date': query_date, 'transaction_type': 'projectcolumn', 'task_id': task_id})
             pc_trans_list = cur.fetchall()
             for pc_trans in pc_trans_list:
                 jblob = json.loads(pc_trans[0])
@@ -395,7 +372,8 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_d
                     break
 
             denorm_query = """
-                INSERT INTO {0} VALUES (
+                INSERT INTO task_history VALUES (
+                %(source)s,
                 %(query_date)s,
                 %(id)s,
                 %(title)s,
@@ -405,16 +383,46 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_d
                 %(points)s,
                 %(maint_type)s)"""
 
-            unsafe_denorm_query = denorm_query.format(task_history_table_name)
-            cur.execute(unsafe_denorm_query, {'query_date': query_date, 'id': task_id, 'title': pretty_title, 'status': pretty_status, 'project': pretty_project, 'projectcolumn': pretty_column, 'points': pretty_points, 'maint_type': maint_type })
+            cur.execute(denorm_query, {'source': source_prefix, 'query_date': query_date, 'id': task_id, 'title': pretty_title, 'status': pretty_status, 'project': pretty_project, 'projectcolumn': pretty_column, 'points': pretty_points, 'maint_type': maint_type })
     
         working_date += datetime.timedelta(days=1)
     cur.close()
 
-def report(conn, VERBOSE, DEBUG, report_tables_script, prefix, title):
+def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, project_name_list):
+    # note that all the COPY commands in the psql scripts run server-side as user postgres
     cur = conn.cursor()
-    cur.execute(open(report_tables_script, "r").read())
-    subprocess.Popen("Rscript make_charts.R {0} {1}".format(prefix, title), shell = True)
+    cur.execute('SELECT wipe_reporting(%(source_prefix)s)', { 'source_prefix': source_prefix})
 
+    report_tables_script = '{0}_make_history.sql'.format(source_prefix)
+    if os.path.isfile('report_tables_script'):
+        cur.execute(open(report_tables_script, "r").read())        
+    else:
+        subprocess.call("psql -d phab -f generic_make_history.sql -v prefix={0}".format(source_prefix), shell = True)
+
+    # working around dynamic filename constructions limitations in psql
+    # rather than try to write the file /tmp/foo/report.csv,
+    # write the file /tmp/phlog/report.csv and then move it to /tmp/foo/report.csv
+
+    subprocess.call("rm -rf /tmp/{0}/".format(source_prefix), shell = True)
+    subprocess.call("rm -rf /tmp/phlog/", shell = True)
+    subprocess.call("mkdir -p /tmp/{0}".format(source_prefix), shell = True)
+    subprocess.call("mkdir -p /tmp/phlog", shell = True)
+    subprocess.call("psql -d phab -f make_report_csvs.sql -v prefix={0}".format(source_prefix), shell = True)
+    subprocess.call("mv /tmp/phlog/* /tmp/{0}/".format(source_prefix), shell = True)
+
+    script_dir = os.path.dirname(__file__)
+    f = open('{0}../html/{1}_projects.csv'.format(script_dir, source_prefix), 'w')
+    for project_name in project_name_list:
+        f.write( "{0}\n".format(project_name) )
+    f.close()
+
+    f = open('{0}../html/{1}_default_points.csv'.format(script_dir, source_prefix), 'w')
+    f.write( "{0}\n".format(default_points) )
+    f.close()
+
+    cur.close()
+    
+    subprocess.call("Rscript make_charts.R {0} {1}".format(source_prefix, source_title), shell = True)
+    
 if __name__ == "__main__":
     main(sys.argv[1:])
