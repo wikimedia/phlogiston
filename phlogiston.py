@@ -411,7 +411,8 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
     subprocess.call("chmod g+w /tmp/phlog", shell = True)
     subprocess.call("psql -d phab -f make_report_csvs.sql -v prefix={0}".format(source_prefix), shell = True)
     subprocess.call("mv /tmp/phlog/* /tmp/{0}/".format(source_prefix), shell = True)
-
+    subprocess.call("sed s/phl_/{0}_/g html/phl.html | sed s/Phlogiston/{1}/g > ~/html/{0}.html".format(source_prefix, source_title), shell = True)
+    
     script_dir = os.path.dirname(__file__)
     f = open('{0}../html/{1}_projects.csv'.format(script_dir, source_prefix), 'w')
     for project_name in project_name_list:
