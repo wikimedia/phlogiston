@@ -182,9 +182,13 @@ DECLARE
   weekrow record;
 BEGIN
 
+    DELETE FROM recently_closed
+     WHERE source = source_prefix;
+
     FOR weekrow IN SELECT DISTINCT date
                      FROM task_history
-                    WHERE EXTRACT(dow from date) IN (1, 15)
+                    WHERE EXTRACT(dow from date) = 0
+                      AND source = source_prefix
                     ORDER BY date
     LOOP
 
@@ -202,7 +206,7 @@ BEGIN
                                 FROM task_history
                                WHERE status = '"resolved"'
                                  AND source = source_prefix
-                                 AND date = weekrow.date - interval '15 days' )
+                                 AND date = weekrow.date - interval '1 week' )
              GROUP BY date, project, projectcolumn
              );
     END LOOP;
