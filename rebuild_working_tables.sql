@@ -131,6 +131,35 @@ CREATE TABLE maintenance_delta (
     new_count int
 );
 
+DROP TABLE IF EXISTS velocity_week;
+DROP TABLE IF EXISTS velocity_delta;
+
+CREATE TABLE velocity_week (
+    source varchar(5),
+    date timestamp,
+    points int,
+    count int
+);
+
+CREATE TABLE velocity_delta (
+    source varchar(5),
+    date timestamp,
+    points int,
+    count int,
+    velocity_points int,
+    velocity_count int
+);
+
+DROP TABLE IF EXISTS backlog_size;
+
+CREATE TABLE backlog_size (
+    source varchar(5),
+    date timestamp,
+    points int,
+    count int
+);
+      
+
 CREATE OR REPLACE FUNCTION wipe_reporting(
        source_param varchar(5)
 ) RETURNS void AS $$

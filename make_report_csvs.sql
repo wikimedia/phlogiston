@@ -35,6 +35,9 @@ SELECT date,
    Maintenance fraction
 Divide all resolved work into Maintenance or New Project, by week. */
 
+DELETE FROM maintenance_week where source = :'prefix';
+DELETE FROM maintenance_delta where source = :'prefix';
+
 INSERT INTO maintenance_week (
 SELECT source,
        date,
@@ -54,6 +57,7 @@ SELECT source,
        date,
        maint_type,
        (points - lag(points) OVER (ORDER BY date)) as maint_points,
+       null,
        (count - lag(count) OVER (ORDER BY date)) as maint_count
   FROM maintenance_week
  WHERE maint_type='Maintenance'
@@ -66,7 +70,7 @@ UPDATE maintenance_delta a
                        FROM (SELECT date,
                                     points - lag(points) OVER (ORDER BY date) as points
                                FROM maintenance_week
-                              WHERE maint_type='New Project'
+                              WHERE maint_type='New Functionality'
                                 AND source = :'prefix') as b
                       WHERE a.date = b.date
                         AND source = :'prefix');
@@ -76,7 +80,7 @@ UPDATE maintenance_delta a
                        FROM (SELECT date,
                                     count - lag(count) OVER (ORDER BY date) as count
                                FROM maintenance_week
-                              WHERE maint_type='New Project'
+                              WHERE maint_type='New Functionality'
                                 AND source = :'prefix') as b
                       WHERE a.date = b.date
                         AND source = :'prefix');
@@ -119,77 +123,84 @@ SELECT ROUND(100 * maint_count::decimal / nullif((maint_count + new_count),0),0)
 /* ####################################################################
 Burnup and Velocity */
 
-DROP TABLE IF EXISTS velocity_week;
-DROP TABLE IF EXISTS velocity_delta;
+DELETE FROM velocity_week where source = :'prefix';
+DELETE FROM velocity_delta where source = :'prefix';
 
-SELECT date,
+INSERT INTO velocity_week (
+SELECT source,
+       date,
        SUM(points) AS points,
        SUM(count) AS count
-  INTO velocity_week
   FROM tall_backlog
  WHERE status = '"resolved"'
    AND EXTRACT(dow from date) = 0 
    AND date >= current_date - interval '3 months'
- GROUP BY date
- ORDER BY date;
+   AND source = :'prefix'
+ GROUP BY date, source);
 
-SELECT date,
+INSERT INTO velocity_delta (
+SELECT source,
+       date,
        (points - lag(points) OVER (ORDER BY date)) as points,
-       (count - lag(count) OVER (ORDER BY date)) as count,
-       NULL::int as velocity_points,
-       NULL::int as velocity_count
-  INTO velocity_delta
+       (count - lag(count) OVER (ORDER BY date)) as count
   FROM velocity_week
- ORDER BY date;
+ ORDER BY date);
 
 UPDATE velocity_delta a
    SET velocity_points = (SELECT points
                        FROM (SELECT date,
                                     points - lag(points) OVER (ORDER BY date) as points
                                FROM velocity_week
+                              WHERE source = :'prefix'
                              ) as b
-                      WHERE a.date = b.date);
+                      WHERE a.date = b.date
+                        AND source = :'prefix');
 
 UPDATE velocity_delta a
    SET velocity_count = (SELECT count
                        FROM (SELECT date,
                                     count - lag(count) OVER (ORDER BY date) as count
                                FROM velocity_week
-                             ) as b
-                      WHERE a.date = b.date);
+                              WHERE source = :'prefix'
+                              ) as b
+                      WHERE a.date = b.date
+                        AND source = :'prefix');
 
 COPY (
 SELECT date,
        velocity_points,
        velocity_count
   FROM velocity_delta
+ WHERE source = :'prefix'
 ) TO '/tmp/phlog/velocity.csv' DELIMITER ',' CSV HEADER;
 
 /* ####################################################################
 Backlog growth calculations */
 
-DROP TABLE IF EXISTS backlog_size;
-
-SELECT date,
-       SUM(points) AS points
-  INTO backlog_size
+INSERT INTO backlog_size (
+SELECT source,
+       date,
+       SUM(points) AS points,
+       SUM(count) as count
   FROM tall_backlog
  WHERE status != '"resolved"'
-   AND EXTRACT(dow from date) = 0 
- GROUP BY date
- ORDER BY date;
+   AND EXTRACT(dow from date) = 0
+   AND source = :'prefix'
+ GROUP BY date, source);
 
 COPY (
 SELECT date,
-       (points - lag(points) OVER (ORDER BY date)) as points
+       (points - lag(points) OVER (ORDER BY date)) as points,
+       (count - lag(count) OVER (ORDER BY date)) as count
   FROM backlog_size
+ WHERE source = :'prefix'
  ORDER BY date
 ) to '/tmp/phlog/net_growth.csv' DELIMITER ',' CSV HEADER;
 
 /* ####################################################################
 Recently Closed */
 
-SELECT find_recently_closed(:'prefix'::varchar(5));
+SELECT find_recently_closed(:'prefix');
 
 COPY (
 SELECT date,
