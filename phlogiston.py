@@ -406,7 +406,9 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
     subprocess.call("rm -rf /tmp/{0}/".format(source_prefix), shell = True)
     subprocess.call("rm -rf /tmp/phlog/", shell = True)
     subprocess.call("mkdir -p /tmp/{0}".format(source_prefix), shell = True)
+    subprocess.call("chmod g+w -p /tmp/{0}".format(source_prefix), shell = True)
     subprocess.call("mkdir -p /tmp/phlog", shell = True)
+    subprocess.call("chmod g+w -p /tmp/phlog", shell = True)
     subprocess.call("psql -d phab -f make_report_csvs.sql -v prefix={0}".format(source_prefix), shell = True)
     subprocess.call("mv /tmp/phlog/* /tmp/{0}/".format(source_prefix), shell = True)
 
