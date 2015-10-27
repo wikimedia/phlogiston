@@ -103,7 +103,7 @@ SELECT ROUND(100 * maint_points::decimal / nullif((maint_points + new_points),0)
        (SELECT sum(new_points)  as new_points
 	     FROM maintenance_delta
          WHERE source = :'prefix') as y
-) TO '/tmp/phlog/maintenance_fraction_total_points.csv' DELIMITER ',' CSV;
+) TO '/tmp/phlog/maintenance_fraction_total_by_points.csv' DELIMITER ',' CSV;
 
 COPY (
 SELECT ROUND(100 * maint_count::decimal / nullif((maint_count + new_count),0),0) as "Total Maintenance Fraction by Count"
@@ -114,7 +114,7 @@ SELECT ROUND(100 * maint_count::decimal / nullif((maint_count + new_count),0),0)
        (SELECT sum(new_count)  as new_count
 	     FROM maintenance_delta
          WHERE source = :'prefix') as y
-) TO '/tmp/phlog/maintenance_fraction_total_count.csv' DELIMITER ',' CSV;
+) TO '/tmp/phlog/maintenance_fraction_total_by_count.csv' DELIMITER ',' CSV;
 
 /* ####################################################################
 Burnup and Velocity */
