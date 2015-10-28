@@ -46,7 +46,8 @@ ggplot(backlog) +
   geom_area(position='stack', aes(x = date, y = points, group=category, fill=category, order=-as.numeric(category))) +
   geom_line(data=burnup, aes(x=date, y=points), size=2) + 
   theme_fivethirtynine() + 
-  labs(title=sprintf("%s backlog", args$title), y="Story Point Total")
+  labs(title=sprintf("%s backlog by points", args$title), y="Story Point Total") +
+  geom_vline(aes(xintercept=as.numeric(as.Date(c('2015-10-01'))), color="gray"))
 dev.off()
 
 backlog_count_output=png(filename = sprintf("~/html/%s_backlog_count_burnup.png", args$project), width=2000, height=1125, units="px", pointsize=30)
@@ -55,7 +56,8 @@ ggplot(backlog) +
   geom_area(position='stack', aes(x = date, y = count, group=category, fill=category, order=-as.numeric(category))) +
   geom_line(data=burnup, aes(x=date, y=count), size=2) +
   theme_fivethirtynine() +
-  labs(title=sprintf("%s backlog", args$title), y="Task Count")
+  labs(title=sprintf("%s backlog by count", args$title), y="Task Count") +
+  geom_vline(aes(xintercept=as.numeric(as.Date(c('2015-10-01'))), color="gray"))
 dev.off()
 
 ######################################################################
@@ -70,7 +72,7 @@ velocity_output <- png(filename = sprintf("~/html/%s_velocity.png", args$project
 ggplot(velocity, aes(date, velocity_points)) +
   geom_bar(stat="identity") +
   theme_fivethirtynine() +
-  labs(title=sprintf("%s Velocity per week", args$title), y="Story Points")
+  labs(title=sprintf("%s weekly velocity by points", args$title), y="Story Points")
 dev.off()
 
 velocity_count_output <- png(filename = sprintf("~/html/%s_velocity_count.png", args$project), width=2000, height=1125, units="px", pointsize=30)
@@ -78,7 +80,7 @@ velocity_count_output <- png(filename = sprintf("~/html/%s_velocity_count.png", 
 ggplot(velocity, aes(date, velocity_count)) +
   geom_bar(stat="identity") +
   theme_fivethirtynine() +
-  labs(title=sprintf("%s Velocity per week", args$title), y="Tasks")
+  labs(title=sprintf("%s weekly velocity by count", args$title), y="Tasks")
 dev.off()
 
 ######################################################################
@@ -93,7 +95,7 @@ net_growth_output <- png(filename = sprintf("~/html/%s_net_growth.png", args$pro
 ggplot(net_growth, aes(date, points)) +
   geom_bar(stat="identity") +
   theme_fivethirtynine() +
-  labs(title=sprintf("%s Net change in open backlog", args$title), y="Story Points")
+  labs(title=sprintf("%s Net change in open backlog by points", args$title), y="Story Points")
 dev.off()
 
 ######################################################################
@@ -108,14 +110,14 @@ ggplot(done, aes(x=date, y=points, fill=factor(category), order=-as.numeric(cate
   geom_bar(stat="identity", width=7) +
   scale_fill_discrete(name="Milestones") + 
   theme_fivethirtynine() +
-  labs(title=sprintf("%s Completed work", args$title), y="Points", x="Month", aesthetic="Milestone")
+  labs(title=sprintf("%s Completed work by points", args$title), y="Points", x="Month", aesthetic="Milestone")
 dev.off()
 done_count_output <- png(filename = sprintf("~/html/%s_done_count.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 ggplot(done, aes(x=date, y=count, fill=factor(category), order=-as.numeric(category))) +
   geom_bar(stat="identity", width=7) +
   scale_fill_discrete(name="Milestones") +
   theme_fivethirtynine() +
-  labs(title=sprintf("%s Completed work", args$title), y="Count", x="Month", aesthetic="Milestone")
+  labs(title=sprintf("%s Completed work by count", args$title), y="Count", x="Month", aesthetic="Milestone")
 dev.off()
 
 ######################################################################
@@ -131,13 +133,13 @@ ggplot(maint_frac, aes(date, maint_frac_points)) +
   geom_bar(stat="identity") +
   scale_y_continuous(labels=percent, limits=c(0,1)) +
   theme_fivethirtynine() +
-  labs(title=sprintf("%s Maintenance Fraction", args$title), y="Fraction of completed work that is maintenance")
+  labs(title=sprintf("%s Maintenance Fraction by points", args$title), y="Fraction of completed work that is maintenance")
 dev.off()
 
 status_output_count <- png(filename = sprintf("~/html/%s_maint_count_frac.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 ggplot(maint_frac, aes(date, maint_frac_count)) +
   geom_bar(stat="identity") +
-  scale_y_continuous(labels=percent, limits=c(0,1), breaks=NULL) + 
+  scale_y_continuous(labels=percent, limits=c(0,1)) + 
   theme_fivethirtynine() +
-  labs(title=sprintf("%s Maintenance Fraction (by count instead of points)", args$title), y="Fraction of completed work that is maintenance")
+  labs(title=sprintf("%s Maintenance Fraction by count", args$title), y="Fraction of completed work that is maintenance")
 dev.off()
