@@ -208,6 +208,7 @@ SELECT date,
        points,
        count
   FROM recently_closed
+ WHERE source = :'prefix'
  ORDER BY date, category
 ) to '/tmp/phlog/recently_closed.csv' DELIMITER ',' CSV HEADER;
 
