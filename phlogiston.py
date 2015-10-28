@@ -455,11 +455,11 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
     i = 0
     html_string = ""
     for item in category_list:
-        category = item[0]
         if i > 8:
-            color = '#F1F1F1'
-        else:
-            color = colors[i]
+            # if there are more than 9 tranches, probably this data doesn't make much sense and there could be dozens more.
+            break
+        category = item[0]
+        color = colors[i]
 
         subprocess.call("Rscript make_tranche_chart.R {0} {1} '{2}' '{3}' {4} {5}".format(source_prefix, i, color, category, max_tranche_height_points, max_tranche_height_count), shell = True)
         points_png_name = "{0}_tranche{1}_burnup_points.png".format(source_prefix, i)
