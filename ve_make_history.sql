@@ -1,6 +1,15 @@
-/* ##################################################################
-Roll up the task history from individual tasks to cumulative totals.
+UPDATE task_history
+   SET status = '"open"'
+ WHERE status = '"stalled"'
+   AND source = :'prefix';
 
+DELETE FROM task_history
+ WHERE (status = '"duplicate"'
+    OR status = '"invalid"'
+    OR status = '"declined"')
+   AND source = :'prefix';
+
+/* ##################################################################
 Apply current work breakdown to historical data.  VE has used both
 project and projectcolumn to categorize work; this script condenses
 both into a single new field called category. */
@@ -10,14 +19,16 @@ projects called "VisualEditor 2014/15 Q3 blockers" and
 "VisualEditor 2014/15 Q4 blockers".   This query should get everything
 from those projects. */
 
-SELECT 've' as source,
+INSERT INTO tall_backlog (source, date, category, status, points, count)
+SELECT source,
        date,
        project as category,
        status,
-       SUM(points) as points
-  INTO tall_backlog
+       SUM(points) as points,
+       COUNT(title) as count
   FROM task_history
  WHERE project != 'VisualEditor'
+   AND source = :'prefix'
  GROUP BY status, category, date;
 
 /* Prior to 18 June 2015, VE work in the VisualEditor project was not
@@ -27,35 +38,40 @@ regardless of state or column.  The nested select is required to
 accurately group by category, after category is forced to a constant
 in the inner select. */
 
-INSERT INTO tall_backlog (source, date, category, status, points) (
-SELECT 've' as source,
+INSERT INTO tall_backlog (source, date, category, status, points, count) (
+SELECT as source,
        date,
        category,
        status,
-       SUM(points) as points
+       SUM(points) as points,
+       COUNT(title) as count
   FROM (
 SELECT date,
        CAST('Uncategorized' AS text) as category,
        status,
-       points
-  FROM ve_task_history
+       points,
+       count
+  FROM task_history
  WHERE project = 'VisualEditor'
    AND date < '2015-06-18') as ve_old_other
- GROUP BY status, category, date);
+   AND source = :'prefix'
+   GROUP BY status, category, date);
 
 /* Since June 18, 2018, the projectcolumn in the VisualEditor project
 should be accurate, so any VE task in a Tranche should use the tranche
 as the category. */
 
-INSERT INTO ve_tall_backlog (source, date, category, status, points) (
-SELECT 've' as source,
+INSERT INTO tall_backlog (source, date, category, status, points, count) (
+SELECT source,
        date,
        projectcolumn as category,
        status,
-       SUM(points) as points
-  FROM ve_task_history
+       SUM(points) as points,
+       COUNT(title) as count
+  FROM task_history
  WHERE project = 'VisualEditor'
    AND projectcolumn SIMILAR TO 'TR%'
+   AND source = :'prefix'
    AND date >= '2015-06-18'
 GROUP BY status, category, date);
 
@@ -64,52 +80,39 @@ June 18th and not in a tranche) should be old data getting cleaned up.
 We will essentially ignore them by placing them in Uncategorized.
 */
 
-INSERT INTO ve_tall_backlog (source, date, category, status, points) (
-SELECT 've' as source,
+INSERT INTO tall_backlog (source, date, category, status, points, count) (
+SELECT source,
        date,
        category,
        status,
        SUM(points) as points
+       COUNT(title) as count
   FROM (
-SELECT date,
+SELECT source,
+       date,
        CAST('Uncategorized' AS text) as category,
        status,
        points
-  FROM ve_task_history
+  FROM task_history
  WHERE project = 'VisualEditor'
    AND projectcolumn NOT SIMILAR TO 'TR%'
+   AND source = :'prefix'
    AND date >= '2015-06-18') AS ve_new_uncategorized
 GROUP BY status, category, date);
 
 
+UPDATE tall_backlog
+   SET maint_type = 'Maintenance'
+ WHERE category = 'TR0: Interrupt'
+   AND source = :'prefix';
+
+UPDATE tall_backlog
+   SET maint_type = 'New Functionality'
+ WHERE category <> 'TR0: Interrupt'
+   AND source = :'prefix';
 
 
-COPY (
-SELECT date,
-       category,
-       SUM(points) as points
-  FROM tall_backlog
- WHERE category <> 'Uncategorized'
-   AND category NOT SIMILAR TO 'TR0%'
-   AND source = ':prefix'
- GROUP BY date, category
- ORDER BY date, category
-) to '/tmp/phlog/backlog_zoomed.csv' DELIMITER ',' CSV HEADER;
-
-COPY (
-SELECT date,
-       SUM(points) as points
-  FROM tall_backlog
- WHERE status = '"resolved"'
-   AND category NOT LIKE 'TR0%'
-   AND category NOT LIKE 'Uncategorized'
-   AND source = ':prefix'
- GROUP BY date
- ORDER BY date
-) to '/tmp/phlog/burnup_zoomed.csv' DELIMITER ',' CSV HEADER;
-
-/*SELECT * FROM find_recently_closed(:'prefix');
-
+/*
 UPDATE recently_closed
    SET category = CASE WHEN category LIKE '%Q3%' THEN 'VE is usable and has acceptable performance'
                        WHEN category LIKE '%Q4%' THEN 'VE is more stable and A/B tested'
