@@ -54,6 +54,7 @@ def main(argv):
         source_prefix = config.get("vars", "source_prefix")
         source_title = config.get("vars", "source_title")
         default_points = config.get("vars", "default_points")
+        category_list = config.get("vars", "category_list")
         project_name_list = tuple(config.get("vars", "project_list").split(','))
         start_date = datetime.datetime.strptime(config.get("vars", "start_date"), "%Y-%m-%d").date()
 
@@ -64,7 +65,7 @@ def main(argv):
             print("Reconstruct specified without a project.  Please specify a project with --project.")
     if run_report:
         if project_source:
-            report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, project_name_list)
+            report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, project_name_list, category_list)
         else:
             print("Report specified without a project.  Please specify a project with --project.")
     conn.close()
@@ -388,7 +389,7 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_d
         working_date += datetime.timedelta(days=1)
     cur.close()
 
-def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, project_name_list):
+def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, project_name_list, category_list):
     # note that all the COPY commands in the psql scripts run server-side as user postgres
     cur = conn.cursor()
     cur.execute('SELECT wipe_reporting(%(source_prefix)s)', { 'source_prefix': source_prefix})
@@ -412,7 +413,8 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
     subprocess.call("psql -d phab -f make_report_csvs.sql -v prefix={0}".format(source_prefix), shell = True)
     subprocess.call("mv /tmp/phlog/* /tmp/{0}/".format(source_prefix), shell = True)
     subprocess.call("sed s/phl_/{0}_/g html/phl.html | sed s/Phlogiston/{1}/g > ~/html/{0}.html".format(source_prefix, source_title), shell = True)
-    
+    subprocess.call("cp /tmp/{0}/maintenance_fraction_total_by_points.csv ~/html/{0}_maintenance_fraction_total_by_points.csv".format(source_prefix), shell = True)
+    subprocess.call("cp /tmp/{0}/maintenance_fraction_total_by_count.csv ~/html/{0}_maintenance_fraction_total_by_count.csv".format(source_prefix), shell = True)
     script_dir = os.path.dirname(__file__)
     f = open('{0}../html/{1}_projects.csv'.format(script_dir, source_prefix), 'w')
     for project_name in project_name_list:
@@ -423,6 +425,48 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
     f.write( "{0}\n".format(default_points) )
     f.close()
 
+    # for each category, generate a burnup
+    max_tranche_height_points_query = """SELECT MAX(points)
+                                     FROM (SELECT SUM(points) AS points
+                                             FROM tall_backlog
+                                            WHERE source = %(source_prefix)s
+                                            GROUP BY date, category) AS x"""
+
+    cur.execute(max_tranche_height_points_query, {'source_prefix': source_prefix})
+    max_tranche_height_points = cur.fetchone()[0]
+
+    max_tranche_height_count_query = """SELECT MAX(count)
+                                     FROM (SELECT SUM(count) AS count
+                                             FROM tall_backlog
+                                            WHERE source = %(source_prefix)s
+                                            GROUP BY date, category) AS x"""
+
+    cur.execute(max_tranche_height_count_query, {'source_prefix': source_prefix})
+    max_tranche_height_count = cur.fetchone()[0]
+
+    category_query = """SELECT DISTINCT category 
+                          FROM tall_backlog 
+                         WHERE source = %(source_prefix)s"""
+
+    if not category_list:
+        cur.execute(category_query, {'source_prefix': source_prefix})
+        category_list = cur.fetchall()
+    colors = ['#B35806', '#E08214', '#FDB863', '#FEE0B6', '#F7F7F7', '#D8DAEB', '#B2ABD2', '#8073AC', '#542788']
+    i = 0
+    html_string = ""
+    for item in category_list:
+        category = item[0]
+        subprocess.call("Rscript make_tranche_chart.R {0} {1} '{2}' '{3}' {4} {5}".format(source_prefix, i, colors[i], category, max_tranche_height_points, max_tranche_height_count), shell = True)
+        i += 1
+        points_png_name = "{0}_tranche{1}_burnup_points.png".format(source_prefix, i)
+        count_png_name = "{0}_tranche{1}_burnup_count.png".format(source_prefix, i)
+        html_string = html_string + '<p><a href="{0}"><img src="{0}"/></a></p>'.format(points_png_name)
+        html_string = html_string + '<p><a href="{0}"><img src="{0}"/></a></p>'.format(count_png_name)
+
+    f = open('{0}../html/{1}_tranches.html'.format(script_dir, source_prefix), 'w')
+    f.write( html_string)
+    f.close()
+    
     cur.close()
     
     subprocess.call("Rscript make_charts.R {0} {1}".format(source_prefix, source_title), shell = True)

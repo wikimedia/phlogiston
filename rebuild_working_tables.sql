@@ -58,7 +58,7 @@ CREATE INDEX ON maniphest_edge (project);
 DROP TABLE IF EXISTS task_history;
 
 CREATE TABLE task_history (
-       source varchar(5),
+       source varchar(6),
        date timestamp,
        id int,
        title text,
@@ -78,7 +78,7 @@ CREATE INDEX ON task_history (date,id) ;
 
 
 CREATE OR REPLACE FUNCTION wipe_reconstruction(
-       source_param varchar(5)
+       source_param varchar(6)
 ) RETURNS void AS $$
 BEGIN
     DELETE FROM task_history
@@ -91,7 +91,7 @@ $$ LANGUAGE plpgsql;
 DROP TABLE IF EXISTS tall_backlog;
 
 CREATE TABLE tall_backlog (
-       source varchar(5),
+       source varchar(6),
        date timestamp,
        category text,
        status text,
@@ -103,7 +103,7 @@ CREATE TABLE tall_backlog (
 DROP TABLE IF EXISTS recently_closed;
 
 CREATE TABLE recently_closed (
-    source varchar(5),
+    source varchar(6),
     date date,
     category text,
     points int,
@@ -114,7 +114,7 @@ DROP TABLE IF EXISTS maintenance_week;
 DROP TABLE IF EXISTS maintenance_delta;
 
 CREATE TABLE maintenance_week (
-    source varchar(5),
+    source varchar(6),
     date timestamp,
     maint_type text,
     points int,
@@ -122,7 +122,7 @@ CREATE TABLE maintenance_week (
 );
 
 CREATE TABLE maintenance_delta (
-    source varchar(5),
+    source varchar(6),
     date timestamp,
     maint_type text,
     maint_points int,
@@ -135,14 +135,14 @@ DROP TABLE IF EXISTS velocity_week;
 DROP TABLE IF EXISTS velocity_delta;
 
 CREATE TABLE velocity_week (
-    source varchar(5),
+    source varchar(6),
     date timestamp,
     points int,
     count int
 );
 
 CREATE TABLE velocity_delta (
-    source varchar(5),
+    source varchar(6),
     date timestamp,
     points int,
     count int,
@@ -153,7 +153,7 @@ CREATE TABLE velocity_delta (
 DROP TABLE IF EXISTS backlog_size;
 
 CREATE TABLE backlog_size (
-    source varchar(5),
+    source varchar(6),
     date timestamp,
     points int,
     count int
@@ -161,7 +161,7 @@ CREATE TABLE backlog_size (
       
 
 CREATE OR REPLACE FUNCTION wipe_reporting(
-       source_param varchar(5)
+       source_param varchar(6)
 ) RETURNS void AS $$
 BEGIN
     DELETE FROM tall_backlog
@@ -205,7 +205,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION find_recently_closed(
-    source_prefix varchar(5)
+    source_prefix varchar(6)
     ) RETURNS void AS $$
 DECLARE
   weekrow record;
