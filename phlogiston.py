@@ -1,13 +1,14 @@
 #!/usr/bin/python3
 
-import psycopg2
-import json
-import time
+import configparser
+import csv
 import datetime
+import json
+import os.path
+import psycopg2
 import sys, getopt
 import subprocess
-import configparser
-import os.path
+import time
 
 def main(argv):
     try:
@@ -391,15 +392,61 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_d
 
 def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, project_name_list, category_list):
     # note that all the COPY commands in the psql scripts run server-side as user postgres
+
+    ######################################################################
+    # Prepare the data
+    ######################################################################
+
     cur = conn.cursor()
     cur.execute('SELECT wipe_reporting(%(source_prefix)s)', { 'source_prefix': source_prefix})
 
+    # generate the summary reporting data from the reconstructed records
     report_tables_script = '{0}_make_history.sql'.format(source_prefix)
-    if os.path.isfile('report_tables_script'):
-        cur.execute(open(report_tables_script, "r").read())        
-    else:
-        subprocess.call("psql -d phab -f generic_make_history.sql -v prefix={0}".format(source_prefix), shell = True)
+    if not os.path.isfile(report_tables_script):
+        report_tables_script = 'generic_make_history.sql'
+    subprocess.call("psql -d phab -f {0} -v prefix={1}".format(report_tables_script, source_prefix), shell = True)
 
+    # perform any additional re-categorization
+    zoom_list = []
+    grouping_data = '{0}_recategorization.csv'.format(source_prefix)
+    recat_cases = ''
+    recat_else = ''
+    if os.path.isfile(grouping_data):
+        with open(grouping_data, 'rt') as f:
+            reader = csv.reader(f)
+            for row in reader:
+                if row[0] == 'PhlogOther':
+                    recat_else = row[1]
+                else:
+                    recat_cases += ' WHEN category LIKE \'{0}\' THEN \'{1}\''.format(row[0], row[1])
+                try:
+                    zoom = row[2]
+                except:
+                    zoom = False
+                if zoom:
+                    zoom_list.append(row[1])
+
+        recat_query = """UPDATE tall_backlog
+                            SET category = CASE {0}
+                                           ELSE '{1}'
+                                           END
+                          WHERE source = '{2}'"""
+
+        unsafe_recat_query = recat_query.format(recat_cases, recat_else, source_prefix)
+        cur.execute(unsafe_recat_query)
+    
+    category_query = """SELECT DISTINCT category 
+                          FROM tall_backlog 
+                         WHERE source = %(source_prefix)s"""
+    if zoom_list:
+        category_query += """ AND category IN %(zoom_list)s"""
+
+    cur.execute(category_query, {'source_prefix': source_prefix, 'zoom_list': tuple(zoom_list)})
+    category_list = cur.fetchall()
+
+    ######################################################################
+    # Prepare all the csv files and working directories
+    ######################################################################
     # working around dynamic filename constructions limitations in psql
     # rather than try to write the file /tmp/foo/report.csv,
     # write the file /tmp/phlog/report.csv and then move it to /tmp/foo/report.csv
@@ -425,32 +472,30 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
     f.write( "{0}\n".format(default_points) )
     f.close()
 
-    # for each category, generate a burnup
+    ######################################################################
+    # for each category, generate burnup charts
+    ######################################################################
     max_tranche_height_points_query = """SELECT MAX(points)
                                      FROM (SELECT SUM(points) AS points
                                              FROM tall_backlog
                                             WHERE source = %(source_prefix)s
+                                              AND category = ANY(%(zoom_list)s::text[])
                                             GROUP BY date, category) AS x"""
 
-    cur.execute(max_tranche_height_points_query, {'source_prefix': source_prefix})
+    cur.execute(max_tranche_height_points_query, {'source_prefix': source_prefix, 'zoom_list': zoom_list})
     max_tranche_height_points = cur.fetchone()[0]
-
+    print(max_tranche_height_points)
+    print('foobar')
     max_tranche_height_count_query = """SELECT MAX(count)
                                      FROM (SELECT SUM(count) AS count
                                              FROM tall_backlog
                                             WHERE source = %(source_prefix)s
+                                              AND category = ANY(%(zoom_list)s::text[])
                                             GROUP BY date, category) AS x"""
 
-    cur.execute(max_tranche_height_count_query, {'source_prefix': source_prefix})
+    cur.execute(max_tranche_height_count_query, {'source_prefix': source_prefix, 'zoom_list': zoom_list})
     max_tranche_height_count = cur.fetchone()[0]
 
-    category_query = """SELECT DISTINCT category 
-                          FROM tall_backlog 
-                         WHERE source = %(source_prefix)s"""
-
-    if not category_list:
-        cur.execute(category_query, {'source_prefix': source_prefix})
-        category_list = cur.fetchall()
     colors = ['#B35806', '#E08214', '#FDB863', '#FEE0B6', '#F7F7F7', '#D8DAEB', '#B2ABD2', '#8073AC', '#542788']
     i = 0
     html_string = ""
@@ -473,7 +518,10 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
     f.close()
     
     cur.close()
-    
+
+    ######################################################################
+    # Make the rest of the charts
+    ######################################################################
     subprocess.call("Rscript make_charts.R {0} {1}".format(source_prefix, source_title), shell = True)
     
 if __name__ == "__main__":

@@ -29,7 +29,7 @@ SELECT source,
   FROM task_history
  WHERE project != 'VisualEditor'
    AND source = :'prefix'
- GROUP BY status, category, date;
+ GROUP BY status, category, date, source;
 
 /* Prior to 18 June 2015, VE work in the VisualEditor project was not
 organized around the interrupt or maintenance, so all work in that
@@ -39,23 +39,24 @@ accurately group by category, after category is forced to a constant
 in the inner select. */
 
 INSERT INTO tall_backlog (source, date, category, status, points, count) (
-SELECT as source,
+SELECT source,
        date,
        category,
        status,
        SUM(points) as points,
        COUNT(title) as count
   FROM (
-SELECT date,
+SELECT source,
+       date,
        CAST('Uncategorized' AS text) as category,
        status,
        points,
-       count
+       title
   FROM task_history
  WHERE project = 'VisualEditor'
-   AND date < '2015-06-18') as ve_old_other
-   AND source = :'prefix'
-   GROUP BY status, category, date);
+   AND date < '2015-06-18'
+   AND source = :'prefix') as ve_old_other
+   GROUP BY status, category, date, source);
 
 /* Since June 18, 2018, the projectcolumn in the VisualEditor project
 should be accurate, so any VE task in a Tranche should use the tranche
@@ -73,7 +74,7 @@ SELECT source,
    AND projectcolumn SIMILAR TO 'TR%'
    AND source = :'prefix'
    AND date >= '2015-06-18'
-GROUP BY status, category, date);
+GROUP BY status, category, date, source);
 
 /* Any other tasks in the VisualEditor project (i.e., any task after
 June 18th and not in a tranche) should be old data getting cleaned up.
@@ -85,20 +86,21 @@ SELECT source,
        date,
        category,
        status,
-       SUM(points) as points
-       COUNT(title) as count
+       SUM(points) as points,
+       count(title) as count
   FROM (
 SELECT source,
        date,
        CAST('Uncategorized' AS text) as category,
        status,
-       points
+       points,
+       title
   FROM task_history
  WHERE project = 'VisualEditor'
    AND projectcolumn NOT SIMILAR TO 'TR%'
    AND source = :'prefix'
    AND date >= '2015-06-18') AS ve_new_uncategorized
-GROUP BY status, category, date);
+GROUP BY status, category, date, source);
 
 
 UPDATE tall_backlog
@@ -110,17 +112,3 @@ UPDATE tall_backlog
    SET maint_type = 'New Functionality'
  WHERE category <> 'TR0: Interrupt'
    AND source = :'prefix';
-
-
-/*
-UPDATE recently_closed
-   SET category = CASE WHEN category LIKE '%Q3%' THEN 'VE is usable and has acceptable performance'
-                       WHEN category LIKE '%Q4%' THEN 'VE is more stable and A/B tested'
-                       WHEN category LIKE '%TR1%' THEN 'VE defaults on for wp_en new users and IPs'
-                       WHEN category LIKE '%TR2%' THEN 'Mobile MVP released'
-                       WHEN category LIKE '%TR3%' THEN 'Language support defaults on for ja, ko, ar, fa, hi, zh_yue'
-                       WHEN category LIKE '%TR4%' THEN 'Link Editor is better'
-                       WHEN category LIKE '%TR5%' THEN 'Charts, formulae, sheet music, and media available or improved in VE'
-                       ELSE 'Other'
-                       END;
-*/
