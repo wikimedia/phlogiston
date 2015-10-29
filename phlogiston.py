@@ -426,13 +426,13 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
                 if zoom:
                     zoom_list.append(row[1])
 
-        recat_query = """UPDATE tall_backlog
-                            SET category = CASE {0}
-                                           ELSE '{1}'
+        recat_query = """UPDATE {0}
+                            SET category = CASE {1}
+                                           ELSE '{2}'
                                            END
-                          WHERE source = '{2}'"""
+                          WHERE source = '{3}'"""
 
-        unsafe_recat_query = recat_query.format(recat_cases, recat_else, source_prefix)
+        unsafe_recat_query = recat_query.format('tall_backlog',recat_cases, recat_else, source_prefix)
         cur.execute(unsafe_recat_query)
     
     category_query = """SELECT DISTINCT category 
@@ -458,6 +458,14 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
     subprocess.call("mkdir -p /tmp/phlog", shell = True)
     subprocess.call("chmod g+w /tmp/phlog", shell = True)
     subprocess.call("psql -d phab -f make_report_csvs.sql -v prefix={0}".format(source_prefix), shell = True)
+
+    # this recat is done twice because task_history is derived from twice, and the raw
+    # data shouldn't be edited
+    
+    if os.path.isfile(grouping_data):
+        unsafe_recat_query = recat_query.format('recently_closed',recat_cases, recat_else, source_prefix)
+        cur.execute(unsafe_recat_query)
+
     subprocess.call("mv /tmp/phlog/* /tmp/{0}/".format(source_prefix), shell = True)
     subprocess.call("sed s/phl_/{0}_/g html/phl.html | sed s/Phlogiston/{1}/g > ~/html/{0}.html".format(source_prefix, source_title), shell = True)
     subprocess.call("cp /tmp/{0}/maintenance_fraction_total_by_points.csv ~/html/{0}_maintenance_fraction_total_by_points.csv".format(source_prefix), shell = True)
@@ -484,8 +492,6 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
 
     cur.execute(max_tranche_height_points_query, {'source_prefix': source_prefix, 'zoom_list': zoom_list})
     max_tranche_height_points = cur.fetchone()[0]
-    print(max_tranche_height_points)
-    print('foobar')
     max_tranche_height_count_query = """SELECT MAX(count)
                                      FROM (SELECT SUM(count) AS count
                                              FROM tall_backlog
