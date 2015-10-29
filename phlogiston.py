@@ -259,7 +259,7 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_d
 
     ######################################################################
     # Reconstruct historical state of tasks
-
+    ######################################################################
     cur.execute('SELECT wipe_reconstruction(%(source_prefix)s)', { 'source_prefix': source_prefix})
 
     working_date = start_date
@@ -373,7 +373,7 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_d
                     pretty_column = column_dict[column_phid]
                     break
 
-            denorm_query = """
+            denorm_insert = """
                 INSERT INTO task_history VALUES (
                 %(source)s,
                 %(query_date)s,
@@ -385,7 +385,7 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_d
                 %(points)s,
                 %(maint_type)s)"""
 
-            cur.execute(denorm_query, {'source': source_prefix, 'query_date': query_date, 'id': task_id, 'title': pretty_title, 'status': pretty_status, 'project': pretty_project, 'projectcolumn': pretty_column, 'points': pretty_points, 'maint_type': maint_type })
+            cur.execute(denorm_insert, {'source': source_prefix, 'query_date': query_date, 'id': task_id, 'title': pretty_title, 'status': pretty_status, 'project': pretty_project, 'projectcolumn': pretty_column, 'points': pretty_points, 'maint_type': maint_type })
     
         working_date += datetime.timedelta(days=1)
     cur.close()
@@ -426,14 +426,14 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
                 if zoom:
                     zoom_list.append(row[1])
 
-        recat_query = """UPDATE {0}
+        recat_update = """UPDATE {0}
                             SET category = CASE {1}
                                            ELSE '{2}'
                                            END
                           WHERE source = '{3}'"""
 
-        unsafe_recat_query = recat_query.format('tall_backlog',recat_cases, recat_else, source_prefix)
-        cur.execute(unsafe_recat_query)
+        unsafe_recat_update = recat_update.format('tall_backlog',recat_cases, recat_else, source_prefix)
+        cur.execute(unsafe_recat_update)
     
     category_query = """SELECT DISTINCT category 
                           FROM tall_backlog 
@@ -463,8 +463,8 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
     # data shouldn't be edited
     
     if os.path.isfile(grouping_data):
-        unsafe_recat_query = recat_query.format('recently_closed',recat_cases, recat_else, source_prefix)
-        cur.execute(unsafe_recat_query)
+        unsafe_recat_update = recat_update.format('recently_closed',recat_cases, recat_else, source_prefix)
+        cur.execute(unsafe_recat_update)
 
     subprocess.call("mv /tmp/phlog/* /tmp/{0}/".format(source_prefix), shell = True)
     subprocess.call("sed s/phl_/{0}_/g html/phl.html | sed s/Phlogiston/{1}/g > ~/html/{0}.html".format(source_prefix, source_title), shell = True)
