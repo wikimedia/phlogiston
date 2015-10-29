@@ -200,8 +200,6 @@ SELECT date,
 /* ####################################################################
 Recently Closed */
 
-SELECT find_recently_closed(:'prefix');
-
 COPY (
 SELECT date,
        category,

@@ -444,20 +444,7 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
     cur.execute(category_query, {'source_prefix': source_prefix, 'zoom_list': tuple(zoom_list)})
     category_list = cur.fetchall()
 
-    ######################################################################
-    # Prepare all the csv files and working directories
-    ######################################################################
-    # working around dynamic filename constructions limitations in psql
-    # rather than try to write the file /tmp/foo/report.csv,
-    # write the file /tmp/phlog/report.csv and then move it to /tmp/foo/report.csv
-
-    subprocess.call("rm -rf /tmp/{0}/".format(source_prefix), shell = True)
-    subprocess.call("rm -rf /tmp/phlog/", shell = True)
-    subprocess.call("mkdir -p /tmp/{0}".format(source_prefix), shell = True)
-    subprocess.call("chmod g+w /tmp/{0}".format(source_prefix), shell = True)
-    subprocess.call("mkdir -p /tmp/phlog", shell = True)
-    subprocess.call("chmod g+w /tmp/phlog", shell = True)
-    subprocess.call("psql -d phab -f make_report_csvs.sql -v prefix={0}".format(source_prefix), shell = True)
+    subprocess.call('psql -d phab -f make_recently_closed.sql -v prefix={0}'.format(source_prefix), shell = True)
 
     # this recat is done twice because task_history is derived from twice, and the raw
     # data shouldn't be edited
@@ -465,6 +452,22 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
     if os.path.isfile(grouping_data):
         unsafe_recat_update = recat_update.format('recently_closed',recat_cases, recat_else, source_prefix)
         cur.execute(unsafe_recat_update)
+
+
+    ######################################################################
+    # Prepare all the csv files and working directories
+    ######################################################################
+    # working around dynamic filename constructions limitations in psql
+    # rather than try to write the file /tmp/foo/report.csv,
+    # write the file /tmp/phlog/report.csv and then move it to /tmp/foo/report.csv
+
+    subprocess.call('rm -rf /tmp/{0}/'.format(source_prefix), shell = True)
+    subprocess.call('rm -rf /tmp/phlog/', shell = True)
+    subprocess.call('mkdir -p /tmp/{0}'.format(source_prefix), shell = True)
+    subprocess.call('chmod g+w /tmp/{0}'.format(source_prefix), shell = True)
+    subprocess.call('mkdir -p /tmp/phlog', shell = True)
+    subprocess.call('chmod g+w /tmp/phlog', shell = True)
+    subprocess.call('psql -d phab -f make_report_csvs.sql -v prefix={0}'.format(source_prefix), shell = True)
 
     subprocess.call("mv /tmp/phlog/* /tmp/{0}/".format(source_prefix), shell = True)
     subprocess.call("sed s/phl_/{0}_/g html/phl.html | sed s/Phlogiston/{1}/g > ~/html/{0}.html".format(source_prefix, source_title), shell = True)
