@@ -6,7 +6,7 @@ SELECT date,
   FROM tall_backlog
  WHERE source = :'prefix'
  GROUP BY date, category
- ORDER BY date, category
+ ORDER BY category, date
 ) to '/tmp/phlog/backlog.csv' DELIMITER ',' CSV HEADER;
 
 COPY (
@@ -23,12 +23,13 @@ SELECT date,
 COPY (
 SELECT date,
        category,
-       SUM(points) as points
+       SUM(points) as points,
+       SUM(count) as count
   FROM tall_backlog
  WHERE status = '"resolved"'
    AND source = :'prefix'
  GROUP BY date, category
- ORDER BY date, category
+ ORDER BY category, date
 ) to '/tmp/phlog/burnup_categories.csv' DELIMITER ',' CSV HEADER;
 
 /* ####################################################################

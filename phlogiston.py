@@ -55,8 +55,8 @@ def main(argv):
         source_prefix = config.get("vars", "source_prefix")
         source_title = config.get("vars", "source_title")
         default_points = config.get("vars", "default_points")
-        category_list = config.get("vars", "category_list")
-        project_name_list = tuple(config.get("vars", "project_list").split(','))
+        category_list = list(config.get("vars", "category_list").split(','))
+        project_name_list = list(config.get("vars", "project_list").split(','))
         start_date = datetime.datetime.strptime(config.get("vars", "start_date"), "%Y-%m-%d").date()
 
     if reconstruct_data:
@@ -212,12 +212,12 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_d
     cur.execute("""SELECT name, phid 
                    FROM phabricator_project
                   WHERE name IN %(project_name_list)s""",
-                { 'project_name_list': project_name_list } )
+                { 'project_name_list': tuple(project_name_list) } )
     project_name_to_phid_dict = dict(cur.fetchall())
     cur.execute("""SELECT name, id 
                      FROM phabricator_project
                     WHERE name IN %(project_name_list)s""",
-                { 'project_name_list': project_name_list } )
+                { 'project_name_list': tuple(project_name_list) } )
     project_name_to_id_dict = dict(cur.fetchall())
     project_id_to_name_dict = {value: key for key, value in project_name_to_id_dict.items()}
 
@@ -407,7 +407,6 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
     subprocess.call("psql -d phab -f {0} -v prefix={1}".format(report_tables_script, source_prefix), shell = True)
 
     # perform any additional re-categorization
-    zoom_list = []
     grouping_data = '{0}_recategorization.csv'.format(source_prefix)
     recat_cases = ''
     recat_else = ''
@@ -419,12 +418,6 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
                     recat_else = row[1]
                 else:
                     recat_cases += ' WHEN category LIKE \'{0}\' THEN \'{1}\''.format(row[0], row[1])
-                try:
-                    zoom = row[2]
-                except:
-                    zoom = False
-                if zoom:
-                    zoom_list.append(row[1])
 
         recat_update = """UPDATE {0}
                             SET category = CASE {1}
@@ -434,15 +427,13 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
 
         unsafe_recat_update = recat_update.format('tall_backlog',recat_cases, recat_else, source_prefix)
         cur.execute(unsafe_recat_update)
-    
+
     category_query = """SELECT DISTINCT category 
                           FROM tall_backlog 
                          WHERE source = %(source_prefix)s"""
-    if zoom_list:
-        category_query += """ AND category IN %(zoom_list)s"""
-
-    cur.execute(category_query, {'source_prefix': source_prefix, 'zoom_list': tuple(zoom_list)})
-    category_list = cur.fetchall()
+    if not category_list:
+        cur.execute(category_query, {'source_prefix': source_prefix})
+        category_list = cur.fetchall()
 
     # Have to load the recently closed table so that it can be
     # recategorized this recat is done twice (once for tall_backlog,
@@ -492,36 +483,34 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
     ######################################################################
     # for each category, generate burnup charts
     ######################################################################
+    # consistent height for all charts
     max_tranche_height_points_query = """SELECT MAX(points)
                                      FROM (SELECT SUM(points) AS points
                                              FROM tall_backlog
                                             WHERE source = %(source_prefix)s
-                                              AND category = ANY(%(zoom_list)s::text[])
                                             GROUP BY date, category) AS x"""
 
-    cur.execute(max_tranche_height_points_query, {'source_prefix': source_prefix, 'zoom_list': zoom_list})
+    cur.execute(max_tranche_height_points_query, {'source_prefix': source_prefix, 'category_list': category_list})
     max_tranche_height_points = cur.fetchone()[0]
     max_tranche_height_count_query = """SELECT MAX(count)
                                      FROM (SELECT SUM(count) AS count
                                              FROM tall_backlog
                                             WHERE source = %(source_prefix)s
-                                              AND category = ANY(%(zoom_list)s::text[])
                                             GROUP BY date, category) AS x"""
 
-    cur.execute(max_tranche_height_count_query, {'source_prefix': source_prefix, 'zoom_list': zoom_list})
+    cur.execute(max_tranche_height_count_query, {'source_prefix': source_prefix, 'category_list': category_list})
     max_tranche_height_count = cur.fetchone()[0]
 
     colors = ['#B35806', '#E08214', '#FDB863', '#FEE0B6', '#F7F7F7', '#D8DAEB', '#B2ABD2', '#8073AC', '#542788']
     i = 0
     html_string = ""
-    for item in category_list:
+    for item in reversed(category_list):
         if i > 8:
             # if there are more than 9 tranches, probably this data doesn't make much sense and there could be dozens more.
             break
-        category = item[0]
+        category = item
         color = colors[i]
-
-        subprocess.call("Rscript make_tranche_chart.R {0} {1} '{2}' '{3}' {4} {5}".format(source_prefix, i, color, category, max_tranche_height_points, max_tranche_height_count), shell = True)
+        subprocess.call("Rscript make_tranche_chart.R {0} {1} \"{2}\" \"{3}\" {4} {5}".format(source_prefix, i, color, category, max_tranche_height_points, max_tranche_height_count), shell = True)
         points_png_name = "{0}_tranche{1}_burnup_points.png".format(source_prefix, i)
         count_png_name = "{0}_tranche{1}_burnup_count.png".format(source_prefix, i)
         html_string = html_string + '<p><a href="{0}"><img src="{0}"/></a></p>'.format(points_png_name)
@@ -537,7 +526,7 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
     ######################################################################
     # Make the rest of the charts
     ######################################################################
-    subprocess.call("Rscript make_charts.R {0} {1}".format(source_prefix, source_title), shell = True)
+    subprocess.call("Rscript make_charts.R {0} {1} {2}".format(source_prefix, source_title, category_list), shell = True)
     
 if __name__ == "__main__":
     main(sys.argv[1:])

@@ -12,6 +12,7 @@ parser <- ArgumentParser()
 
 parser$add_argument("project", nargs=1, help="Project prefix")
 parser$add_argument("title", nargs=1, help="Project title")
+parser$add_argument("category_list", nargs="+", help="Category List")
 
 args <- parser$parse_args()
 
@@ -39,8 +40,12 @@ backlog <- read.csv(sprintf("/tmp/%s/backlog.csv", args$project))
 backlog$date <- as.Date(backlog$date, "%Y-%m-%d")
 backlog_output=png(filename = sprintf("~/html/%s_backlog_burnup.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 
+## manually set ordering of data
+#backlog$category2 <- factor(backlog$category, levels = args$zoom_list)
+
 burnup <- read.csv(sprintf("/tmp/%s/burnup.csv", args$project))
 burnup$date <- as.Date(burnup$date, "%Y-%m-%d")
+#burnup$category2 <- 0
 
 ggplot(backlog) +
   geom_area(position='stack', aes(x = date, y = points, group=category, fill=category, order=-as.numeric(category))) +

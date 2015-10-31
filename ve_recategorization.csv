@@ -1,3 +1,4 @@
+%TR0%,Interrupt, t
 %Q3%,VE is usable and has acceptable performance
 %Q4%,VE is more stable and A/B tested
 %TR1%,VE defaults on for wp_en new users and IPs, t
@@ -5,5 +6,4 @@
 %TR3%,Language support defaults on for ja, ko, ar, fa, hi, zh_yue, t
 %TR4%,Link Editor is better, t
 %TR5%,Charts, formulae, sheet music, and media available or improved in VE, t
-%TR0%,Interrupt, t
 PhlogOther,Other

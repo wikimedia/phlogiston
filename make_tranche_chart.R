@@ -58,7 +58,7 @@ ggplot(backlog[backlog$category==args$tranche_name,]) +
    geom_area(position='stack', aes(x = date, y = count, ymin=0), fill=args$color) +
    scale_x_date(breaks="1 month", label=date_format("%Y-%b-%d"))+
    scale_y_continuous(limits=c(0, as.numeric(args$count_height))) +
-geom_line(data=burnup_cat[burnup_cat$category==args$tranche_name,], aes(x=date, y=points), size=2)
+geom_line(data=burnup_cat[burnup_cat$category==args$tranche_name,], aes(x=date, y=count), size=2)
 dev.off()
 
 
