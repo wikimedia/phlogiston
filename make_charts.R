@@ -8,7 +8,7 @@ library(ggthemes)
 library(argparse)
 
 suppressPackageStartupMessages(library("argparse"))
-parser <- ArgumentParser()
+parser <- ArgumentParser(formatter_class= 'argparse.RawTextHelpFormatter')
 
 parser$add_argument("project", nargs=1, help="Project prefix")
 parser$add_argument("title", nargs=1, help="Project title")
