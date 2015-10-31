@@ -56,6 +56,8 @@ def main(argv):
         source_title = config.get("vars", "source_title")
         default_points = config.get("vars", "default_points")
         category_list = list(config.get("vars", "category_list").split(','))
+        if not category_list[0]:
+            category_list = False
         project_name_list = list(config.get("vars", "project_list").split(','))
         start_date = datetime.datetime.strptime(config.get("vars", "start_date"), "%Y-%m-%d").date()
 
@@ -433,7 +435,8 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
                          WHERE source = %(source_prefix)s"""
     if not category_list:
         cur.execute(category_query, {'source_prefix': source_prefix})
-        category_list = cur.fetchall()
+        category_list_of_tuples = cur.fetchall()
+        category_list = [item[0] for item in category_list_of_tuples]
 
     # Have to load the recently closed table so that it can be
     # recategorized this recat is done twice (once for tall_backlog,
@@ -504,12 +507,12 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
     colors = ['#B35806', '#E08214', '#FDB863', '#FEE0B6', '#F7F7F7', '#D8DAEB', '#B2ABD2', '#8073AC', '#542788']
     i = 0
     html_string = ""
-    for item in reversed(category_list):
+    for category in reversed(category_list):
         if i > 8:
             # if there are more than 9 tranches, probably this data doesn't make much sense and there could be dozens more.
             break
-        category = item
         color = colors[i]
+
         subprocess.call("Rscript make_tranche_chart.R {0} {1} \"{2}\" \"{3}\" {4} {5}".format(source_prefix, i, color, category, max_tranche_height_points, max_tranche_height_count), shell = True)
         points_png_name = "{0}_tranche{1}_burnup_points.png".format(source_prefix, i)
         count_png_name = "{0}_tranche{1}_burnup_count.png".format(source_prefix, i)
