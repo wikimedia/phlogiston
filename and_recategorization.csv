@@ -1,2 +1,3 @@
-%Android%,Mobile-App,t
-PhlogOther,Other
+sort_order,zoom_list,title,matchstring
+1,True,%Android%,Mobile-App
+2,True,PhlogOther,Other

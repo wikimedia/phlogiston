@@ -1,2 +1,3 @@
-%Discovery-Wikidata%,Discovery-Wikidata,t
-PhlogOther,Other
+sort_order,zoom_list,title,matchstring
+1,True,%Discovery-Wikidata%,Discovery-Wikidata
+2,True,PhlogOther,Other

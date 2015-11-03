@@ -1,9 +1,10 @@
-%Q3 1415%,Q3 2014/15
-%Q4 1415%,Q4 2014/15
-%Q1 1516%,Q1 2015/16
-%Q2 1516%,Q2 2015/16
-%Q3 1516%,Q3 2015/16
-%Q4 1516%,Q4 2015/16
-%not fr-tech%,Blocked & not fr-tech
-%Fundraising-Backlog%,Fundraising Backlog
-PhlogOther,Other
+sort_order,zoom_list,title,matchstring
+1,t,%Q3 1415%,Q3 2014/15
+2,t,%Q4 1415%,Q4 2014/15
+3,t,%Q1 1516%,Q1 2015/16
+4,t,%Q2 1516%,Q2 2015/16
+5,t,%Q3 1516%,Q3 2015/16
+6,t,%Q4 1516%,Q4 2015/16
+7,t,%not fr-tech%,Blocked & not fr-tech
+8,t,%Fundraising-Backlog%,Fundraising Backlog
+9,t,PhlogOther,Other

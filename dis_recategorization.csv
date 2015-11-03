@@ -1,2 +1,3 @@
-%Discovery-Analysis%,Discovery-Analysis,t
-PhlogOther,Other
+sort_order,zoom_list,title,matchstring
+1,True,%Discovery-Analysis%,Discovery-Analysis
+2,True,PhlogOther,Other

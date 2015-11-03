@@ -1,2 +1,3 @@
-%Discovery-Maps%,Discovery-Maps,t
-PhlogOther,Other
+sort_order,zoom_list,title,matchstring
+1,True,%Discovery-Maps%,Discovery-Maps
+2,True,PhlogOther,Other
