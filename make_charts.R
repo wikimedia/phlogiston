@@ -48,6 +48,8 @@ ggplot(backlog) +
   geom_line(data=burnup, aes(x=date, y=points), size=2) +
   theme_fivethirtynine() +
   scale_fill_brewer(palette="PuOr") +
+  theme(legend.position='bottom', legend.direction='vertical') +
+  guides(col = guide_legend(reverse=TRUE)) +
   labs(title=sprintf("%s backlog by points", args$title), y="Story Point Total") +
   geom_vline(aes(xintercept=as.numeric(as.Date(c('2015-10-01'))), color="gray"))
 dev.off()
@@ -55,10 +57,12 @@ dev.off()
 backlog_count_output=png(filename = sprintf("~/html/%s_backlog_count_burnup.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 
 ggplot(backlog) +
-  geom_area(position='stack', aes(x = date, y = count, group=category, fill=category, order=as.numeric(category))) +
+  geom_area(position='stack', aes(x = date, y = count, group=category, fill=category, order=-as.numeric(category))) +
   geom_line(data=burnup, aes(x=date, y=count), size=2) +
   theme_fivethirtynine() +
   scale_fill_brewer(palette="PuOr") +
+  theme(legend.position='bottom', legend.direction='vertical') +
+  guides(col = guide_legend(reverse=TRUE)) +
   labs(title=sprintf("%s backlog by count", args$title), y="Task Count") +
   geom_vline(aes(xintercept=as.numeric(as.Date(c('2015-10-01'))), color="gray"))
 dev.off()
@@ -113,6 +117,7 @@ ggplot(done, aes(x=date, y=points, fill=factor(category), order=-as.numeric(cate
   geom_bar(stat="identity", width=7) +
   scale_fill_discrete(name="Milestones") + 
   theme_fivethirtynine() +
+  theme(legend.position='bottom', legend.direction='vertical') +
   labs(title=sprintf("%s Completed work by points", args$title), y="Points", x="Month", aesthetic="Milestone")
 dev.off()
 done_count_output <- png(filename = sprintf("~/html/%s_done_count.png", args$project), width=2000, height=1125, units="px", pointsize=30)
@@ -120,6 +125,7 @@ ggplot(done, aes(x=date, y=count, fill=factor(category), order=-as.numeric(categ
   geom_bar(stat="identity", width=7) +
   scale_fill_discrete(name="Milestones") +
   theme_fivethirtynine() +
+  theme(legend.position='bottom', legend.direction='vertical') +
   labs(title=sprintf("%s Completed work by count", args$title), y="Count", x="Month", aesthetic="Milestone")
 dev.off()
 

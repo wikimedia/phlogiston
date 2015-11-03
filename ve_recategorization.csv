@@ -1,10 +1,10 @@
 sort_order,zoom_list,title,matchstring
 1,FALSE,Other,PhlogOther
 2,FALSE,VE is usable and has acceptable performance,%Q3%
-3,FALSE,-1:VE is more stable and A/B tested,%Q4%
+3,FALSE,VE is more stable and A/B tested,%Q4%
 4,TRUE,0: Interrupt,%TR0%
 5,TRUE,1: VE defaults on for enwiki new users and IPs,%TR1%
 6,TRUE,2: Mobile MVP released,%TR2%
 7,TRUE,"3: Language support defaults on for ja, ko, ar, fa, hi, zh_yue",%TR3%
 8,TRUE,4: Link Editor is better,%TR4%
-9,TRUE,"5: Charts, formulæ, sheet music, and media available or improved in VE",%TR5%
+9,TRUE,"5: Charts, formulae, sheet music, and media available or improved in VE",%TR5%

@@ -134,11 +134,11 @@ def load(conn, end_date, VERBOSE, DEBUG):
         print("Load tasks, transactions, and edges for {count} tasks".
               format(count=len(data['task'].keys())))
         if DEBUG:
-            print("DEBUG: loading only tasks ending in 01")
+            print("DEBUG: loading only tasks ending in 1")
 
     for task_id in data['task'].keys():
 
-        if DEBUG and int(task_id) % 100 != 1:
+        if DEBUG and int(task_id) % 10 != 1:
             continue
 
         task = data['task'][task_id]
@@ -435,7 +435,6 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
         unsafe_recat_update = recat_update.format('tall_backlog',recat_cases, recat_else, source_prefix)
         cur.execute(unsafe_recat_update)
 
-    import ipdb; ipdb.set_trace()
     if zoom_list:
         category_query = """SELECT category 
                               FROM zoom_list 

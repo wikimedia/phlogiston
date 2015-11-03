@@ -1,7 +1,7 @@
 <html>
   <head><title>Phlogiston Burnup Charts</title></head>
   <style>
-    img {width:80%}
+    img {width:100%}
     </style>
   <body>
     <h1>Phlogiston Charts</h1>
@@ -15,20 +15,56 @@
     <p>Tasks included in several of these projects are only counted in the first matching project.</p>
     <a name="burnups"><h2>Burnups</h2></a>
     <p>The complete backlog and burnup for all VE work.  The black line represents total completed tasks, and since it includes tasks from various tranches, does not exactly correlate to the tranches.</p>
-    <p><a href="phl_backlog_burnup.png"><img src="phl_backlog_burnup.png"/></a></p>
-    <p><a href="phl_backlog_count_burnup.png"><img src="phl_backlog_count_burnup.png"/></a></p>
+    <p>
+      <table>
+	<tr>
+	  <td>
+	    <a href="phl_backlog_burnup.png"><img src="phl_backlog_burnup.png"/></a>
+	  </td>
+	  <td>
+	    <a href="phl_backlog_count_burnup.png"><img src="phl_backlog_count_burnup.png"/></a>
+	  </td>
+	</tr>
+      </table>
+    </p>
     <!--# block name="no-tranche" -->Per-category charts not available<!--# endblock -->
     <!--# include file="phl_tranches.html" stub="no-tranche" -->
     <a name="velocity"><h2>Velocity</h2></a>
-    <p><a href="phl_velocity.png"><img src="phl_velocity.png"/></a></p>
-    <p><a href="phl_velocity_count.png"><img src="phl_velocity_count.png"/></a></p>
+    <p>
+      <table>
+	<tr>
+	  <td>
+	    <a href="phl_velocity.png"><img src="phl_velocity.png"/></a>
+	  </td>
+	  <td>
+	    <a href="phl_velocity_count.png"><img src="phl_velocity_count.png"/></a>
+	  </td>
+	</tr>
+      </table>
+    </p>
     <p>What has been completed.</p>
-    <p><a href="phl_done.png"><img src="phl_done.png"/></a></p>
-    <p><a href="phl_done_count.png"><img src="phl_done_count.png"/></a></p>
+      <table>
+	<tr>
+	  <td>
+	    <a href="phl_done.png"><img src="phl_done.png"/></a>
+	  </td>
+	  <td>
+	    <a href="phl_done_count.png"><img src="phl_done_count.png"/></a>
+	  </td>
+	</tr>
+      </table>
     <a name="analysis"><h2>Analysis</h2></a>
     <p>The percentage of completed work per week that was spent on "maintenance" work.  The total fraction is <!--# include file="phl_maintenance_fraction_total_by_points.csv" -->% by points, or <!--# include file="phl_maintenance_fraction_total_by_count.csv" -->% by count.</p>
-    <p><a href="phl_maint_frac.png"><img src="phl_maint_frac.png"/></a></p>
-    <p><a href="phl_maint_count_frac.png"><img src="phl_maint_count_frac.png"/></a></p>
+      <table>
+	<tr>
+	  <td>
+	    <a href="phl_maint_frac.png"><img src="phl_maint_frac.png"/></a>
+	  </td>
+	  <td>
+	    <a href="phl_maint_count_frac.png"><img src="phl_maint_count_frac.png"/></a>
+	  </td>
+	</tr>
+      </table>
     <p>The size of the Phlogiston Backlog, that is, work that is planned or requested for Phlogiston and not completed.</p>
     <p><a href="phl_net_growth.png"><img src="phl_net_growth.png"/></a></p>
   </body>
