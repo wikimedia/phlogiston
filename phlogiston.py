@@ -435,7 +435,6 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
         unsafe_recat_update = recat_update.format('tall_backlog',recat_cases, recat_else, source_prefix)
         cur.execute(unsafe_recat_update)
 
-    import ipdb; ipdb.set_trace()
     if zoom_list:
         category_query = """SELECT category 
                               FROM zoom_list 
