@@ -55,9 +55,6 @@ def main(argv):
         source_prefix = config.get("vars", "source_prefix")
         source_title = config.get("vars", "source_title")
         default_points = config.get("vars", "default_points")
-        category_list = list(config.get("vars", "category_list").split(','))
-        if not category_list[0]:
-            category_list = False
         project_name_list = list(config.get("vars", "project_list").split(','))
         start_date = datetime.datetime.strptime(config.get("vars", "start_date"), "%Y-%m-%d").date()
 
@@ -68,7 +65,7 @@ def main(argv):
             print("Reconstruct specified without a project.  Please specify a project with --project.")
     if run_report:
         if project_source:
-            report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, project_name_list, category_list)
+            report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, project_name_list)
         else:
             print("Report specified without a project.  Please specify a project with --project.")
     conn.close()
@@ -392,7 +389,7 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_d
         working_date += datetime.timedelta(days=1)
     cur.close()
 
-def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, project_name_list, category_list):
+def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, project_name_list):
     # note that all the COPY commands in the psql scripts run server-side as user postgres
 
     ######################################################################
@@ -412,14 +409,22 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
     grouping_data = '{0}_recategorization.csv'.format(source_prefix)
     recat_cases = ''
     recat_else = ''
+    zoom_list = False
+    zoom_delete = """DELETE FROM zoom_list WHERE source = %(source_prefix)s"""
+    cur.execute(zoom_delete, {'source_prefix':source_prefix})
+    zoom_save = """INSERT INTO zoom_list VALUES (%(source_prefix)s, %(sort_order)s, %(category)s)"""
     if os.path.isfile(grouping_data):
         with open(grouping_data, 'rt') as f:
-            reader = csv.reader(f)
-            for row in reader:
-                if row[0] == 'PhlogOther':
-                    recat_else = row[1]
+            reader = csv.DictReader(f)
+            for line in reader:
+                if line['matchstring'] == 'PhlogOther':
+                    recat_else = line['title']
                 else:
-                    recat_cases += ' WHEN category LIKE \'{0}\' THEN \'{1}\''.format(row[0], row[1])
+                    recat_cases += ' WHEN category LIKE \'{0}\' THEN \'{1}\''.format(
+                        line['matchstring'], line['title'])
+                if line['zoom_list'].lower() in ['true', 't', '1', 'yes', 'y']:
+                    zoom_list = True
+                    cur.execute(zoom_save, {'source_prefix': source_prefix, 'sort_order': line['sort_order'], 'category': line['title']})
 
         recat_update = """UPDATE {0}
                             SET category = CASE {1}
@@ -430,13 +435,22 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
         unsafe_recat_update = recat_update.format('tall_backlog',recat_cases, recat_else, source_prefix)
         cur.execute(unsafe_recat_update)
 
-    category_query = """SELECT DISTINCT category 
-                          FROM tall_backlog 
-                         WHERE source = %(source_prefix)s"""
-    if not category_list:
-        cur.execute(category_query, {'source_prefix': source_prefix})
-        category_list_of_tuples = cur.fetchall()
-        category_list = [item[0] for item in category_list_of_tuples]
+    import ipdb; ipdb.set_trace()
+    if zoom_list:
+        category_query = """SELECT category 
+                              FROM zoom_list 
+                             WHERE source = %(source_prefix)s
+                             ORDER BY sort_order"""
+
+    else:
+        category_query = """SELECT DISTINCT category 
+                              FROM tall_backlog 
+                             WHERE source = %(source_prefix)s
+                             ORDER BY category"""
+
+    cur.execute(category_query, {'source_prefix': source_prefix})
+    category_list_of_tuples = cur.fetchall()
+    category_list = [item[0] for item in category_list_of_tuples]
 
     # Have to load the recently closed table so that it can be
     # recategorized this recat is done twice (once for tall_backlog,
@@ -453,7 +467,6 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
     if os.path.isfile(grouping_data):
         unsafe_recat_update = recat_update.format('recently_closed',recat_cases, recat_else, source_prefix)
         cur.execute(unsafe_recat_update)
-
 
     ######################################################################
     # Prepare all the csv files and working directories
@@ -491,20 +504,29 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
                                      FROM (SELECT SUM(points) AS points
                                              FROM tall_backlog
                                             WHERE source = %(source_prefix)s
+                                              AND category IN %(category_list)s
                                             GROUP BY date, category) AS x"""
 
-    cur.execute(max_tranche_height_points_query, {'source_prefix': source_prefix, 'category_list': category_list})
+    cur.execute(max_tranche_height_points_query, {'source_prefix': source_prefix, 'category_list': tuple(category_list)})
     max_tranche_height_points = cur.fetchone()[0]
     max_tranche_height_count_query = """SELECT MAX(count)
                                      FROM (SELECT SUM(count) AS count
                                              FROM tall_backlog
                                             WHERE source = %(source_prefix)s
+                                              AND category IN %(category_list)s
                                             GROUP BY date, category) AS x"""
 
-    cur.execute(max_tranche_height_count_query, {'source_prefix': source_prefix, 'category_list': category_list})
+    cur.execute(max_tranche_height_count_query, {'source_prefix': source_prefix, 'category_list': tuple(category_list)})
     max_tranche_height_count = cur.fetchone()[0]
 
-    colors = ['#B35806', '#E08214', '#FDB863', '#FEE0B6', '#F7F7F7', '#D8DAEB', '#B2ABD2', '#8073AC', '#542788']
+    # This should be passed to R but since it's static for now, it's just duplicated
+
+    colors = []
+    proc = subprocess.check_output("Rscript get_palette.R {0}".format(len(category_list)), shell=True)
+    color_output = proc.decode().split()
+    for item in color_output:
+        if '#' in item:
+            colors.append(item)
     i = 0
     html_string = ""
     for category in reversed(category_list):
@@ -515,8 +537,8 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
         subprocess.call("Rscript make_tranche_chart.R {0} {1} \"{2}\" \"{3}\" {4} {5}".format(source_prefix, i, color, category, max_tranche_height_points, max_tranche_height_count), shell = True)
         points_png_name = "{0}_tranche{1}_burnup_points.png".format(source_prefix, i)
         count_png_name = "{0}_tranche{1}_burnup_count.png".format(source_prefix, i)
-        html_string = html_string + '<p><a href="{0}"><img src="{0}"/></a></p>'.format(points_png_name)
-        html_string = html_string + '<p><a href="{0}"><img src="{0}"/></a></p>'.format(count_png_name)
+        html_string = html_string + '<p><table><tr><td><a href="{0}"><img src="{0}"/></a></td>'.format(points_png_name)
+        html_string = html_string + '<td><a href="{0}"><img src="{0}"/></a></tr></table></p>'.format(count_png_name)
         i += 1
 
     f = open('{0}../html/{1}_tranches.html'.format(script_dir, source_prefix), 'w')
@@ -528,7 +550,7 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
     ######################################################################
     # Make the rest of the charts
     ######################################################################
-    subprocess.call("Rscript make_charts.R {0} {1} {2}".format(source_prefix, source_title, category_list), shell = True)
+    subprocess.call("Rscript make_charts.R {0} {1}".format(source_prefix, source_title), shell = True)
     
 if __name__ == "__main__":
     main(sys.argv[1:])

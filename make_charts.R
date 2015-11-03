@@ -12,7 +12,6 @@ parser <- ArgumentParser(formatter_class= 'argparse.RawTextHelpFormatter')
 
 parser$add_argument("project", nargs=1, help="Project prefix")
 parser$add_argument("title", nargs=1, help="Project title")
-parser$add_argument("category_list", nargs="+", help="Category List")
 
 args <- parser$parse_args()
 
@@ -39,18 +38,16 @@ theme_fivethirtynine <- function(base_size = 12, base_family = "sans"){
 backlog <- read.csv(sprintf("/tmp/%s/backlog.csv", args$project))
 backlog$date <- as.Date(backlog$date, "%Y-%m-%d")
 backlog_output=png(filename = sprintf("~/html/%s_backlog_burnup.png", args$project), width=2000, height=1125, units="px", pointsize=30)
-
-## manually set ordering of data
-#backlog$category2 <- factor(backlog$category, levels = args$zoom_list)
+backlog$category <- factor(backlog$category, levels=rev(backlog$category))
 
 burnup <- read.csv(sprintf("/tmp/%s/burnup.csv", args$project))
 burnup$date <- as.Date(burnup$date, "%Y-%m-%d")
-#burnup$category2 <- 0
 
 ggplot(backlog) +
   geom_area(position='stack', aes(x = date, y = points, group=category, fill=category, order=-as.numeric(category))) +
-  geom_line(data=burnup, aes(x=date, y=points), size=2) + 
-  theme_fivethirtynine() + 
+  geom_line(data=burnup, aes(x=date, y=points), size=2) +
+  theme_fivethirtynine() +
+  scale_fill_brewer(palette="PuOr") +
   labs(title=sprintf("%s backlog by points", args$title), y="Story Point Total") +
   geom_vline(aes(xintercept=as.numeric(as.Date(c('2015-10-01'))), color="gray"))
 dev.off()
@@ -58,9 +55,10 @@ dev.off()
 backlog_count_output=png(filename = sprintf("~/html/%s_backlog_count_burnup.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 
 ggplot(backlog) +
-  geom_area(position='stack', aes(x = date, y = count, group=category, fill=category, order=-as.numeric(category))) +
+  geom_area(position='stack', aes(x = date, y = count, group=category, fill=category, order=as.numeric(category))) +
   geom_line(data=burnup, aes(x=date, y=count), size=2) +
   theme_fivethirtynine() +
+  scale_fill_brewer(palette="PuOr") +
   labs(title=sprintf("%s backlog by count", args$title), y="Task Count") +
   geom_vline(aes(xintercept=as.numeric(as.Date(c('2015-10-01'))), color="gray"))
 dev.off()

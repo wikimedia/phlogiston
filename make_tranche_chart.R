@@ -41,7 +41,7 @@ backlog$date <- as.Date(backlog$date, "%Y-%m-%d")
 burnup_cat <- read.csv(sprintf("/tmp/%s/burnup_categories.csv", args$project))
 burnup_cat$date <- as.Date(burnup_cat$date, "%Y-%m-%d")
 
-burnup_output <- png(filename = sprintf("~/html/%s_tranche%s_burnup_points.png", args$project, args$tranche_num), width=2000, height=1125, units="px", pointsize=30)
+burnup_output <- png(filename = sprintf("~/html/%s_tranche%s_burnup_points.png", args$project, args$tranche_num), width=1000, height=1125, units="px", pointsize=30)
 ggplot(backlog[backlog$category==args$tranche_name,]) + 
    labs(title=sprintf("%s burnup by points", args$tranche_name), y="Story Point Total") +
    theme(text = element_text(size=30), legend.title=element_blank())+
@@ -51,7 +51,7 @@ ggplot(backlog[backlog$category==args$tranche_name,]) +
 geom_line(data=burnup_cat[burnup_cat$category==args$tranche_name,], aes(x=date, y=points), size=2)
 dev.off()
 
-burnup_output <- png(filename = sprintf("~/html/%s_tranche%s_burnup_count.png", args$project, args$tranche_num), width=2000, height=1125, units="px", pointsize=30)
+burnup_output <- png(filename = sprintf("~/html/%s_tranche%s_burnup_count.png", args$project, args$tranche_num), width=1000, height=1125, units="px", pointsize=30)
 ggplot(backlog[backlog$category==args$tranche_name,]) + 
    labs(title=sprintf("%s burnup by count", args$tranche_name), y="Story Count") +
    theme(text = element_text(size=30), legend.title=element_blank())+

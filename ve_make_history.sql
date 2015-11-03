@@ -102,6 +102,7 @@ SELECT source,
    AND date >= '2015-06-18') AS ve_new_uncategorized
 GROUP BY status, category, date, source);
 
+/* Set Maintenance flags, since VE uses tranches instead of tags to determine this */
 
 UPDATE tall_backlog
    SET maint_type = 'Maintenance'

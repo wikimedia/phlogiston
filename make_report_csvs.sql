@@ -5,6 +5,9 @@ SELECT date,
        SUM(count) as count
   FROM tall_backlog
  WHERE source = :'prefix'
+   AND category in (SELECT category
+                      FROM zoom_list
+                     WHERE source = :'prefix')
  GROUP BY date, category
  ORDER BY category, date
 ) to '/tmp/phlog/backlog.csv' DELIMITER ',' CSV HEADER;
@@ -16,6 +19,9 @@ SELECT date,
   FROM tall_backlog
  WHERE status = '"resolved"'
    AND source = :'prefix'
+   AND category in (SELECT category
+                      FROM zoom_list
+                     WHERE source = :'prefix')
  GROUP BY date
  ORDER BY date
 ) to '/tmp/phlog/burnup.csv' DELIMITER ',' CSV HEADER;
@@ -28,6 +34,9 @@ SELECT date,
   FROM tall_backlog
  WHERE status = '"resolved"'
    AND source = :'prefix'
+   AND category in (SELECT category
+                      FROM zoom_list
+                     WHERE source = :'prefix')
  GROUP BY date, category
  ORDER BY category, date
 ) to '/tmp/phlog/burnup_categories.csv' DELIMITER ',' CSV HEADER;

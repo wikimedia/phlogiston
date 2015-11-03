@@ -88,6 +88,14 @@ $$ LANGUAGE plpgsql;
 
 -- Tables for reporting
 
+DROP TABLE IF EXISTS zoom_list;
+
+CREATE TABLE zoom_list (
+       source varchar(6),
+       sort_order int,
+       category text
+);
+
 DROP TABLE IF EXISTS tall_backlog;
 
 CREATE TABLE tall_backlog (
@@ -167,6 +175,8 @@ BEGIN
     DELETE FROM tall_backlog
      WHERE source = source_param;
 
+    DELETE FROM zoom_list
+     WHERE source = source_param;
 END;
 $$ LANGUAGE plpgsql;
 
