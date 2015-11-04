@@ -1,18 +1,15 @@
 COPY (
 SELECT date,
        t.category,
-       max(sort_order) as sort_order,
        SUM(points) as points,
        SUM(count) as count
-  FROM tall_backlog t, zoom_list z
+  FROM tall_backlog t
  WHERE t.source = :'prefix'
    AND t.category in (SELECT category
                       FROM zoom_list
                      WHERE source = :'prefix')
-   AND t.source = z.source
-   AND t.category = z.category
- GROUP BY date, t.category, sort_order
- ORDER BY sort_order, date
+ GROUP BY date, t.category
+ ORDER BY t.category, date
 ) to '/tmp/phlog/backlog.csv' DELIMITER ',' CSV HEADER;
 
 COPY (

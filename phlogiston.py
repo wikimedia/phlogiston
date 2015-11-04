@@ -435,6 +435,8 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
         unsafe_recat_update = recat_update.format('tall_backlog',recat_cases, recat_else, source_prefix)
         cur.execute(unsafe_recat_update)
 
+    # if any rows in the custom recategorization file indicate a zoom list, use that.  Otherwise,
+    # the zoom_list and category_list are identical
     if zoom_list:
         category_query = """SELECT category 
                               FROM zoom_list 
@@ -446,7 +448,15 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
                               FROM tall_backlog 
                              WHERE source = %(source_prefix)s
                              ORDER BY category"""
-
+        zoom_insert = """INSERT INTO zoom_list (
+                             SELECT %(source_prefix)s, 
+                                     row_number() OVER(ORDER BY category asc),
+                                     category
+                               FROM tall_backlog
+                              WHERE source = %(source_prefix)s
+                              ORDER BY category)"""
+        cur.execute(zoom_insert, {'source_prefix': source_prefix})
+    
     cur.execute(category_query, {'source_prefix': source_prefix})
     category_list_of_tuples = cur.fetchall()
     category_list = [item[0] for item in category_list_of_tuples]
