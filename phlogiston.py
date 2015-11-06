@@ -543,11 +543,12 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
             # if there are more than 9 tranches, probably this data doesn't make much sense and there could be dozens more.
             break
         color = colors[i]
-        subprocess.call("Rscript make_tranche_chart.R {0} {1} \"{2}\" \"{3}\" {4} {5}".format(source_prefix, i, color, category, max_tranche_height_points, max_tranche_height_count), shell = True)
-        points_png_name = "{0}_tranche{1}_burnup_points.png".format(source_prefix, i)
-        count_png_name = "{0}_tranche{1}_burnup_count.png".format(source_prefix, i)
-        html_string = html_string + '<p><table><tr><td><a href="{0}"><img src="{0}"/></a></td>'.format(points_png_name)
-        html_string = html_string + '<td><a href="{0}"><img src="{0}"/></a></tr></table></p>'.format(count_png_name)
+        chart_result = subprocess.call("Rscript make_tranche_chart.R {0} {1} \"{2}\" \"{3}\" {4} {5}".format(source_prefix, i, color, category, max_tranche_height_points, max_tranche_height_count), shell = True)
+        if chart_result == 0:
+            points_png_name = "{0}_tranche{1}_burnup_points.png".format(source_prefix, i)
+            count_png_name = "{0}_tranche{1}_burnup_count.png".format(source_prefix, i)
+            html_string = html_string + '<p><table><tr><td><a href="{0}"><img src="{0}"/></a></td>'.format(points_png_name)
+            html_string = html_string + '<td><a href="{0}"><img src="{0}"/></a></tr></table></p>'.format(count_png_name)
         i += 1
 
     f = open('{0}../html/{1}_tranches.html'.format(script_dir, source_prefix), 'w')
