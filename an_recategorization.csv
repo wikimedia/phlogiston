@@ -1,0 +1,5 @@
+sort_order,zoom_list,title,matchstring
+1,True,Kanban,%Analytics-Kanban%
+2,True,Backlog,%Analytics-Backlog%
+3,True,Cluster,%Analytics-Cluster%
+4,True,Other,PhlogOther

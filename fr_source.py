@@ -1,7 +1,6 @@
 [vars]
 source_prefix = fr
 source_Title = 'Fundraising Tech'
-category_list =
 default_points = 0
 project_list = Fundraising-Backlog,Fundraising Tech Backlog
 start_date = 2015-01-01
