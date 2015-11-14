@@ -44,7 +44,7 @@ burnup_cat$date <- as.Date(burnup_cat$date, "%Y-%m-%d")
 burnup_output <- png(filename = sprintf("~/html/%s_tranche%s_burnup_points.png", args$project, args$tranche_num), width=1000, height=1125, units="px", pointsize=30)
 ggplot(backlog[backlog$category==args$tranche_name,]) + 
    labs(title=sprintf("%s burnup by points", args$tranche_name), y="Story Point Total") +
-   theme(text = element_text(size=30), legend.title=element_blank())+
+   theme(text = legend.title=element_blank())+
    geom_area(position='stack', aes(x = date, y = points, ymin=0), fill=args$color) +
    scale_x_date(breaks="1 month", label=date_format("%Y-%b-%d"))+
    scale_y_continuous(limits=c(0, as.numeric(args$points_height))) +
