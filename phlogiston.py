@@ -561,6 +561,10 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
     # Make the rest of the charts
     ######################################################################
     subprocess.call("Rscript make_charts.R {0} {1}".format(source_prefix, source_title), shell = True)
+
+    f = open('{0}../html/{1}_report_date.csv'.format(script_dir, source_prefix), 'w')
+    f.write(datetime.datetime.now().strftime('%c'))
+    f.close
     
 if __name__ == "__main__":
     main(sys.argv[1:])
