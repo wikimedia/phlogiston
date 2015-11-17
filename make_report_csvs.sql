@@ -133,79 +133,136 @@ SELECT ROUND(100 * maint_count::decimal / nullif((maint_count + new_count),0),0)
 /* ####################################################################
 Burnup and Velocity */
 
-DELETE FROM velocity_week where source = :'prefix';
-DELETE FROM velocity_delta where source = :'prefix';
+DELETE FROM velocity where source = :'prefix';
 
-INSERT INTO velocity_week (
+INSERT INTO velocity (
 SELECT source,
+       category,
        date,
        SUM(points) AS points,
        SUM(count) AS count
   FROM tall_backlog
  WHERE status = '"resolved"'
    AND EXTRACT(dow from date) = 0 
-   AND date >= current_date - interval '3 months'
+   AND date >= current_date - interval '6 months'
    AND source = :'prefix'
- GROUP BY date, source);
+ GROUP BY date, source, category);
 
-INSERT INTO velocity_delta (
-SELECT source,
-       date,
-       (points - lag(points) OVER (ORDER BY date)) as points,
-       (count - lag(count) OVER (ORDER BY date)) as count
-  FROM velocity_week
- ORDER BY date);
+UPDATE velocity
+   SET delta_points = COALESCE(subq.delta_points,0),
+       delta_count = COALESCE(subq.delta_count,0)
+  FROM (SELECT source,
+               date,
+               category,
+               count - lag(count) OVER (PARTITION BY source, category ORDER BY date) as delta_count,
+               points - lag(points) OVER (PARTITION BY source, category ORDER BY date) as delta_points
+	  FROM velocity
+	 WHERE source = :'prefix') as subq
+  WHERE velocity.source = subq.source
+    AND velocity.date = subq.date
+    AND velocity.category = subq.category;   
 
-UPDATE velocity_delta a
-   SET velocity_points = (SELECT points
-                       FROM (SELECT date,
-                                    points - lag(points) OVER (ORDER BY date) as points
-                               FROM velocity_week
-                              WHERE source = :'prefix'
-                             ) as b
-                      WHERE a.date = b.date
-                        AND source = :'prefix');
-
-UPDATE velocity_delta a
-   SET velocity_count = (SELECT count
-                       FROM (SELECT date,
-                                    count - lag(count) OVER (ORDER BY date) as count
-                               FROM velocity_week
-                              WHERE source = :'prefix'
-                              ) as b
-                      WHERE a.date = b.date
-                        AND source = :'prefix');
+SELECT calculate_velocities(:'prefix');
+			      
+COPY (
+SELECT date,
+       sum(delta_points) as points,
+       sum(delta_count) as count
+  FROM velocity
+ WHERE source = :'prefix'
+ GROUP BY date
+ ORDER BY date
+) TO '/tmp/phlog/velocity.csv' DELIMITER ',' CSV HEADER;
 
 COPY (
 SELECT date,
-       velocity_points,
-       velocity_count
-  FROM velocity_delta
+       category,
+       delta_points as points,
+       delta_count as count
+  FROM velocity
  WHERE source = :'prefix'
-) TO '/tmp/phlog/velocity.csv' DELIMITER ',' CSV HEADER;
+ ORDER BY category, date
+) TO '/tmp/phlog/tranche_velocity.csv' DELIMITER ',' CSV HEADER;
+
+COPY (
+SELECT date,
+       category,
+       opt_points_vel,
+       nom_points_vel,
+       pes_points_vel
+  FROM velocity
+ WHERE source = :'prefix'
+ ORDER BY category, date
+) TO '/tmp/phlog/tranche_velocity_points.csv' DELIMITER ',' CSV HEADER;
+
+COPY (
+SELECT date,
+       category,
+       opt_count_vel,
+       nom_count_vel,
+       pes_count_vel
+  FROM velocity
+ WHERE source = :'prefix'
+ ORDER BY category, date
+) TO '/tmp/phlog/tranche_velocity_count.csv' DELIMITER ',' CSV HEADER;
 
 /* ####################################################################
 Backlog growth calculations */
 
-INSERT INTO backlog_size (
+INSERT INTO open_backlog_size (
 SELECT source,
+       category,
        date,
        SUM(points) AS points,
-       SUM(count) as count
+       SUM(count) AS count
   FROM tall_backlog
  WHERE status != '"resolved"'
    AND EXTRACT(dow from date) = 0
    AND source = :'prefix'
- GROUP BY date, source);
+ GROUP BY date, source, category);
+
+UPDATE open_backlog_size
+   SET delta_points = COALESCE(subq.delta_points,0),
+       delta_count = COALESCE(subq.delta_count,0)
+  FROM (SELECT source,
+               date,
+               category,
+               count - lag(count) OVER (PARTITION BY source, category ORDER BY date) as delta_count,
+               points - lag(points) OVER (PARTITION BY source, category ORDER BY date) as delta_points
+	  FROM open_backlog_size
+	 WHERE source = :'prefix') as subq
+  WHERE open_backlog_size.source = subq.source
+    AND open_backlog_size.date = subq.date
+    AND open_backlog_size.category = subq.category;   
 
 COPY (
 SELECT date,
-       (points - lag(points) OVER (ORDER BY date)) as points,
-       (count - lag(count) OVER (ORDER BY date)) as count
-  FROM backlog_size
+       sum(delta_points) as points,
+       sum(delta_count) as count
+  FROM open_backlog_size
  WHERE source = :'prefix'
+ GROUP BY date
  ORDER BY date
 ) to '/tmp/phlog/net_growth.csv' DELIMITER ',' CSV HEADER;
+
+/* ####################################################################
+Forecast */
+
+COPY (
+SELECT source,
+       date,
+       category,
+       opt_points_fore,
+       nom_points_fore,
+       pes_points_fore,
+       opt_count_fore,
+       nom_count_fore,
+       pes_count_fore
+  FROM velocity
+ WHERE source = :'prefix'
+ ORDER BY date
+) to '/tmp/phlog/forecast.csv' DELIMITER ',' CSV HEADER;
+
 
 /* ####################################################################
 Recently Closed */
@@ -316,52 +373,3 @@ since it's the only way to identify recently resolved tasks
 --       ORDER BY week, points)
 -- TO '/tmp/phlog/age_of_resolved.csv' DELIMITER ',' CSV HEADER;
 
--- /* Queries actually used for forecasting - data is copied to spreadsheet */
-
--- SHOULD BE REPLACED BY CONEWORMS
-
--- /* Assumes that data is current; in theory we could use max_date in the
--- data as the baseline instead of current_data but that's probably
--- something for the plpgsql port */
-
--- COPY (
--- SELECT SUM(velocity_points)/3 AS min_velocity
---   FROM (SELECT velocity_points 
---           FROM velocity_delta
---          WHERE date >= current_date - interval '3 months'
---            AND velocity_points <> 0 
---          ORDER BY velocity_points 
---          LIMIT 3) as x)
--- TO '/tmp/phlog/min.csv' DELIMITER ',' CSV;
-
--- COPY (
--- SELECT SUM(velocity_points)/3 AS max_velocity
---   FROM (SELECT velocity_points
---           FROM velocity_delta
---          WHERE date >= current_date - interval '3 months'
---            AND velocity_points <> 0 
---          ORDER BY velocity_points DESC
---          LIMIT 3) as x)
--- TO '/tmp/phlog/max.csv' DELIMITER ',' CSV;
-
--- COPY (
--- SELECT AVG(velocity_points) AS avg_velocity
---   FROM (SELECT velocity_points 
---           FROM velocity_delta
---          WHERE date >= current_date - interval '3 months'
---            AND velocity_points <> 0 
---          ORDER BY velocity_points)
---          as x)
--- TO '/tmp/phlog/avg.csv' DELIMITER ',' CSV;
-
--- COPY (
--- SELECT projectcolumn,
---        SUM(points) AS open_backlog
---   FROM task_history
---  WHERE projectcolumn SIMILAR TO 'TR%'
---    AND status='"open"'
---    AND date=(SELECT MAX(date)
---                FROM task_history)
---  GROUP BY projectcolumn
---  ORDER BY projectcolumn)
---  TO '/tmp/phlog/backlog_current.csv' DELIMITER ',' CSV HEADER;

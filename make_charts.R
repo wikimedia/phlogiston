@@ -76,7 +76,7 @@ velocity$date <- as.Date(velocity$date, "%Y-%m-%d")
 
 velocity_output <- png(filename = sprintf("~/html/%s_velocity.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 
-ggplot(velocity, aes(date, velocity_points)) +
+ggplot(velocity, aes(date, points)) +
   geom_bar(stat="identity") +
   theme_fivethirtynine() +
   labs(title=sprintf("%s weekly velocity by points", args$title), y="Story Points")
@@ -84,7 +84,7 @@ dev.off()
 
 velocity_count_output <- png(filename = sprintf("~/html/%s_velocity_count.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 
-ggplot(velocity, aes(date, velocity_count)) +
+ggplot(velocity, aes(date, count)) +
   geom_bar(stat="identity") +
   theme_fivethirtynine() +
   labs(title=sprintf("%s weekly velocity by count", args$title), y="Tasks")

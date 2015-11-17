@@ -139,35 +139,42 @@ CREATE TABLE maintenance_delta (
     new_count int
 );
 
-DROP TABLE IF EXISTS velocity_week;
-DROP TABLE IF EXISTS velocity_delta;
+DROP TABLE IF EXISTS velocity;
 
-CREATE TABLE velocity_week (
+CREATE TABLE velocity (
     source varchar(6),
-    date timestamp,
-    points int,
-    count int
-);
-
-CREATE TABLE velocity_delta (
-    source varchar(6),
+    category text,
     date timestamp,
     points int,
     count int,
-    velocity_points int,
-    velocity_count int
+    delta_points int,
+    delta_count int,
+    opt_points_vel int,
+    nom_points_vel int,
+    pes_points_vel int,
+    opt_count_vel int,
+    nom_count_vel int,
+    pes_count_vel int,
+    opt_points_fore int,
+    nom_points_fore int,
+    pes_points_fore int,
+    opt_count_fore int,
+    nom_count_fore int,
+    pes_count_fore int
 );
 
-DROP TABLE IF EXISTS backlog_size;
+DROP TABLE IF EXISTS open_backlog_size;
 
-CREATE TABLE backlog_size (
+CREATE TABLE open_backlog_size (
     source varchar(6),
+    category text,
     date timestamp,
     points int,
-    count int
+    count int,
+    delta_points int,
+    delta_count int
 );
       
-
 CREATE OR REPLACE FUNCTION wipe_reporting(
        source_param varchar(6)
 ) RETURNS void AS $$
@@ -177,6 +184,22 @@ BEGIN
 
     DELETE FROM zoom_list
      WHERE source = source_param;
+
+    DELETE FROM recently_closed
+     WHERE source = source_param;
+
+    DELETE FROM maintenance_week
+     WHERE source = source_param;
+
+    DELETE FROM maintenance_delta
+     WHERE source = source_param;
+
+    DELETE FROM velocity
+     WHERE source = source_param;
+
+    DELETE FROM open_backlog_size
+     WHERE source = source_param;
+
 END;
 $$ LANGUAGE plpgsql;
 
@@ -253,3 +276,159 @@ BEGIN
     RETURN;
 END;
 $$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION calculate_velocities(
+    source_prefix varchar(6)
+    ) RETURNS void AS $$
+DECLARE
+  weekrow record;
+  tranche record;
+  min_points_vel float;
+  avg_points_vel float;
+  max_points_vel float;
+  min_count_vel float;
+  avg_count_vel float;
+  max_count_vel float;
+  min_points_fore float;
+  avg_points_fore float;
+  max_points_fore float;
+  min_count_fore float;
+  avg_count_fore float;
+  max_count_fore float;
+BEGIN
+
+    FOR weekrow IN SELECT DISTINCT date
+                     FROM velocity
+                    WHERE source = source_prefix
+                    ORDER BY date
+    LOOP
+        FOR tranche IN SELECT DISTINCT category
+	                 FROM tall_backlog
+			WHERE date = weekrow.date
+			  AND source = source_prefix
+			ORDER BY category
+	LOOP
+	    SELECT SUM(delta_points)/3 AS min_points_vel
+              INTO min_points_vel
+              FROM (SELECT delta_points
+                      FROM velocity subqv
+                     WHERE subqv.date >= weekrow.date - interval '3 months'
+                       AND subqv.date < weekrow.date
+                       AND subqv.source = source_prefix
+                       AND subqv.category = tranche.category
+                     ORDER BY subqv.delta_points 
+                     LIMIT 3) as x;
+
+	    SELECT SUM(delta_points)/3 AS max_points_vel
+              INTO max_points_vel
+              FROM (SELECT delta_points
+                      FROM velocity subqv
+                     WHERE subqv.date >= weekrow.date - interval '3 months'
+                       AND subqv.date < weekrow.date
+                       AND subqv.source = source_prefix
+                       AND subqv.category = tranche.category
+                     ORDER BY subqv.delta_points DESC
+                     LIMIT 3) as x;
+
+            SELECT AVG(delta_points)
+              INTO avg_points_vel
+              FROM velocity subqv
+             WHERE subqv.date >= weekrow.date - interval '3 months'
+               AND subqv.date < weekrow.date
+               AND subqv.source = source_prefix
+               AND subqv.category = tranche.category;
+
+	    SELECT SUM(delta_count)/3 AS min_count_vel
+              INTO min_count_vel
+              FROM (SELECT delta_count
+                      FROM velocity subqv
+                     WHERE subqv.date >= weekrow.date - interval '3 months'
+                       AND subqv.date < weekrow.date
+                       AND subqv.source = source_prefix
+                       AND subqv.category = tranche.category
+                     ORDER BY subqv.delta_count 
+                     LIMIT 3) as x;
+
+	    SELECT SUM(delta_count)/3 AS max_count_vel
+              INTO max_count_vel
+              FROM (SELECT delta_count
+                      FROM velocity subqv
+                     WHERE subqv.date >= weekrow.date - interval '3 months'
+                       AND subqv.date < weekrow.date
+                       AND subqv.source = source_prefix
+                       AND subqv.category = tranche.category
+                     ORDER BY subqv.delta_count DESC
+                     LIMIT 3) as x;
+
+            SELECT AVG(delta_count)
+              INTO avg_count_vel
+              FROM velocity subqv
+             WHERE subqv.date >= weekrow.date - interval '3 months'
+               AND subqv.date < weekrow.date
+               AND subqv.source = source_prefix
+               AND subqv.category = tranche.category;
+
+            SELECT points::float / NULLIF(min_points_vel,0)
+	      INTO min_points_fore
+	      FROM open_backlog_size
+             WHERE source = source_prefix
+	       AND date = weekrow.date
+	       AND category = tranche.category;
+
+            SELECT points::float / NULLIF(avg_points_vel,0)
+	      INTO avg_points_fore
+	      FROM open_backlog_size
+             WHERE source = source_prefix
+	       AND date = weekrow.date
+	       AND category = tranche.category;
+
+            SELECT points::float / NULLIF(max_points_vel,0)
+	      INTO max_points_fore
+	      FROM open_backlog_size
+             WHERE source = source_prefix
+	       AND date = weekrow.date
+	       AND category = tranche.category;
+
+            SELECT count::float / NULLIF(min_count_vel,0)
+	      INTO min_count_fore
+	      FROM open_backlog_size
+             WHERE source = source_prefix
+	       AND date = weekrow.date
+	       AND category = tranche.category;
+
+            SELECT count::float / NULLIF(avg_count_vel,0)
+	      INTO avg_count_fore
+	      FROM open_backlog_size
+             WHERE source = source_prefix
+	       AND date = weekrow.date
+	       AND category = tranche.category;
+
+            SELECT count::float / NULLIF(max_count_vel,0)
+	      INTO max_count_fore
+	      FROM open_backlog_size
+             WHERE source = source_prefix
+	       AND date = weekrow.date
+	       AND category = tranche.category;
+
+            UPDATE velocity
+               SET pes_points_vel = round(min_points_vel),
+                   nom_points_vel = round(avg_points_vel),
+                   opt_points_vel = round(max_points_vel),
+                   pes_count_vel = round(min_count_vel),
+                   nom_count_vel = round(avg_count_vel),
+                   opt_count_vel = round(max_count_vel),
+		   pes_points_fore = round(min_points_fore),
+		   nom_points_fore = round(avg_points_fore),
+  		   opt_points_fore = round(max_points_fore),
+		   pes_count_fore = round(min_count_fore),
+		   nom_count_fore = round(avg_count_fore),
+  		   opt_count_fore = round(max_count_fore)
+             WHERE source = source_prefix
+               AND category = tranche.category
+               AND date = weekrow.date;
+        END LOOP;
+    END LOOP;
+    RETURN;
+END;
+$$ LANGUAGE plpgsql;
+
