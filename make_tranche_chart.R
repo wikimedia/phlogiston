@@ -103,7 +103,7 @@ ggplot(forecast) +
    geom_line(aes(x=date, y=pes_points_fore), size=1, color="red") +
    geom_line(aes(x=date, y=nom_points_fore), size=3, color="gray") +
    geom_line(aes(x=date, y=opt_points_fore), size=1, color="green") +
-   labs(title=sprintf("%s completetion forecast by points", args$tranche_name), y="weeks remaining") +
+   labs(title=sprintf("%s completion forecast by points", args$tranche_name), y="weeks remaining") +
    scale_x_date(breaks="1 month", label=date_format("%Y-%b-%d"))+
    scale_y_discrete(limits=c(0,50))+
    theme_fivethirtynine()
@@ -115,7 +115,7 @@ ggplot(forecast) +
    geom_line(aes(x=date, y=pes_count_fore), size=1, color="red") +
    geom_line(aes(x=date, y=nom_count_fore), size=3, color="gray") +
    geom_line(aes(x=date, y=opt_count_fore), size=1, color="green") +
-   labs(title=sprintf("%s completetion forecast by count", args$tranche_name), y="weeks remaining") +
+   labs(title=sprintf("%s completion forecast by count", args$tranche_name), y="weeks remaining") +
    scale_x_date(breaks="1 month", label=date_format("%Y-%b-%d"))+
    scale_y_discrete(limits=c(0,50))+
    theme_fivethirtynine()

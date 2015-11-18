@@ -580,7 +580,7 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
 
     html_string = """<p><table><tr><th rowspan="3">Category</th><th colspan="6">Weeks until completion</th></tr>
                                <tr><th colspan="3">By Points</th><th>By Count</th></tr>
-                               <tr><th>Pessimistic</th><th>Nominal</th><th>Optimistic</th></tr>"""
+                               <tr><th>Pess.</th><th>Nominal</th><th>Opt.</th><th>Pess.</th><th>Nominal</th><th>Opt.</th></tr>"""
     cur.execute(forecast_query, {'source_prefix': source_prefix})
     for row in cur.fetchall():
         html_string += "<tr><td>{0}</td><td>{1}</td><td><b>{2}</b></td><td>{3}</td><td>{4}</td><td><b>{5}</b></td><td>{6}</td>".format(row[0],row[1],row[2],row[3],row[4],row[5],row[6])
