@@ -63,7 +63,6 @@ ggplot(backlog[backlog$category==args$tranche_name,]) +
 geom_line(data=burnup_cat[burnup_cat$category==args$tranche_name,], aes(x=date, y=count), size=2)
 dev.off()
 
-
 velocity_cat_points <- read.csv(sprintf("/tmp/%s/tranche_velocity_points.csv", args$project))
 velocity_cat_points$date <- as.Date(velocity_cat_points$date, "%Y-%m-%d")
 velocity_output <- png(filename = sprintf("~/html/%s_tranche%s_velocity_points.png", args$project, args$tranche_num), width=1000, height=700, units="px", pointsize=10)
@@ -94,30 +93,31 @@ ggplot(vlong_count) +
    theme_fivethirtynine()
 dev.off()
 
+
 forecast <- read.csv(sprintf("/tmp/%s/forecast.csv", args$project))
 forecast$date <- as.Date(forecast$date, "%Y-%m-%d")
 forecast <- forecast[forecast$category == args$tranche_name,]
 forecast_points_output <- png(filename = sprintf("~/html/%s_tranche%s_forecast_points.png", args$project, args$tranche_num), width=1000, height=700, units="px", pointsize=10)
 
 ggplot(forecast) +
-   geom_line(aes(x=date, y=pes_points_fore), size=2, color="red") +
+   geom_line(aes(x=date, y=pes_points_fore), size=1, color="red") +
    geom_line(aes(x=date, y=nom_points_fore), size=3, color="gray") +
-   geom_line(aes(x=date, y=opt_points_fore), size=2, color="green") +
+   geom_line(aes(x=date, y=opt_points_fore), size=1, color="green") +
    labs(title=sprintf("%s completetion forecast by points", args$tranche_name), y="weeks remaining") +
    scale_x_date(breaks="1 month", label=date_format("%Y-%b-%d"))+
-   scale_y_continuous(limits=c(0,50))+
+   scale_y_discrete(limits=c(NA,50))+
    theme_fivethirtynine()
 dev.off()
 
 forecast_count_output <- png(filename = sprintf("~/html/%s_tranche%s_forecast_count.png", args$project, args$tranche_num), width=1000, height=700, units="px", pointsize=10)
 
 ggplot(forecast) +
-   geom_line(aes(x=date, y=pes_count_fore), size=2, color="red") +
+   geom_line(aes(x=date, y=pes_count_fore), size=1, color="red") +
    geom_line(aes(x=date, y=nom_count_fore), size=3, color="gray") +
-   geom_line(aes(x=date, y=opt_count_fore), size=2, color="green") +
+   geom_line(aes(x=date, y=opt_count_fore), size=1, color="green") +
    labs(title=sprintf("%s completetion forecast by count", args$tranche_name), y="weeks remaining") +
    scale_x_date(breaks="1 month", label=date_format("%Y-%b-%d"))+
-   scale_y_continuous(limits=c(0,50))+
+   scale_y_discrete(limits=c(NA,50))+
    theme_fivethirtynine()
 dev.off()
 
