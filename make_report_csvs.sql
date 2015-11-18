@@ -274,7 +274,7 @@ SELECT category,
   FROM velocity
  WHERE source = :'prefix'
    AND date = (SELECT MAX(date) FROM velocity WHERE source = :'prefix')
-) to '/tmp/phlog/current_forecast.csv DELIMITER ',' CSV HEADER;
+) to '/tmp/phlog/current_forecasts.csv' DELIMITER ',' CSV HEADER;
 
 
 /* ####################################################################
