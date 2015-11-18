@@ -571,9 +571,9 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
                pes_points_fore,
                nom_points_fore,
                opt_points_fore,
-               pes_count_fore
+               pes_count_fore,
                nom_count_fore,
-               opt_count_fore,
+               opt_count_fore
           FROM velocity
          WHERE source = %(source_prefix)s
            AND date = (SELECT MAX(date) FROM velocity WHERE source = %(source_prefix)s)"""
