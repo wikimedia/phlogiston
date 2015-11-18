@@ -87,6 +87,7 @@ def load(conn, end_date, VERBOSE, DEBUG):
 
     # reload the database tables
     cur.execute(open("rebuild_working_tables.sql", "r").read())
+    cur.execute(open("rebuild_stored_procedures.sql", "r").read())
 
     if VERBOSE:
         print("Loading dump file")
