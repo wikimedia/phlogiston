@@ -579,7 +579,7 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
            AND date = (SELECT MAX(date) FROM velocity WHERE source = %(source_prefix)s)"""
 
     html_string = """<p><table><tr><th rowspan="3">Category</th><th colspan="6">Weeks until completion</th></tr>
-                               <tr><th colspan="3>By Points</th><th>By Count</th></tr>
+                               <tr><th colspan="3">By Points</th><th>By Count</th></tr>
                                <tr><th>Pessimistic</th><th>Nominal</th><th>Optimistic</th></tr>"""
     cur.execute(forecast_query, {'source_prefix': source_prefix})
     for row in cur.fetchall():
