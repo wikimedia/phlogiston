@@ -263,6 +263,19 @@ SELECT source,
  ORDER BY date
 ) to '/tmp/phlog/forecast.csv' DELIMITER ',' CSV HEADER;
 
+COPY (
+SELECT category,
+       opt_points_fore,
+       nom_points_fore,
+       pes_points_fore,
+       opt_count_fore,
+       nom_count_fore,
+       pes_count_fore
+  FROM velocity
+ WHERE source = :'prefix'
+   AND date = (SELECT MAX(date) FROM velocity WHERE source = :'prefix')
+) to '/tmp/phlog/current_forecast.csv DELIMITER ',' CSV HEADER;
+
 
 /* ####################################################################
 Recently Closed */

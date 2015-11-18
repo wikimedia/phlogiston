@@ -496,6 +496,7 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
     subprocess.call("sed s/phl_/{0}_/g html/phl.html | sed s/Phlogiston/{1}/g > ~/html/{0}.html".format(source_prefix, source_title), shell = True)
     subprocess.call("cp /tmp/{0}/maintenance_fraction_total_by_points.csv ~/html/{0}_maintenance_fraction_total_by_points.csv".format(source_prefix), shell = True)
     subprocess.call("cp /tmp/{0}/maintenance_fraction_total_by_count.csv ~/html/{0}_maintenance_fraction_total_by_count.csv".format(source_prefix), shell = True)
+    subprocess.call("cp /tmp/{0}/current_forecasts.csv ~/html/{0}_current_forecasts.csv".format(source_prefix), shell = True)
     script_dir = os.path.dirname(__file__)
     f = open('{0}../html/{1}_projects.csv'.format(script_dir, source_prefix), 'w')
     for project_name in project_name_list:
