@@ -496,7 +496,7 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
     subprocess.call("sed s/phl_/{0}_/g html/phl.html | sed s/Phlogiston/{1}/g > ~/html/{0}.html".format(source_prefix, source_title), shell = True)
     subprocess.call("cp /tmp/{0}/maintenance_fraction_total_by_points.csv ~/html/{0}_maintenance_fraction_total_by_points.csv".format(source_prefix), shell = True)
     subprocess.call("cp /tmp/{0}/maintenance_fraction_total_by_count.csv ~/html/{0}_maintenance_fraction_total_by_count.csv".format(source_prefix), shell = True)
-    subprocess.call("cp /tmp/{0}/current_forecasts.csv ~/html/{0}_current_forecasts.csv".format(source_prefix), shell = True)
+
     script_dir = os.path.dirname(__file__)
     f = open('{0}../html/{1}_projects.csv'.format(script_dir, source_prefix), 'w')
     for project_name in project_name_list:
@@ -549,22 +549,47 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
         if chart_result == 0:
             points_png_name = "{0}_tranche{1}_burnup_points.png".format(source_prefix, i)
             count_png_name = "{0}_tranche{1}_burnup_count.png".format(source_prefix, i)
-            html_string = html_string + '<p><table><tr><td><a href="{0}"><img src="{0}"/></a></td>'.format(points_png_name)
-            html_string = html_string + '<td><a href="{0}"><img src="{0}"/></a></tr></table></p>'.format(count_png_name)
+            html_string +='<p><table><tr><td><a href="{0}"><img src="{0}"/></a></td>'.format(points_png_name)
+            html_string +='<td><a href="{0}"><img src="{0}"/></a></tr></table></p>'.format(count_png_name)
             points_png_name = "{0}_tranche{1}_velocity_points.png".format(source_prefix, i)
             count_png_name = "{0}_tranche{1}_velocity_count.png".format(source_prefix, i)
-            html_string = html_string + '<p><table><tr><td><a href="{0}"><img src="{0}"/></a></td>'.format(points_png_name)
-            html_string = html_string + '<td><a href="{0}"><img src="{0}"/></a></tr></table></p>'.format(count_png_name)
+            html_string +='<p><table><tr><td><a href="{0}"><img src="{0}"/></a></td>'.format(points_png_name)
+            html_string +='<td><a href="{0}"><img src="{0}"/></a></tr></table></p>'.format(count_png_name)
             points_png_name = "{0}_tranche{1}_forecast_points.png".format(source_prefix, i)
             count_png_name = "{0}_tranche{1}_forecast_count.png".format(source_prefix, i)
-            html_string = html_string + '<p><table><tr><td><a href="{0}"><img src="{0}"/></a></td>'.format(points_png_name)
-            html_string = html_string + '<td><a href="{0}"><img src="{0}"/></a></tr></table></p>'.format(count_png_name)
+            html_string +='<p><table><tr><td><a href="{0}"><img src="{0}"/></a></td>'.format(points_png_name)
+            html_string +='<td><a href="{0}"><img src="{0}"/></a></tr></table></p>'.format(count_png_name)
         i += 1
 
     f = open('{0}../html/{1}_tranches.html'.format(script_dir, source_prefix), 'w')
     f.write( html_string)
     f.close()
-    
+
+
+    forecast_query = """   
+        SELECT category,
+               pes_points_fore,
+               nom_points_fore,
+               opt_points_fore,
+               pes_count_fore
+               nom_count_fore,
+               opt_count_fore,
+          FROM velocity
+         WHERE source = %(source_prefix)s
+           AND date = (SELECT MAX(date) FROM velocity WHERE source = %(source_prefix)s)"""
+
+    html_string = """<p><table><tr><th rowspan="3">Category</th><th colspan="6">Weeks until completion</th></tr>
+                               <tr><th colspan="3>By Points</th><th>By Count</th></tr>
+                               <tr><th>Pessimistic</th><th>Nominal</th><th>Optimistic</th></tr>"""
+    cur.execute(forecast_query, {'source_prefix': source_prefix})
+    for row in cur.fetchall():
+        html_string += "<tr><td>{0}</td><td>{1}</td><td><b>{2}</b></td><td>{3}</td><td>{4}</td><td><b>{5}</b></td><td>{6}</td>".format(row[0],row[1],row[2],row[3],row[4],row[5],row[6])
+
+    html_string += "</table></p>"
+    f = open('{0}../html/{1}_current_forecasts.html'.format(script_dir, source_prefix), 'w')
+    f.write( html_string)
+    f.close()
+
     cur.close()
 
     ######################################################################

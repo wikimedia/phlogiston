@@ -170,7 +170,7 @@ SELECT date,
 ) to '/tmp/phlog/net_growth.csv' DELIMITER ',' CSV HEADER;
 
 /* ####################################################################
-Burnup and Velocity */
+Burnup and Velocity and Forecasts */
 
 DELETE FROM velocity where source = :'prefix';
 
@@ -244,38 +244,6 @@ SELECT date,
  WHERE source = :'prefix'
  ORDER BY category, date
 ) TO '/tmp/phlog/tranche_velocity_count.csv' DELIMITER ',' CSV HEADER;
-
-/* ####################################################################
-Forecast */
-
-COPY (
-SELECT source,
-       date,
-       category,
-       opt_points_fore,
-       nom_points_fore,
-       pes_points_fore,
-       opt_count_fore,
-       nom_count_fore,
-       pes_count_fore
-  FROM velocity
- WHERE source = :'prefix'
- ORDER BY date
-) to '/tmp/phlog/forecast.csv' DELIMITER ',' CSV HEADER;
-
-COPY (
-SELECT category,
-       opt_points_fore,
-       nom_points_fore,
-       pes_points_fore,
-       opt_count_fore,
-       nom_count_fore,
-       pes_count_fore
-  FROM velocity
- WHERE source = :'prefix'
-   AND date = (SELECT MAX(date) FROM velocity WHERE source = :'prefix')
-) to '/tmp/phlog/current_forecasts.csv' DELIMITER ',' CSV HEADER;
-
 
 /* ####################################################################
 Recently Closed */
