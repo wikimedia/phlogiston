@@ -327,6 +327,15 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_d
                 pretty_status = status_raw[0]
 
             # ----------------------------------------------------------------------
+            # Priority
+            # ----------------------------------------------------------------------
+            cur.execute(transaction_values_query, {'query_date': query_date, 'transaction_type': 'priority', 'task_id': task_id})
+            priority_raw= cur.fetchone()
+            pretty_priority = ""
+            if priority_raw:
+                pretty_priority = priority_raw[0]
+                
+            # ----------------------------------------------------------------------
             # Project & Maintenance Type
             # ----------------------------------------------------------------------
             cur.execute(edge_values_query, {'task_id': task_id, 'query_date': query_date})
@@ -383,9 +392,10 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_d
                 %(project)s,
                 %(projectcolumn)s,
                 %(points)s,
-                %(maint_type)s)"""
+                %(maint_type)s,
+                %(priority)s)"""
 
-            cur.execute(denorm_insert, {'source': source_prefix, 'query_date': query_date, 'id': task_id, 'title': pretty_title, 'status': pretty_status, 'project': pretty_project, 'projectcolumn': pretty_column, 'points': pretty_points, 'maint_type': maint_type })
+            cur.execute(denorm_insert, {'source': source_prefix, 'query_date': query_date, 'id': task_id, 'title': pretty_title, 'status': pretty_status, 'priority': pretty_priority, 'project': pretty_project, 'projectcolumn': pretty_column, 'points': pretty_points, 'maint_type': maint_type })
     
         working_date += datetime.timedelta(days=1)
     cur.close()

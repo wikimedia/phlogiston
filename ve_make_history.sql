@@ -72,6 +72,7 @@ SELECT source,
   FROM task_history
  WHERE project = 'VisualEditor'
    AND projectcolumn SIMILAR TO 'TR%'
+   AND priority = '80'
    AND source = :'prefix'
    AND date >= '2015-06-18'
 GROUP BY status, category, date, source);

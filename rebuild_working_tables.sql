@@ -66,8 +66,9 @@ CREATE TABLE task_history (
        project text,
        projectcolumn text,
        points int,
-       maint_type text
-);
+       maint_type text,
+       priority text
+       );
 
 CREATE INDEX ON task_history (project) ;
 CREATE INDEX ON task_history (projectcolumn) ;
