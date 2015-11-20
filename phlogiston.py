@@ -545,12 +545,12 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
     colors = []
     proc = subprocess.check_output("Rscript get_palette.R {0}".format(len(category_list)), shell=True)
     color_output = proc.decode().split()
-    for item in color_output:
+    for item in reverse(color_output):
         if '#' in item:
             colors.append(item)
     i = 0
     html_string = ""
-    for category in reversed(category_list):
+    for category in category_list:
         if i > 8:
             # if there are more than 9 tranches, probably this data doesn't make much sense and there could be dozens more.
             break
