@@ -191,16 +191,6 @@ def load(conn, end_date, VERBOSE, DEBUG):
                                  'has_edge_data': has_edge_data,
                                  'active_projects': active_proj})
 
-    max_date_query = """SELECT MAX(date_modified)
-                          FROM maniphest_transaction"""
-
-    cur.execute(max_date_query)
-    max_date = cur.fetchone()[0]
-    script_dir = os.path.dirname(__file__)
-    f = open('{0}../html/max_date.csv'.format(script_dir), 'w')
-    f.write(max_date.strftime('%c'))
-    cur.close()
-
 
 def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_date, end_date, source_prefix):
     cur = conn.cursor()
@@ -398,6 +388,7 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_d
             cur.execute(denorm_insert, {'source': source_prefix, 'query_date': query_date, 'id': task_id, 'title': pretty_title, 'status': pretty_status, 'priority': pretty_priority, 'project': pretty_project, 'projectcolumn': pretty_column, 'points': pretty_points, 'maint_type': maint_type })
     
         working_date += datetime.timedelta(days=1)
+
     cur.close()
 
 def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, project_name_list):
@@ -420,7 +411,7 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
     grouping_data = '{0}_recategorization.csv'.format(source_prefix)
     recat_cases = ''
     recat_else = ''
-    zoom_list = False
+    zoom_list_present = False
     zoom_delete = """DELETE FROM zoom_list WHERE source = %(source_prefix)s"""
     cur.execute(zoom_delete, {'source_prefix':source_prefix})
     zoom_save = """INSERT INTO zoom_list VALUES (%(source_prefix)s, %(sort_order)s, %(category)s)"""
@@ -434,7 +425,7 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
                     recat_cases += ' WHEN category LIKE \'{0}\' THEN \'{1}\''.format(
                         line['matchstring'], line['title'])
                 if line['zoom_list'].lower() in ['true', 't', '1', 'yes', 'y']:
-                    zoom_list = True
+                    zoom_list_present = True
                     cur.execute(zoom_save, {'source_prefix': source_prefix, 'sort_order': line['sort_order'], 'category': line['title']})
 
         recat_update = """UPDATE {0}
@@ -446,31 +437,35 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
         unsafe_recat_update = recat_update.format('tall_backlog',recat_cases, recat_else, source_prefix)
         cur.execute(unsafe_recat_update)
 
-    # if any rows in the custom recategorization file indicate a zoom list, use that.  Otherwise,
-    # the zoom_list and category_list are identical
-    if zoom_list:
-        category_query = """SELECT category 
-                              FROM zoom_list 
-                             WHERE source = %(source_prefix)s
-                             ORDER BY sort_order"""
 
-    else:
-        category_query = """SELECT DISTINCT category 
-                              FROM tall_backlog 
-                             WHERE source = %(source_prefix)s
-                             ORDER BY category"""
+    # if no zoom_list was indicated in the data, use alphabetical order
+    # of categories to create one
+    if not zoom_list_present:
         zoom_insert = """INSERT INTO zoom_list (
-                             SELECT %(source_prefix)s, 
-                                     row_number() OVER(ORDER BY category asc),
-                                     category
-                               FROM tall_backlog
-                              WHERE source = %(source_prefix)s
-                              ORDER BY category)"""
+                         SELECT %(source_prefix)s, 
+                                row_number() OVER(ORDER BY category asc),
+                                category
+                           FROM (SELECT DISTINCT category
+                                   FROM tall_backlog
+                                  WHERE source = %(source_prefix)s
+                                  ORDER BY category) as foo)"""
         cur.execute(zoom_insert, {'source_prefix': source_prefix})
-    
-    cur.execute(category_query, {'source_prefix': source_prefix})
-    category_list_of_tuples = cur.fetchall()
-    category_list = [item[0] for item in category_list_of_tuples]
+        
+    zoom_query = """SELECT category
+                      FROM (SELECT z.category,
+                                   max(z.sort_order) as sort_order,
+                                   sum(t.count) as xcount
+                              FROM zoom_list z, tall_backlog t
+                             WHERE z.source = %(source_prefix)s
+                               AND z.source = t.source
+                               AND z.category = t.category
+                             GROUP BY z.category) as foo
+                     WHERE xcount > 0 
+                    ORDER BY sort_order"""
+
+    cur.execute(zoom_query, {'source_prefix': source_prefix})
+    zoom_list_of_tuples = cur.fetchall()
+    zoom_list = [item[0] for item in zoom_list_of_tuples]
 
     # Have to load the recently closed table so that it can be
     # recategorized this recat is done twice (once for tall_backlog,
@@ -525,32 +520,30 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
                                      FROM (SELECT SUM(points) AS points
                                              FROM tall_backlog
                                             WHERE source = %(source_prefix)s
-                                              AND category IN %(category_list)s
+                                              AND category IN %(zoom_list)s
                                             GROUP BY date, category) AS x"""
 
-    cur.execute(max_tranche_height_points_query, {'source_prefix': source_prefix, 'category_list': tuple(category_list)})
+    cur.execute(max_tranche_height_points_query, {'source_prefix': source_prefix, 'zoom_list': tuple(zoom_list)})
     max_tranche_height_points = cur.fetchone()[0]
     max_tranche_height_count_query = """SELECT MAX(count)
                                      FROM (SELECT SUM(count) AS count
                                              FROM tall_backlog
                                             WHERE source = %(source_prefix)s
-                                              AND category IN %(category_list)s
+                                              AND category IN %(zoom_list)s
                                             GROUP BY date, category) AS x"""
 
-    cur.execute(max_tranche_height_count_query, {'source_prefix': source_prefix, 'category_list': tuple(category_list)})
+    cur.execute(max_tranche_height_count_query, {'source_prefix': source_prefix, 'zoom_list': tuple(zoom_list)})
     max_tranche_height_count = cur.fetchone()[0]
 
-    # This should be passed to R but since it's static for now, it's just duplicated
-
     colors = []
-    proc = subprocess.check_output("Rscript get_palette.R {0}".format(len(category_list)), shell=True)
+    proc = subprocess.check_output("Rscript get_palette.R {0}".format(len(zoom_list)), shell=True)
     color_output = proc.decode().split()
-    for item in reverse(color_output):
+    for item in color_output:
         if '#' in item:
             colors.append(item)
     i = 0
     html_string = ""
-    for category in category_list:
+    for category in reversed(zoom_list):
         if i > 8:
             # if there are more than 9 tranches, probably this data doesn't make much sense and there could be dozens more.
             break
@@ -574,21 +567,23 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
     f.write( html_string)
     f.close()
 
-
     forecast_query = """   
-        SELECT category,
+        SELECT v.category,
                pes_points_fore,
                nom_points_fore,
                opt_points_fore,
                pes_count_fore,
                nom_count_fore,
                opt_count_fore
-          FROM velocity
-         WHERE source = %(source_prefix)s
-           AND date = (SELECT MAX(date) FROM velocity WHERE source = %(source_prefix)s)"""
+          FROM velocity v, zoom_list z
+         WHERE v.source = %(source_prefix)s
+           AND v.source = z.source
+           AND v.category = z.category
+           AND v.date = (SELECT MAX(date) FROM velocity WHERE source = %(source_prefix)s)
+         ORDER BY sort_order"""
 
-    html_string = """<p><table><tr><th rowspan="3">Category</th><th colspan="6">Weeks until completion</th></tr>
-                               <tr><th colspan="3">By Points</th><th>By Count</th></tr>
+    html_string = """<p><table border="1px solid lightgray" cellpadding="2" cellspacing="0"><tr><th rowspan="3">Category</th><th colspan="6">Weeks until completion</th></tr>
+                               <tr><th colspan="3">By Points</th><th colspan="3">By Count</th></tr>
                                <tr><th>Pess.</th><th>Nominal</th><th>Opt.</th><th>Pess.</th><th>Nominal</th><th>Opt.</th></tr>"""
     cur.execute(forecast_query, {'source_prefix': source_prefix})
     for row in cur.fetchall():
@@ -599,7 +594,15 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
     f.write( html_string)
     f.close()
 
-    cur.close()
+    max_date_query = """SELECT MAX(date)
+                          FROM task_history
+                         WHERE source like %(source)s"""
+
+    cur.execute(max_date_query, {'source':source_prefix})
+    max_date = cur.fetchone()[0]
+    script_dir = os.path.dirname(__file__)
+    f = open('{0}../html/{1}_max_date.csv'.format(script_dir, source_prefix), 'w')
+    f.write(max_date.strftime('%c %Z'))
 
     ######################################################################
     # Make the rest of the charts
@@ -607,8 +610,10 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
     subprocess.call("Rscript make_charts.R {0} {1}".format(source_prefix, source_title), shell = True)
 
     f = open('{0}../html/{1}_report_date.csv'.format(script_dir, source_prefix), 'w')
-    f.write(datetime.datetime.now().strftime('%c'))
+    f.write(datetime.datetime.now().strftime('%c %Z'))
     f.close
-    
+
+    cur.close()
+
 if __name__ == "__main__":
     main(sys.argv[1:])
