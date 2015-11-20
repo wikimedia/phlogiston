@@ -86,8 +86,8 @@ velocity_cat_count <- velocity_cat_count[velocity_cat_count$category == args$tra
 vlong_count <- melt(velocity_cat_count, id=c("date", "category"))
 
 ggplot(vlong_count) +
-   geom_bar(data=velocity_t[velocity_t$category == args$tranche_name,], aes(x=date, y=count), fill="grey", size=2, stat="identity") +
-   geom_line(aes(x=date, y=value, group=variable), size=3) +
+   geom_bar(data=velocity_t[velocity_t$category == args$tranche_name,], aes(x=date, y=count), fill="black", size=2, stat="identity") +
+   geom_line(aes(x=date, y=value, group=variable), size=3, color="gray") +
    labs(title=sprintf("%s velocity forecasts", args$tranche_name), y="Story Count") +
    scale_x_date(breaks="1 month", label=date_format("%Y-%b-%d"))+
    theme_fivethirtynine()
@@ -104,8 +104,8 @@ ggplot(forecast) +
    geom_line(aes(x=date, y=nom_points_fore), size=3, color="gray") +
    geom_line(aes(x=date, y=opt_points_fore), size=1, color="green") +
    labs(title=sprintf("%s completion forecast by points", args$tranche_name), y="weeks remaining") +
-   scale_x_date(breaks="1 month", label=date_format("%Y-%b-%d"))+
-   scale_y_discrete(limits=c(0,50))+
+   scale_x_date(breaks="1 month", label=date_format("%Y-%b-%d")) +
+   ylim(0,50) +
    theme_fivethirtynine()
 dev.off()
 
@@ -117,7 +117,7 @@ ggplot(forecast) +
    geom_line(aes(x=date, y=opt_count_fore), size=1, color="green") +
    labs(title=sprintf("%s completion forecast by count", args$tranche_name), y="weeks remaining") +
    scale_x_date(breaks="1 month", label=date_format("%Y-%b-%d"))+
-   scale_y_discrete(limits=c(0,50))+
+   ylim(0,50) + 
    theme_fivethirtynine()
 dev.off()
 
