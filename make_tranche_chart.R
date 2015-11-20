@@ -93,7 +93,6 @@ ggplot(vlong_count) +
    theme_fivethirtynine()
 dev.off()
 
-
 forecast <- read.csv(sprintf("/tmp/%s/forecast.csv", args$project))
 forecast$date <- as.Date(forecast$date, "%Y-%m-%d")
 forecast <- forecast[forecast$category == args$tranche_name,]
