@@ -105,8 +105,8 @@ ggplot(forecast) +
    geom_line(aes(x=date, y=opt_points_fore), size=1, color="green") +
    labs(title=sprintf("%s completion forecast by points", args$tranche_name), y="weeks remaining") +
    scale_x_date(breaks="1 month", label=date_format("%Y-%b-%d")) +
-   ylim(0,50) +
-   theme_fivethirtynine()
+   scale_y_discrete(limits=c(0,50), breaks=pretty_breaks(n=10)) +
+theme_fivethirtynine()
 dev.off()
 
 forecast_count_output <- png(filename = sprintf("~/html/%s_tranche%s_forecast_count.png", args$project, args$tranche_num), width=1000, height=700, units="px", pointsize=10)
@@ -117,7 +117,7 @@ ggplot(forecast) +
    geom_line(aes(x=date, y=opt_count_fore), size=1, color="green") +
    labs(title=sprintf("%s completion forecast by count", args$tranche_name), y="weeks remaining") +
    scale_x_date(breaks="1 month", label=date_format("%Y-%b-%d"))+
-   ylim(0,50) + 
+   scale_y_discrete(limits=c(0,50), breaks=pretty_breaks(n=10)) +
    theme_fivethirtynine()
 dev.off()
 
