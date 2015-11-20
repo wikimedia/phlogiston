@@ -50,7 +50,7 @@ ggplot(backlog[backlog$category==args$tranche_name,]) +
    labs(title=sprintf("%s burnup by points", args$tranche_name), y="Story Point Total") +
    theme(legend.title=element_blank())+
    geom_area(position='stack', aes(x = date, y = points, ymin=0), fill=args$color) +
-   scale_x_date(breaks="1 month", label=date_format("%Y-%b-%d"))+
+   scale_x_date(limits=c(cutoff_date, now), minor_breaks="1 week", label=date_format("%b %d %Y"))+
    scale_y_continuous(limits=c(0, as.numeric(args$points_height))) +
 geom_line(data=burnup_cat[burnup_cat$category==args$tranche_name,], aes(x=date, y=points), size=2)
 dev.off()
@@ -61,7 +61,7 @@ ggplot(backlog[backlog$category==args$tranche_name,]) +
    labs(title=sprintf("%s burnup by count", args$tranche_name), y="Story Count") +
    theme(legend.title=element_blank())+
    geom_area(position='stack', aes(x = date, y = count, ymin=0), fill=args$color) +
-   scale_x_date(breaks="1 month", label=date_format("%Y-%b-%d"))+
+   scale_x_date(limits=c(cutoff_date, now), minor_breaks="1 week", label=date_format("%b %d %Y"))+
    scale_y_continuous(limits=c(0, as.numeric(args$count_height))) +
 geom_line(data=burnup_cat[burnup_cat$category==args$tranche_name,], aes(x=date, y=count), size=2)
 dev.off()
@@ -78,7 +78,7 @@ ggplot(vlong_points) +
    geom_bar(data=velocity_t[velocity_t$category == args$tranche_name,], aes(x=date, y=points), fill="gray", size=2, stat="identity") +
    geom_line(aes(x=date, y=value, group=variable), size=3, color="black") +
    labs(title=sprintf("%s velocity forecasts", args$tranche_name), y="Story Point Total") +
-   scale_x_date(breaks="1 month", label=date_format("%Y-%b-%d"))+
+   scale_x_date(limits=c(cutoff_date, now), minor_breaks="1 week", label=date_format("%b %d %Y"))+
    theme_fivethirtynine()
 dev.off()
 
@@ -92,7 +92,7 @@ ggplot(vlong_count) +
    geom_bar(data=velocity_t[velocity_t$category == args$tranche_name,], aes(x=date, y=count), fill="gray", size=2, stat="identity") +
    geom_line(aes(x=date, y=value, group=variable), size=3, color="black") +
    labs(title=sprintf("%s velocity forecasts", args$tranche_name), y="Story Count") +
-   scale_x_date(breaks="1 month", label=date_format("%Y-%b-%d"))+
+   scale_x_date(limits=c(cutoff_date, now), minor_breaks="1 week", label=date_format("%b %d %Y"))+
    theme_fivethirtynine()
 dev.off()
 
@@ -106,7 +106,7 @@ ggplot(forecast) +
    geom_line(aes(x=date, y=nom_points_fore), size=3, color="gray") +
    geom_line(aes(x=date, y=opt_points_fore), size=1, color="green") +
    labs(title=sprintf("%s completion forecast by points", args$tranche_name), y="weeks remaining") +
-   scale_x_date(limits=c(cutoff_date, now), minor_breaks="1 week", label=date_format("%Y-%b-%d")) +
+   scale_x_date(limits=c(cutoff_date, now), minor_breaks="1 week", label=date_format("%b %d %Y")) +
    scale_y_continuous(limits=c(0,14), breaks=pretty_breaks(n=7)) +
 theme_fivethirtynine()
 dev.off()
@@ -118,7 +118,7 @@ ggplot(forecast) +
    geom_line(aes(x=date, y=nom_count_fore), size=3, color="gray") +
    geom_line(aes(x=date, y=opt_count_fore), size=1, color="green") +
    labs(title=sprintf("%s completion forecast by count", args$tranche_name), y="weeks remaining") +
-   scale_x_date(limits=c(cutoff_date, now), minor_breaks="1 week", label=date_format("%Y-%b-%d"))+
+   scale_x_date(limits=c(cutoff_date, now), minor_breaks="1 week", label=date_format("%b %d %Y"))+
    scale_y_continuous(limits=c(0,14), breaks=pretty_breaks(n=7) ) +
    theme_fivethirtynine()
 dev.off()
