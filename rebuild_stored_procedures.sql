@@ -113,7 +113,7 @@ CREATE OR REPLACE FUNCTION find_recently_closed_daily(
     source_prefix varchar(6)
     ) RETURNS void AS $$
 DECLARE
-  weekrow record;
+  daterow record;
 BEGIN
 
     DELETE FROM recently_closed
