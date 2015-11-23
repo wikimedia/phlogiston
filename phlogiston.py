@@ -338,12 +338,12 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_d
                 maint_type = 'Maintenance'
             else:
                 maint_type = ''
-            
+
             best_edge = ''
             # Reduce the list of edges to only the single best match,
             # where best = earliest in the specified project list
-            for project in edges:
-                if project in project_id_list:
+            for project in project_id_list:
+                if project in edges:
                     best_edge = project
                     break
 
