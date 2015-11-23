@@ -109,6 +109,44 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION find_recently_closed_daily(
+    source_prefix varchar(6)
+    ) RETURNS void AS $$
+DECLARE
+  weekrow record;
+BEGIN
+
+    DELETE FROM recently_closed
+     WHERE source = source_prefix;
+
+    FOR daterow IN SELECT DISTINCT date
+                  FROM task_history
+                   AND source = source_prefix
+                 ORDER BY date
+    LOOP
+
+        INSERT INTO recently_closed_individual (
+             SELECT source_prefix as source,
+                    date,
+		    id,
+		    title,
+                    project || ' ' || projectcolumn as category
+              FROM task_history
+             WHERE status = '"resolved"'
+               AND date = daterow.date
+               AND source = source_prefix
+               AND id NOT IN (SELECT id
+                                FROM task_history
+                               WHERE status = '"resolved"'
+                                 AND source = source_prefix
+                                 AND date = daterow.date - interval '1 day' )
+             );
+    END LOOP;
+
+    RETURN;
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION calculate_velocities(
     source_prefix varchar(6)
     ) RETURNS void AS $$

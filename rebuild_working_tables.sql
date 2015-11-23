@@ -109,6 +109,16 @@ CREATE TABLE recently_closed (
     count int
 );
 
+DROP TABLE IF EXISTS recently_closed_individual;
+
+CREATE TABLE recently_closed_individual (
+    source varchar(6),
+    id int,
+    title text,
+    date date,
+    category text
+);
+
 DROP TABLE IF EXISTS maintenance_week;
 DROP TABLE IF EXISTS maintenance_delta;
 
