@@ -113,9 +113,9 @@ DROP TABLE IF EXISTS recently_closed_individual;
 
 CREATE TABLE recently_closed_individual (
     source varchar(6),
+    date date,
     id int,
     title text,
-    date date,
     category text
 );
 
