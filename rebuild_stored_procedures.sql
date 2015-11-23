@@ -120,9 +120,9 @@ BEGIN
      WHERE source = source_prefix;
 
     FOR daterow IN SELECT DISTINCT date
-                  FROM task_history
-                   AND source = source_prefix
-                 ORDER BY date
+                     FROM task_history
+                    WHERE source = source_prefix
+                    ORDER BY date
     LOOP
 
         INSERT INTO recently_closed_individual (
