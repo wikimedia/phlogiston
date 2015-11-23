@@ -15,8 +15,12 @@ python3 phlogiston.py --reconstruct --report --project discir_source.py
 python3 phlogiston.py --reconstruct --report --project diswik_source.py
 python3 phlogiston.py --reconstruct --report --project dismap_source.py
 python3 phlogiston.py --reconstruct --report --project fr_source.py
-python3 phlogiston.py --reconstruct --report --project ios_source.py 
+python3 phlogiston.py --reconstruct --report --project ios_source.py
+python3 phlogiston.py --reconstruct --report --project ja_source.py
 python3 phlogiston.py --reconstruct --report --project phl_source.py
+python3 phlogiston.py --reconstruct --report --project rel_source.py
 python3 phlogiston.py --reconstruct --report --project tpg_source.py
 python3 phlogiston.py --reconstruct --report --project ve_source.py
+python3 phlogiston.py --reconstruct --report --project ve1_source.py
+
 
