@@ -13,7 +13,7 @@
     <h2>Forecasts</h2>
     <b><pre><!--# include file="phl_current_forecasts.html" --></pre></b>
     <p>Tasks included in several of these projects are only counted in the first matching project.</p>
-    <a name="burnups"><h2>Burnups</h2></a>
+    <a name="burnups"><h2>Project Burnup</h2></a>
     <p>The complete backlog and burnup for all VE work.  The black line represents total completed tasks, and since it includes tasks from various tranches, does not exactly correlate to the tranches.</p>
     <p>
       <table>
@@ -27,8 +27,8 @@
 	</tr>
       </table>
     </p>
-    <h2>Per-Tranche Burnups</h2>
-    <!--# block name="no-tranche" -->Per-category charts not available<!--# endblock -->
+    <h2>Per-Milestone Burnups</h2>
+    <!--# block name="no-tranche" -->Per-milestone charts not available<!--# endblock -->
     <!--# include file="phl_tranches.html" stub="no-tranche" -->
     <a name="velocity"><h2>Velocity</h2></a>
     <p>
@@ -54,6 +54,7 @@
 	  </td>
 	</tr>
       </table>
+    <p><a href="phl_recently_closed.html">List of recently closed tasks</a></p>
     <a name="analysis"><h2>Analysis</h2></a>
     <p>The percentage of completed work per week that was spent on "maintenance" work.  The total fraction is <!--# include file="phl_maintenance_fraction_total_by_points.csv" -->% by points, or <!--# include file="phl_maintenance_fraction_total_by_count.csv" -->% by count.</p>
       <table>

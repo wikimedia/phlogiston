@@ -594,6 +594,24 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, pr
     f.write( html_string)
     f.close()
 
+    recently_closed_query = """SELECT id,
+                                      title,
+                                      date,
+                                      category
+                                 FROM recently_closed_individual
+                                WHERE source = %(source_prefix)s
+                             ORDER BY date, category, id"""
+
+    html_string = """<p><table border="1px solid lightgray" cellpadding="2" cellspacing="0"><tr><th>Date</th><th>Category</th><th>Task</th></tr>"""
+    cur.execute(recently_closed_query, {'source_prefix': source_prefix})
+    for row in cur.fetchall():
+        html_string += "<tr><td>{2}</td><td>{3}</td><td><b><a href=\"https://phabricator.wikimedia.org/T{0}\">{0}: {1}</a></td></tr>".format(row[0],row[1],row[2],row[3])
+
+    html_string += "</table></p>"
+    f = open('{0}../html/{1}_recently_closed.html'.format(script_dir, source_prefix), 'w')
+    f.write( html_string)
+    f.close()
+
     max_date_query = """SELECT MAX(date)
                           FROM task_history
                          WHERE source like %(source)s"""
