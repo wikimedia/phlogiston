@@ -7,6 +7,6 @@
 auto-save-list
 tramp
 .\#*
-
+batch_report-local.bash
 .RData
 .Rhistory
