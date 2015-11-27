@@ -12,14 +12,16 @@ import time
 
 def main(argv):
     try:
-        opts, args = getopt.getopt(argv, "cde:hlp:rv", ["reconstruct", "debug", "enddate", "help", "load", "project=", "report", "verbose"])
+        opts, args = getopt.getopt(argv, "cde:hilnp:rv", ["reconstruct", "debug", "enddate", "help", "initialize", "load", "incremental", "project=", "report", "verbose"])
     except getopt.GetoptError as e:
         print(e)
         usage()
         sys.exit(2)
+    initialize = False
     load_data = False
     reconstruct_data = False
     run_report = False
+    incremental = False
     DEBUG = False
     VERBOSE = False
     default_points = 5
@@ -37,6 +39,10 @@ def main(argv):
             sys.exit()
         elif opt in ("-l", "--load"):
             load_data = True
+        elif opt in ("-i", "--initialize"):
+            initialize = True
+        elif opt in ("-n", "--incremental"):
+            incremental = True
         elif opt in ("-p", "--project"):
             project_source = arg
         elif opt in ("-r", "--report"):
@@ -45,6 +51,9 @@ def main(argv):
             VERBOSE = True
     conn = psycopg2.connect("dbname=phab")
     conn.autocommit = True
+
+    if initialize:
+        do_initialize(conn, VERBOSE, DEBUG)
 
     if load_data:
         load(conn, end_date, VERBOSE, DEBUG)
@@ -60,7 +69,7 @@ def main(argv):
 
     if reconstruct_data:
         if project_source:
-            reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_date, end_date, source_prefix)
+            reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_date, end_date, source_prefix, incremental)
         else:
             print("Reconstruct specified without a project.  Please specify a project with --project.")
     if run_report:
@@ -70,24 +79,47 @@ def main(argv):
             print("Report specified without a project.  Please specify a project with --project.")
     conn.close()
 
+    if not (initialize or load_data or reconstruct_data or run_report):
+        usage()
+        sys.exit()
+
+
 def usage():
    print("""Usage:\n
-  --debug to work on a small subset of data\n
-  --enddate ending date for loading and reconstruction; defaults to now\n
-  --help for this message.\n
-  --load to load data.  This will wipe existing data in the reporting database.\n
-  --project Name of a Python file containing metadata specific to the project to be analyzed.  Reconstruct and report will not function without a project.\n
-  --report Process data in SQL, generate graphs in R, and output a set of png files.\n
-  --verbose to show extra messages\n
-  --reconstruct Reprocess the loaded data to reconstruct a historical record day by day, in the database\n
-  --startdate The date reconstruction should start, as YYYY-MM-DD""")
-  
+At least one of:
+  --initialize       to create or recreate database tables and stored procedures.\n
+  --load             Load data from dump. This will wipe the previously loaded data, 
+                     but not any reconstructed data.\n
+  --reconstruct      Use the loaded data to reconstruct a historical record day by 
+                     day, in the database.  This will wipe previously reconstructed 
+                     data for this project.\n
+  --report           Process data in SQL, generate graphs in R, and output html and png
+                     in the ~/html directory.\n
+
+Optionally:
+  --debug        to work on a small subset of data and see extra information.\n
+  --enddate      ending date for loading and reconstruction, as YYYY-MM-DD. 
+                 Defaults to now.\n
+  --help         for this message.\n
+  --incremental  Reconstruct only new data since the last reconstruction for
+                 this project.  Faster.\n
+  --project      Name of a Python file containing metadata specific to the 
+                 project to be analyzed.  This is required for reconstruct and 
+                 report.\n
+  --startdate    The date reconstruction should start, as YYYY-MM-DD.\n
+  --verbose      Show progress messages.\n""")
+
+
+def do_initialize(conn, VERBOSE, DEBUG):
+    cur = conn.cursor()
+    cur.execute(open("rebuild_loading.sql", "r").read())
+    cur.execute(open("rebuild_reconstruction.sql", "r").read())
+    cur.execute(open("rebuild_reporting.sql", "r").read())
+
+
 def load(conn, end_date, VERBOSE, DEBUG):
     cur = conn.cursor()
-
-    # reload the database tables
-    cur.execute(open("rebuild_working_tables.sql", "r").read())
-    cur.execute(open("rebuild_stored_procedures.sql", "r").read())
+    cur.execute(open("rebuild_loading.sql", "r").read())
 
     if VERBOSE:
         print("Loading dump file")
@@ -120,16 +152,16 @@ def load(conn, end_date, VERBOSE, DEBUG):
     # Load transactions and edges
     ######################################################################
     
-    transaction_insert = ("""
+    transaction_insert = """
       INSERT INTO maniphest_transaction (
              id, phid, task_id, object_phid, transaction_type, 
              new_value, date_modified, has_edge_data, active_projects)
       VALUES (%(id)s, %(phid)s, %(task_id)s, %(object_phid)s, %(transaction_type)s,
-              %(new_value)s, %(date_modified)s, %(has_edge_data)s, %(active_projects)s)""")
+              %(new_value)s, %(date_modified)s, %(has_edge_data)s, %(active_projects)s)"""
 
-    task_insert = (""" 
+    task_insert = """ 
       INSERT INTO maniphest_task (id, phid, title, story_points)
-      VALUES (%(task_id)s, %(phid)s, %(title)s, %(story_points)s) """)
+      VALUES (%(task_id)s, %(phid)s, %(title)s, %(story_points)s) """
 
     if VERBOSE:
         print("Load tasks, transactions, and edges for {count} tasks".
@@ -139,8 +171,9 @@ def load(conn, end_date, VERBOSE, DEBUG):
 
     for task_id in data['task'].keys():
 
-        if DEBUG and int(task_id) % 10 != 1:
-            continue
+        if DEBUG:
+            if int(task_id) % 10 != 1:
+                continue
 
         task = data['task'][task_id]
         if task['info']:
@@ -191,8 +224,10 @@ def load(conn, end_date, VERBOSE, DEBUG):
                                  'has_edge_data': has_edge_data,
                                  'active_projects': active_proj})
 
+    cur.close()
 
-def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_date, end_date, source_prefix):
+
+def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_date, end_date, source_prefix,incremental):
     cur = conn.cursor()
 
     ######################################################################
@@ -222,6 +257,16 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_d
                       AND pp.id = ANY(%(project_id_list)s)""",
                 { 'project_id_list': project_id_list } )
     column_dict = dict(cur.fetchall())
+    # In addition to project-specific projects, include WorkType tags
+    id_list_with_worktypes = list(project_id_list)
+    id_list_with_worktypes.extend([1453, 1454])
+
+    max_date_query = """SELECT MAX(date)
+                          FROM task_history
+                         WHERE source like %(source)s"""
+
+    cur.execute(max_date_query, {'source':source_prefix})
+    max_date = cur.fetchone()[0]
 
     ######################################################################
     # Generate denormalized data
@@ -229,29 +274,42 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_d
     # Generate denormalized edge data.  This is edge data for only the
     # projects of interest, but goes into a shared table for
     # simplicity.
-    
-    if not start_date:
-        oldest_data_query = """SELECT date(min(date_modified)) from maniphest_transaction"""
-        cur.execute(oldest_data_query)
-        start_date = cur.fetchone()[0]
-    working_date = start_date
 
-    # In addition to project-specific projects, include WorkType tags
-    id_list_with_worktypes = list(project_id_list)
-    id_list_with_worktypes.extend([1453, 1454])
+    max_date = None
+    if incremental:
+        max_date_query = """SELECT MAX(date)
+                              FROM task_history
+                             WHERE source like %(source)s"""
+        cur.execute(max_date_query, {'source':source_prefix})
+        max_date = cur.fetchone()[0]
+    else:
+        cur.execute('SELECT wipe_reconstruction(%(source_prefix)s)', { 'source_prefix': source_prefix})
+
+    if max_date:
+        start_date = max_date.date()
+    else:
+        if not start_date:
+            oldest_data_query = """SELECT date(min(date_modified)) from maniphest_transaction"""
+            cur.execute(oldest_data_query)
+            start_date = cur.fetchone()[0].date()
+
+    working_date = start_date
     while working_date <= end_date:
+        # because working_date is midnight at the beginning of the
+        # day, use a date at the midnight at the end of the day to
+        # make the queries line up with the date label
         query_date = working_date + datetime.timedelta(days=1)
+        working_date += datetime.timedelta(days=1)
         if VERBOSE:
             print('{0}: Making maniphest_edge for {1}'.format(datetime.datetime.now(), query_date))
+
         cur.execute('SELECT build_edges(%(date)s, %(project_id_list)s)',
                     { 'date': query_date, 'project_id_list': id_list_with_worktypes } )
-        working_date += datetime.timedelta(days=1)
+
 
     ######################################################################
     # Reconstruct historical state of tasks
     ######################################################################
-    cur.execute('SELECT wipe_reconstruction(%(source_prefix)s)', { 'source_prefix': source_prefix})
-
     working_date = start_date
         
     transaction_values_query = """
@@ -272,8 +330,9 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_d
          LIMIT 1 """
 
     while working_date <= end_date:
-        # because working_date is midnight at the beginning of the day, use a date at
-        # the midnight at the end of the day to make the queries line up with the date label
+        # because working_date is midnight at the beginning of the
+        # day, use a date at the midnight at the end of the day to
+        # make the queries line up with the date label
         query_date = working_date + datetime.timedelta(days=1)
         if VERBOSE:
             print("Reconstructing data for {0}".format(working_date))
@@ -324,7 +383,8 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_d
             pretty_priority = ""
             if priority_raw:
                 pretty_priority = priority_raw[0]
-                
+
+
             # ----------------------------------------------------------------------
             # Project & Maintenance Type
             # ----------------------------------------------------------------------
@@ -388,8 +448,8 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list, start_d
             cur.execute(denorm_insert, {'source': source_prefix, 'query_date': query_date, 'id': task_id, 'title': pretty_title, 'status': pretty_status, 'priority': pretty_priority, 'project': pretty_project, 'projectcolumn': pretty_column, 'points': pretty_points, 'maint_type': maint_type })
     
         working_date += datetime.timedelta(days=1)
-
     cur.close()
+
 
 def report(conn, VERBOSE, DEBUG, source_prefix, source_title, default_points, project_name_list):
     # note that all the COPY commands in the psql scripts run server-side as user postgres
