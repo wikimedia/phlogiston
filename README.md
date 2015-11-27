@@ -51,8 +51,7 @@ Postgresql database named "phab"   <- data goes here
      * `gpg -a --export E084DAB9 | sudo apt-key add - `
      * `apt-get update`
   3. Install ubuntu packages
-     * `apt-get install nginx postgresql-9.4 python3-pip python3-psycopg2 python3-dev postgresql-contrib r-base`
-     * `apt-get build-dep python3-psycopg2 r-base-core r-base-script`
+     * `apt-get install nginx postgresql-9.4 python3-pip python3-psycopg2 python3-dev postgresql-contrib r-base r-base-dev`
   4. Install R packages.
      * `R`
      * `install.packages(c("ggplot2", "ggthemes", "argparse", "reshape"))`
@@ -71,6 +70,8 @@ Postgresql database named "phab"   <- data goes here
      * `createdb -O phlogiston phab`
 4. Install virtualenv and packages.  As phlogiston, 
      * `mkdir ~/html`
+     * `cp ~/phlogiston/html/index.html ~/html`
+     * `cp ~/phlogiston/html/caution.html ~/html`
      * `pip3 install virtualenv`
      * `pip3 install psycopg2`
 5. Set up the script to run via cron
