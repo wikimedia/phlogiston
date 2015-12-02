@@ -1,5 +1,5 @@
 -- Tables for reconstructing
-
+DROP TABLE IF EXISTS task_milestone;
 DROP TABLE IF EXISTS task_history;
 
 CREATE TABLE task_history (
@@ -12,15 +12,25 @@ CREATE TABLE task_history (
        projectcolumn text,
        points int,
        maint_type text,
-       priority text
+       priority text,
+       parent_title text
        );
 
-CREATE INDEX ON task_history (project) ;
-CREATE INDEX ON task_history (projectcolumn) ;
-CREATE INDEX ON task_history (status) ;
-CREATE INDEX ON task_history (date) ;
-CREATE INDEX ON task_history (id) ;
-CREATE INDEX ON task_history (date,id) ;
+CREATE INDEX ON task_history (project);
+CREATE INDEX ON task_history (projectcolumn); 
+CREATE INDEX ON task_history (status);
+CREATE INDEX ON task_history (date);
+CREATE INDEX ON task_history (id);
+CREATE INDEX ON task_history (date,id);
+
+CREATE TABLE task_milestone (
+       source varchar(6),
+       date timestamp,
+       task_id int,
+       milestone_id int
+);
+
+CREATE INDEX ON task_milestone (task_id);
 
 CREATE OR REPLACE FUNCTION wipe_reconstruction(
        source_param varchar(6)
@@ -28,6 +38,7 @@ CREATE OR REPLACE FUNCTION wipe_reconstruction(
 BEGIN
     DELETE FROM task_history
      WHERE source = source_param;
+
 END;
 $$ LANGUAGE plpgsql;
 
@@ -62,5 +73,32 @@ BEGIN
     END LOOP;     
 
     RETURN;
+END;
+$$ LANGUAGE plpgsql;
+
+
+-- currently uses edge data, which is point-in-time.  When transactional
+-- data becomes available, should use that instead
+CREATE OR REPLACE FUNCTION find_descendents(
+       root_id int,
+       run_date date
+) RETURNS TABLE(id int) AS $$
+BEGIN
+  RETURN query
+  WITH RECURSIVE search_graph(blocked_id, id, depth, path, cycle) AS (
+        SELECT b.blocked_id, b.id, 1,
+          ARRAY[b.id],
+          false
+        FROM maniphest_blocked b
+       WHERE blocked_id = root_id
+      UNION ALL
+        SELECT b.blocked_id, b.id, sg.depth + 1,
+          path || b.id,
+          b.id = ANY(path)
+        FROM maniphest_blocked b, search_graph sg
+        WHERE b.blocked_id = sg.id AND NOT cycle
+  )
+  SELECT search_graph.id FROM search_graph;
+
 END;
 $$ LANGUAGE plpgsql;

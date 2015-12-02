@@ -54,11 +54,23 @@ CREATE INDEX ON maniphest_edge (task, project, edge_date);
 CREATE INDEX ON maniphest_edge (task);
 CREATE INDEX ON maniphest_edge (project);
 
--- No RI for this table because otherwise we would have to load all tasks before any blocks
-CREATE TABLE maniphest_blocked (
+
+
+DROP TABLE IF EXISTS maniphest_blocked_phid;
+
+-- No RI for this table because otherwise we would have to load all
+-- tasks before any blocks
+CREATE TABLE maniphest_blocked_phid (
+       blocked_date date,
        phid text,
        blocked_phid text
 );
 
-CREATE INDEX ON maniphest_blocked (phid);
-CREATE INDEX ON maniphest_blocked (blocked_phid);
+CREATE TABLE maniphest_blocked (
+       blocked_date date,
+       id int references maniphest_task (id),
+       blocked_id int references maniphest_task (id)
+);
+
+CREATE INDEX ON maniphest_blocked (id);
+CREATE INDEX ON maniphest_blocked (blocked_id);
