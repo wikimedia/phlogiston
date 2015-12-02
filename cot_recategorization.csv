@@ -1,4 +1,6 @@
 sort_order,zoom_list,title,matchstring
-1,True,Community-Tech Freezer,%Freezer%
-2,True,Community-Tech,%Community-Tech%
-3,True,Other,PhlogOther
+1,True,Rev Slider,%RevSlider%
+2,True,WikiProject tools,%WikiProject-tools%
+3,True,Gadgets 2.0,%Gadgets-2.0%
+4,True,CopyVio tools,%CopyVio-tools%
+5,True,Other,PhlogOther
