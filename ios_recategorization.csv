@@ -2,4 +2,4 @@ sort_order,zoom_list,title,matchstring
 1,True,App 5.0 Alpha,%app-alpha%
 2,True,App 5.0 Beta,%app-beta%
 3,True,App 5.0 Production,%app-production%
-4,True,Other,PhlogOther
+4,False,Other,PhlogOther
