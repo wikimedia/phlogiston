@@ -268,7 +268,9 @@ BEGIN
 
 	    SELECT SUM(delta_count)/3 AS min_count_vel
               INTO min_count_vel
-              FROM (SELECT delta_count
+              FROM (SELECT CASE WHEN delta_count < 0 THEN 0
+	                   ELSE delta_count
+			   END
                       FROM velocity subqv
                      WHERE subqv.date >= weekrow.date - interval '3 months'
                        AND subqv.date < weekrow.date
