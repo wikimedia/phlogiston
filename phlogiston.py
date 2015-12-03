@@ -158,7 +158,7 @@ def load(conn, end_date, VERBOSE, DEBUG):
         count = len(data['project']['projects'])
         print("Load {0} projects".format(count))
 
-    project_insert = ("""INSERT INTO phabricator_project (id, name, phid)
+    project_insert = ("""INSERT INTO phabricator_project
                 VALUES (%(id)s, %(name)s, %(phid)s)""")
     for row in data['project']['projects']:
         cur.execute(project_insert,
@@ -167,7 +167,7 @@ def load(conn, end_date, VERBOSE, DEBUG):
     cur.execute("SELECT phid, id from phabricator_project")
     project_phid_to_id_dict = dict(cur.fetchall())
 
-    column_insert = ("""INSERT INTO phabricator_column (id, name, phid, project_phid)
+    column_insert = ("""INSERT INTO phabricator_column
                 VALUES (%(id)s, %(name)s, %(phid)s, %(project_phid)s)""")
     if VERBOSE:
         count = len(data['project']['columns'])
@@ -182,19 +182,17 @@ def load(conn, end_date, VERBOSE, DEBUG):
     ######################################################################
 
     transaction_insert = """
-      INSERT INTO maniphest_transaction (
-             id, phid, task_id, object_phid, transaction_type,
-             new_value, date_modified, has_edge_data, active_projects)
+      INSERT INTO maniphest_transaction
       VALUES (%(id)s, %(phid)s, %(task_id)s, %(object_phid)s,
               %(transaction_type)s, %(new_value)s, %(date_modified)s,
               %(has_edge_data)s, %(active_projects)s)"""
 
     task_insert = """
-      INSERT INTO maniphest_task (id, phid, title, story_points)
+      INSERT INTO maniphest_task
       VALUES (%(task_id)s, %(phid)s, %(title)s, %(story_points)s) """
 
     blocked_insert = """
-      INSERT INTO maniphest_blocked_phid (date, phid, blocked_phid)
+      INSERT INTO maniphest_blocked_phid
       VALUES (%(date)s, %(phid)s, %(blocked_phid)s) """
 
     if VERBOSE:
@@ -224,7 +222,8 @@ def load(conn, end_date, VERBOSE, DEBUG):
         for edge in task['edge']:
             if edge[1] == 4:
                 blocked_phid = edge[2]
-                cur.execute(blocked_insert, {'phid': task_phid,
+                cur.execute(blocked_insert, {'date': datetime.datetime.now().date(),
+                                             'phid': task_phid,
                                              'blocked_phid': blocked_phid})
 
         # Load transactions for this task
@@ -263,15 +262,16 @@ def load(conn, end_date, VERBOSE, DEBUG):
                                  'has_edge_data': has_edge_data,
                                  'active_projects': active_proj})
 
-    convert_blocked_sql = """INSERT INTO maniphest_blocked
-                             SELECT mb.date, mt1.id, mt2.id
-                               FROM maniphest_blocked_phid mb,
-                                    maniphest_task mt1,
-                                    maniphest_task mt2
-                              WHERE mb.phid = mt1.phid
-                                AND mb.blocked_phid = mt2.phid"""
+    convert_blocked_phid_to_id_sql = """
+        INSERT INTO maniphest_blocked
+        SELECT mb.blocked_date, mt1.id, mt2.id
+          FROM maniphest_blocked_phid mb,
+               maniphest_task mt1,
+               maniphest_task mt2
+         WHERE mb.phid = mt1.phid
+           AND mb.blocked_phid = mt2.phid"""
 
-    cur.execute(convert_blocked_sql)
+    cur.execute(convert_blocked_phid_to_id_sql)
     cur.close()
 
 
@@ -307,7 +307,7 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
                       AND pp.id = ANY(%(project_id_list)s)""",
                 {'project_id_list': project_id_list})
     column_dict = dict(cur.fetchall())
-    # In addition to project-specific projects, include WorkType tags
+    # In addition to project-specific projects, include special, global tags
     id_list_with_worktypes = list(project_id_list)
     for i in PHAB_TAGS.keys():
         id_list_with_worktypes.extend([PHAB_TAGS[i]])
@@ -471,6 +471,7 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
 
             pretty_project = project_id_to_name_dict[best_edge]
             project_phid = project_name_to_phid_dict[pretty_project]
+
             # ----------------------------------------------------------------------
             # Column
             # ----------------------------------------------------------------------
@@ -544,6 +545,15 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
     ######################################################################
 
     cur = conn.cursor()
+    size_query = """SELECT count(*) 
+                      FROM task_history 
+                     WHERE source = %(source_prefix)s"""
+    cur.execute(size_query, {'source_prefix': source_prefix})
+    data_size = cur.fetchone()[0]
+    if data_size == 0:
+        print("ERROR: no data in task_history for {0}".format(source_prefix))
+        sys.exit(-1)
+    
     cur.execute('SELECT wipe_reporting(%(source_prefix)s)',
                 {'source_prefix': source_prefix})
 
