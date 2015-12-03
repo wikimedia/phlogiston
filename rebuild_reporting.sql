@@ -236,7 +236,9 @@ BEGIN
 	LOOP
 	    SELECT SUM(delta_points)/3 AS min_points_vel
               INTO min_points_vel
-              FROM (SELECT delta_points
+              FROM (SELECT CASE WHEN delta_points < 0 THEN 0
+	                   ELSE delta_points
+			   END
                       FROM velocity subqv
                      WHERE subqv.date >= weekrow.date - interval '3 months'
                        AND subqv.date < weekrow.date
