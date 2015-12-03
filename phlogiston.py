@@ -168,14 +168,14 @@ def load(conn, end_date, VERBOSE, DEBUG):
     project_phid_to_id_dict = dict(cur.fetchall())
 
     column_insert = ("""INSERT INTO phabricator_column
-                VALUES (%(id)s, %(name)s, %(phid)s, %(project_phid)s)""")
+                VALUES (%(id)s, %(phid)s, %(name)s, %(project_phid)s)""")
     if VERBOSE:
         count = len(data['project']['columns'])
         print("Load {0} projectcolumns".format(count))
     for row in data['project']['columns']:
         cur.execute(column_insert,
-                    {'id': row[0], 'name': row[2],
-                     'phid': row[1], 'project_phid': row[5]})
+                    {'id': row[0], 'phid': row[1],
+                     'name': row[2], 'project_phid': row[5]})
 
     ######################################################################
     # Load transactions and edges
@@ -222,9 +222,10 @@ def load(conn, end_date, VERBOSE, DEBUG):
         for edge in task['edge']:
             if edge[1] == 4:
                 blocked_phid = edge[2]
-                cur.execute(blocked_insert, {'date': datetime.datetime.now().date(),
-                                             'phid': task_phid,
-                                             'blocked_phid': blocked_phid})
+                cur.execute(blocked_insert,
+                            {'date': datetime.datetime.now().date(),
+                             'phid': task_phid,
+                             'blocked_phid': blocked_phid})
 
         # Load transactions for this task
         transactions = task['transactions']
@@ -545,15 +546,15 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
     ######################################################################
 
     cur = conn.cursor()
-    size_query = """SELECT count(*) 
-                      FROM task_history 
+    size_query = """SELECT count(*)
+                      FROM task_history
                      WHERE source = %(source_prefix)s"""
     cur.execute(size_query, {'source_prefix': source_prefix})
     data_size = cur.fetchone()[0]
     if data_size == 0:
         print("ERROR: no data in task_history for {0}".format(source_prefix))
         sys.exit(-1)
-    
+
     cur.execute('SELECT wipe_reporting(%(source_prefix)s)',
                 {'source_prefix': source_prefix})
 
@@ -749,7 +750,7 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
     f.write(html_string)
     f.close()
 
-    forecast_query = """   
+    forecast_query = """
         SELECT v.category,
                pes_points_fore,
                nom_points_fore,
