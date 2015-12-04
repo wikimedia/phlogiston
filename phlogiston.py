@@ -220,7 +220,7 @@ def load(conn, end_date, VERBOSE, DEBUG):
         # Load blocked info for this task. When transactional data
         # becomes available, this should use that instead
         for edge in task['edge']:
-            if edge[1] == 4:
+            if edge[1] == 3:
                 blocked_phid = edge[2]
                 cur.execute(blocked_insert,
                             {'date': datetime.datetime.now().date(),
@@ -504,7 +504,12 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
 
             cur.execute(denorm_insert, {'source': source_prefix, 'working_date': working_date, 'id': task_id, 'title': pretty_title, 'status': pretty_status, 'priority': pretty_priority, 'project': pretty_project, 'projectcolumn': pretty_column, 'points': pretty_points, 'maint_type': maint_type})  # noqa
 
-        # When transactional blocked data becomes available, change this
+        # This takes the as-is blocked by relationships and
+        # reconstructs them historically as if they existed every day;
+        # this excess design is in case this is ever switched to do
+        # full reconstruction.  see
+        # https://phabricator.wikimedia.org/T115936#1847188
+
         milestones_on_day_query = """
           SELECT task
             FROM task_history t, maniphest_edge m
