@@ -335,18 +335,18 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
             cur.execute(oldest_data_query)
             start_date = cur.fetchone()[0].date()
 
-    # working_date = start_date
-    # while working_date <= end_date:
-    #     if VERBOSE:
-    #         print('{0}: Making maniphest_edge for {1}'.
-    #               format(datetime.datetime.now(), working_date))
-    #     # because working_date is midnight at the beginning of the
-    #     # day, use a date at the midnight at the end of the day to
-    #     # make the queries line up with the date label
-    #     working_date += datetime.timedelta(days=1)
-    #     cur.execute('SELECT build_edges(%(date)s, %(project_id_list)s)',
-    #                 {'date': working_date,
-    #                  'project_id_list': id_list_with_worktypes})
+    working_date = start_date
+    while working_date <= end_date:
+        if VERBOSE:
+            print('{0}: Making maniphest_edge for {1}'.
+                  format(datetime.datetime.now(), working_date))
+        # because working_date is midnight at the beginning of the
+        # day, use a date at the midnight at the end of the day to
+        # make the queries line up with the date label
+        working_date += datetime.timedelta(days=1)
+        cur.execute('SELECT build_edges(%(date)s, %(project_id_list)s)',
+                    {'date': working_date,
+                     'project_id_list': id_list_with_worktypes})
 
     ######################################################################
     # Reconstruct historical state of tasks
