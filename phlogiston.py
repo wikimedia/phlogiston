@@ -40,7 +40,7 @@ def main(argv):
     global PHAB_TAGS
     PHAB_TAGS = dict(new=1453,
                      maint=1454,
-                     milestone=942)
+                     milestone=1656)
 
     end_date = datetime.datetime.now().date()
     for opt, arg in opts:
