@@ -269,8 +269,8 @@ def load(conn, end_date, VERBOSE, DEBUG):
           FROM maniphest_blocked_phid mb,
                maniphest_task mt1,
                maniphest_task mt2
-         WHERE mb.phid = mt1.phid
-           AND mb.blocked_phid = mt2.phid"""
+         WHERE mb.blocks_phid = mt1.phid
+           AND mb.blocked_by_phid = mt2.phid"""
 
     cur.execute(convert_blocked_phid_to_id_sql)
     cur.close()
@@ -335,18 +335,18 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
             cur.execute(oldest_data_query)
             start_date = cur.fetchone()[0].date()
 
-    working_date = start_date
-    while working_date <= end_date:
-        if VERBOSE:
-            print('{0}: Making maniphest_edge for {1}'.
-                  format(datetime.datetime.now(), working_date))
-        # because working_date is midnight at the beginning of the
-        # day, use a date at the midnight at the end of the day to
-        # make the queries line up with the date label
-        working_date += datetime.timedelta(days=1)
-        cur.execute('SELECT build_edges(%(date)s, %(project_id_list)s)',
-                    {'date': working_date,
-                     'project_id_list': id_list_with_worktypes})
+    # working_date = start_date
+    # while working_date <= end_date:
+    #     if VERBOSE:
+    #         print('{0}: Making maniphest_edge for {1}'.
+    #               format(datetime.datetime.now(), working_date))
+    #     # because working_date is midnight at the beginning of the
+    #     # day, use a date at the midnight at the end of the day to
+    #     # make the queries line up with the date label
+    #     working_date += datetime.timedelta(days=1)
+    #     cur.execute('SELECT build_edges(%(date)s, %(project_id_list)s)',
+    #                 {'date': working_date,
+    #                  'project_id_list': id_list_with_worktypes})
 
     ######################################################################
     # Reconstruct historical state of tasks
@@ -511,25 +511,25 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
         # https://phabricator.wikimedia.org/T115936#1847188
 
         milestones_on_day_query = """
-          SELECT task
+          SELECT DISTINCT task
             FROM task_history t, maniphest_edge m
            WHERE t.source = %(source)s
              AND m.edge_date = %(working_date)s
              AND t.id = m.task
-             AND m.project = %(milestone_id)s"""
+             AND m.project = %(milestone_tag_id)s"""
 
         cur.execute(milestones_on_day_query,
                     {'source': source_prefix,
                      'working_date': working_date,
-                     'milestone_id': PHAB_TAGS['milestone']})
+                     'milestone_tag_id': PHAB_TAGS['milestone']})
         for row in cur.fetchall():
             milestone_id = row[0]
             task_milestone_insert = """
             INSERT INTO task_milestone (
             SELECT %(source)s,
                    %(working_date)s,
-                   %(milestone_id)s,
-                   id
+                   id,
+                   %(milestone_id)s
               FROM (SELECT *
                       FROM find_descendents(%(milestone_id)s,
                                             %(working_date)s)) as x)"""
@@ -538,8 +538,26 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
                          'milestone_id': milestone_id,
                          'working_date': working_date})
 
-    cur.close()
+    milestones_sql = """UPDATE task_history th
+                           SET parent_title = (
+                            SELECT string_agg(title, ' ') FROM (
+                                SELECT th_foo.id, mt.title
+                                  FROM maniphest_task mt,
+                                       task_milestone tm,
+                                       task_history th_foo
+                                 WHERE th_foo.id = tm.task_id
+                                   AND th_foo.source = tm.source
+                                   AND th_foo.date = tm.date
+                                   AND tm.milestone_id = mt.id
+                                   AND tm.source = %(source)s
+                                     GROUP BY th_foo.id, mt.title
+                                ) as foo
+                             WHERE id = th.id
+                            )"""
 
+    cur.execute(milestones_sql,{'source': source_prefix})
+    cur.close()
+    
 
 def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
            default_points, project_name_list):

@@ -65,7 +65,7 @@ as the category. */
 INSERT INTO tall_backlog (source, date, category, status, points, count) (
 SELECT source,
        date,
-       projectcolumn as category,
+       projectcolumn || ' ' || parent_title as category,
        status,
        SUM(points) as points,
        COUNT(title) as count
@@ -92,7 +92,7 @@ SELECT source,
   FROM (
 SELECT source,
        date,
-       CAST('Uncategorized' AS text) as category,
+       CAST('Uncategorized' AS text) || ' ' parent_title as category,
        status,
        points,
        title

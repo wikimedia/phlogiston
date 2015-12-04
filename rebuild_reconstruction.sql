@@ -39,6 +39,8 @@ BEGIN
     DELETE FROM task_history
      WHERE source = source_param;
 
+    DELETE FROM task_milestone
+     WHERE source = source_param;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -77,28 +79,30 @@ END;
 $$ LANGUAGE plpgsql;
 
 
--- currently uses edge data, which is point-in-time.  When transactional
--- data becomes available, should use that instead
 CREATE OR REPLACE FUNCTION find_descendents(
        root_id int,
        run_date date
 ) RETURNS TABLE(id int) AS $$
 BEGIN
   RETURN query
-  WITH RECURSIVE search_graph(blocked_id, id, depth, path, cycle) AS (
-        SELECT b.blocked_id, b.id, 1,
-          ARRAY[b.id],
-          false
-        FROM maniphest_blocked b
-       WHERE blocked_id = root_id
+  WITH RECURSIVE search_mb(parent_id, child_id, depth, path, cycle) AS (
+        SELECT parent_id,
+	       child_id,
+	       1,
+	       ARRAY[parent_id],
+               false
+        FROM maniphest_blocked mb
+       WHERE parent_id = root_id
       UNION ALL
-        SELECT b.blocked_id, b.id, sg.depth + 1,
-          path || b.id,
-          b.id = ANY(path)
-        FROM maniphest_blocked b, search_graph sg
-        WHERE b.blocked_id = sg.id AND NOT cycle
+        SELECT mb.parent_id,
+	       mb.child_id,
+	       smb.depth + 1,
+               path || mb.parent_id,
+               mb.parent_id = ANY(path)
+        FROM maniphest_blocked mb, search_mb smb
+        WHERE mb.parent_id = smb.child_id AND NOT cycle
   )
-  SELECT search_graph.id FROM search_graph;
+  SELECT child_id FROM search_mb;
 
 END;
 $$ LANGUAGE plpgsql;

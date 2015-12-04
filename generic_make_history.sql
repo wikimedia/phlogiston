@@ -22,7 +22,7 @@ DELETE FROM task_history
 INSERT INTO tall_backlog(
 SELECT source,
        date,
-       project || ' ' || projectcolumn as category,
+       project || ' ' || projectcolumn || ' ' || parent_title as category,
        status,
        SUM(points) as points,
        COUNT(title) as count,
