@@ -10,7 +10,7 @@ SELECT date,
                      WHERE source = :'prefix')
  GROUP BY date, t.category
  ORDER BY t.category, date
-) to '/tmp/phlog/backlog.csv' DELIMITER ',' CSV HEADER;
+) TO '/tmp/phlog/backlog.csv' DELIMITER ',' CSV HEADER;
 
 COPY (
 SELECT date,
@@ -24,7 +24,7 @@ SELECT date,
                      WHERE source = :'prefix')
  GROUP BY date
  ORDER BY date
-) to '/tmp/phlog/burnup.csv' DELIMITER ',' CSV HEADER;
+) TO '/tmp/phlog/burnup.csv' DELIMITER ',' CSV HEADER;
 
 COPY (
 SELECT date,
@@ -39,7 +39,7 @@ SELECT date,
                      WHERE source = :'prefix')
  GROUP BY date, category
  ORDER BY category, date
-) to '/tmp/phlog/burnup_categories.csv' DELIMITER ',' CSV HEADER;
+) TO '/tmp/phlog/burnup_categories.csv' DELIMITER ',' CSV HEADER;
 
 COPY (
 SELECT COUNT(*),
@@ -49,7 +49,7 @@ SELECT COUNT(*),
   FROM task_history
  WHERE source = :'prefix'
  GROUP BY project, projectcolumn, milestone_title
-) to '/tmp/phlog/category_possibilities.csv' DELIMITER ',' CSV HEADER;
+) TO '/tmp/phlog/category_possibilities.csv' DELIMITER ',' CSV HEADER;
 
 /* ####################################################################
    Maintenance fraction
