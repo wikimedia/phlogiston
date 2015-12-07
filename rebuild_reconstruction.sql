@@ -13,7 +13,7 @@ CREATE TABLE task_history (
        points int,
        maint_type text,
        priority text,
-       parent_title text
+       milestone_title text
        );
 
 CREATE INDEX ON task_history (project);

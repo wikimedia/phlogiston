@@ -539,7 +539,7 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
                          'working_date': working_date})
 
     milestones_sql = """UPDATE task_history th
-                           SET parent_title = (
+                           SET milestone_title = (
                             SELECT string_agg(title, ' ') FROM (
                                 SELECT th_foo.id, mt.title
                                   FROM maniphest_task mt,
