@@ -47,7 +47,7 @@ ggplot(backlog) +
   geom_area(position='stack', aes(x = date, y = points, group=category, fill=category, order=-as.numeric(category))) +
   geom_line(data=burnup, aes(x=date, y=points), size=2) +
   theme_fivethirtynine() +
-  scale_fill_brewer(palette="Spectral") +
+  scale_fill_brewer(palette="Set3") +
   theme(legend.position='bottom', legend.direction='vertical') +
   guides(col = guide_legend(reverse=TRUE)) +
   labs(title=sprintf("%s backlog by points", args$title), y="Story Point Total") +
@@ -60,7 +60,7 @@ ggplot(backlog) +
   geom_area(position='stack', aes(x = date, y = count, group=category, fill=category, order=-as.numeric(category))) +
   geom_line(data=burnup, aes(x=date, y=count), size=2) +
   theme_fivethirtynine() +
-  scale_fill_brewer(palette="Spectral") +
+  scale_fill_brewer(palette="Set3") +
   theme(legend.position='bottom', legend.direction='vertical') +
   guides(col = guide_legend(reverse=TRUE)) +
   labs(title=sprintf("%s backlog by count", args$title), y="Task Count") +
