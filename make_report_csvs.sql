@@ -41,6 +41,16 @@ SELECT date,
  ORDER BY category, date
 ) to '/tmp/phlog/burnup_categories.csv' DELIMITER ',' CSV HEADER;
 
+COPY (
+SELECT COUNT(*),
+       project,
+       projectcolumn,
+       milestone_title
+  FROM task_history
+ WHERE source = :'prefix'
+ GROUP BY project, projectcolumn, milestone_title
+) to '/tmp/phlog/category_possibilities.csv' DELIMITED ',' CSV HEADER;
+
 /* ####################################################################
    Maintenance fraction
 Divide all resolved work into Maintenance or New Project, by week. */
