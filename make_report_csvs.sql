@@ -281,6 +281,7 @@ SELECT date,
        count
   FROM recently_closed
  WHERE source = :'prefix'
+   AND date >= current_date - interval '3 months'
  ORDER BY date, category
 ) to '/tmp/phlog/recently_closed.csv' DELIMITER ',' CSV HEADER;
 
