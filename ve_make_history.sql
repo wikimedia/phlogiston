@@ -107,11 +107,7 @@ GROUP BY status, category, date, source);
 /* Set Maintenance flags, since VE uses tranches instead of tags to determine this */
 
 UPDATE tall_backlog
-   SET maint_type = 'Maintenance'
- WHERE category = 'TR0: Interrupt'
-   AND source = :'prefix';
-
-UPDATE tall_backlog
-   SET maint_type = 'New Functionality'
- WHERE category <> 'TR0: Interrupt'
-   AND source = :'prefix';
+   SET maint_type = CASE WHEN category LIKE '%TR0%' THEN 'Maintenance'
+                         ELSE 'New Functionality'
+                    END
+ WHERE source = :'prefix';
