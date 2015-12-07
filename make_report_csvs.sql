@@ -49,7 +49,7 @@ SELECT COUNT(*),
   FROM task_history
  WHERE source = :'prefix'
  GROUP BY project, projectcolumn, milestone_title
-) to '/tmp/phlog/category_possibilities.csv' DELIMITED ',' CSV HEADER;
+) to '/tmp/phlog/category_possibilities.csv' DELIMITER ',' CSV HEADER;
 
 /* ####################################################################
    Maintenance fraction
