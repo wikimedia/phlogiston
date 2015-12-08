@@ -694,7 +694,7 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
         format(source_prefix, source_title), shell=True)
     subprocess.call('cp /tmp/{0}/maintenance_fraction_total_by_points.csv ~/html/{0}_maintenance_fraction_total_by_points.csv'.format(source_prefix), shell=True)
     subprocess.call('cp /tmp/{0}/maintenance_fraction_total_by_count.csv ~/html/{0}_maintenance_fraction_total_by_count.csv'.format(source_prefix), shell=True)
-    subprocess.call('cp /tmp/{0}/category_possibilities.csv ~/html/{0}_category_possibilities.csv'.format(source_prefix), shell=True)
+    subprocess.call('cp /tmp/{0}/category_possibilities.txt ~/html/{0}_category_possibilities.txt'.format(source_prefix), shell=True)
 
     script_dir = os.path.dirname(__file__)
     f = open('{0}../html/{1}_projects.csv'.

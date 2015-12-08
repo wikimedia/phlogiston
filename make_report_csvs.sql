@@ -43,13 +43,14 @@ SELECT date,
 
 COPY (
 SELECT COUNT(*),
+       milestone_title,
        project,
-       projectcolumn,
-       milestone_title
+       projectcolumn
   FROM task_history
  WHERE source = :'prefix'
- GROUP BY project, projectcolumn, milestone_title
-) TO '/tmp/phlog/category_possibilities.csv' DELIMITER ',' CSV HEADER;
+ GROUP BY milestone_title, project, projectcolumn
+ ORDER BY milestone_title, project, projectcolumn
+) TO '/tmp/phlog/category_possibilities.txt';
 
 /* ####################################################################
    Maintenance fraction
