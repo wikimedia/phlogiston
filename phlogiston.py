@@ -615,7 +615,7 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
                                  'category': line['title']})
 
         recat_update = """UPDATE {0}
-                            SET category = CASE '{1}'
+                            SET category = CASE {1}
                                            ELSE '{2}'
                                            END
                           WHERE source = '{3}' """
