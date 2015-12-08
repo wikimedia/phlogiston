@@ -2,7 +2,7 @@ sort_order,zoom_list,title,matchstring
 1,FALSE,Other,PhlogOther
 2,TRUE,Interrupt,%TR0%
 3,TRUE,Improve support for math editing by improving the UX of the Math extension and researching its usability.,%Improve support for math editing by improving the UX of the Math extension and researching its usability%
-4,TRUE,It's easier to create and edit charts from within VisualEditor,%It's easier to create and edit charts from within VisualEditor%
+4,TRUE,It is easier to create and edit charts from within VisualEditor,%easier to create and edit charts from within VisualEditor%
 5,TRUE,Re-enable VisualEditor by default for all logged-out users of the English Wikipedia.,Re-enable VisualEditor by default for all logged-out users of the English Wikipedia.
 6,TRUE,VE defaults on for enwiki new users and IPs,%TR1%
 7,TRUE,Mobile MVP released,%TR2%
