@@ -173,9 +173,14 @@ def load(conn, end_date, VERBOSE, DEBUG):
         count = len(data['project']['columns'])
         print("Load {0} projectcolumns".format(count))
     for row in data['project']['columns']:
-        cur.execute(column_insert,
-                    {'id': row[0], 'phid': row[1],
-                     'name': row[2], 'project_phid': row[5]})
+        phid = row[1]
+        project_phid = row[5]
+        if project_phid in project_phid_to_id_dict:
+            cur.execute(column_insert,
+                        {'id': row[0], 'phid': phid,
+                         'name': row[2], 'project_phid': project_phid})
+        else:
+            print("Data error for column {0}: project {1} doesn't exist.Skipping.".format(phid, project_phid))
 
     ######################################################################
     # Load transactions and edges
@@ -244,13 +249,13 @@ def load(conn, end_date, VERBOSE, DEBUG):
                         jblob = json.loads(new_value)
                         if jblob:
                             for key in jblob.keys():
-                                try:
-                                    if jblob[key]['type'] == 41:
-                                        has_edge_data = True
+                                if jblob[key]['type'] == 41:
+                                    has_edge_data = True
+                                    if key in project_phid_to_id_dict:
                                         proj_id = project_phid_to_id_dict[key]
                                         active_proj.append(proj_id)
-                                except:
-                                    print("Error loading {0}".format(trans))
+                                    else:
+                                        print("Data error for transaction {0}: project {1} doesn't exist. Skipping.".format(trans[1], key))
 
                     cur.execute(transaction_insert,
                                 {'id': trans[0],
