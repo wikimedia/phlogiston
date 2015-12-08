@@ -16,8 +16,10 @@ CREATE TABLE task_history (
        milestone_title text
        );
 
+CREATE INDEX ON task_history (source);
 CREATE INDEX ON task_history (project);
-CREATE INDEX ON task_history (projectcolumn); 
+CREATE INDEX ON task_history (projectcolumn);
+CREATE INDEX ON task_history (milestone_title); 
 CREATE INDEX ON task_history (status);
 CREATE INDEX ON task_history (date);
 CREATE INDEX ON task_history (id);
