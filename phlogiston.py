@@ -618,7 +618,7 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
                             SET category = CASE "{1}"
                                            ELSE "{2}"
                                            END
-                          WHERE source = "{3}""""
+                          WHERE source = "{3}" """
 
         unsafe_recat_update = recat_update.format(
             'tall_backlog', recat_cases, recat_else, source_prefix)
