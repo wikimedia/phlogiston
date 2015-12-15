@@ -543,24 +543,28 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
                          'milestone_id': milestone_id,
                          'working_date': working_date})
 
-    milestones_sql = """UPDATE task_history th
-                           SET milestone_title = (
-                            SELECT string_agg(title, ' ') FROM (
-                                SELECT th_foo.id, mt.title
-                                  FROM maniphest_task mt,
-                                       task_milestone tm,
-                                       task_history th_foo
-                                 WHERE th_foo.id = tm.task_id
-                                   AND th_foo.source = tm.source
-                                   AND th_foo.date = tm.date
-                                   AND tm.milestone_id = mt.id
-                                   AND tm.source = %(source)s
-                                     GROUP BY th_foo.id, mt.title
-                                ) as foo
-                             WHERE id = th.id
-                            )"""
+    milestones_sql = """
+        UPDATE task_history th
+           SET milestone_title = (
+               SELECT string_agg(title, ' ') 
+                 FROM (
+                       SELECT th_foo.id, mt.title
+                         FROM maniphest_task mt,
+                              task_milestone tm,
+                              task_history th_foo
+                        WHERE th_foo.id = tm.task_id
+                          AND th_foo.source = tm.source
+                          AND th_foo.date = tm.date
+                          AND tm.milestone_id = mt.id
+                          AND tm.source = %(source)s
+                        GROUP BY th_foo.id, mt.title
+                        ) as foo
+                WHERE id = th.id
+                )
+         WHERE source = %(source)s
+           AND date >= %(start_date)s"""
 
-    cur.execute(milestones_sql,{'source': source_prefix})
+    cur.execute(milestones_sql,{'source': source_prefix, 'start_date': start_date})
     cur.close()
     
 

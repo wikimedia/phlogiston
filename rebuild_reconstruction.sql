@@ -19,7 +19,7 @@ CREATE TABLE task_history (
 CREATE INDEX ON task_history (source);
 CREATE INDEX ON task_history (project);
 CREATE INDEX ON task_history (projectcolumn);
-CREATE INDEX ON task_history (milestone_title); 
+CREATE INDEX ON task_history (milestone_title);
 CREATE INDEX ON task_history (status);
 CREATE INDEX ON task_history (date);
 CREATE INDEX ON task_history (id);
@@ -33,6 +33,10 @@ CREATE TABLE task_milestone (
 );
 
 CREATE INDEX ON task_milestone (task_id);
+CREATE INDEX ON task_milestone (task_id, source);
+CREATE INDEX ON task_milestone (milestone_id);
+CREATE INDEX ON task_milestone (source);
+
 
 CREATE OR REPLACE FUNCTION wipe_reconstruction(
        source_param varchar(6)
@@ -80,6 +84,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+
+END;
+$$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION find_descendents(
        root_id int,
