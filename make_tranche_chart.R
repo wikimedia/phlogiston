@@ -68,7 +68,7 @@ dev.off()
 
 velocity_cat_points <- read.csv(sprintf("/tmp/%s/tranche_velocity_points.csv", args$project))
 velocity_cat_points$date <- as.Date(velocity_cat_points$date, "%Y-%m-%d")
-velocity_output <- png(filename = sprintf("~/html/%s_tranche%s_velocity_points.png", args$project, args$tranche_num), width=1000, height=700, units="px", pointsize=10)
+velocity_output <- png(filename = sprintf("~/html/%s_tranche%s_velocity_points.png", args$project, args$tranche_num), width=1000, height=300, units="px", pointsize=10)
 velocity_cat_points <- velocity_cat_points[velocity_cat_points$category == args$tranche_name,]
 vlong_points <- melt(velocity_cat_points, id=c("date", "category"))
 velocity_t <- read.csv(sprintf("/tmp/%s/tranche_velocity.csv", args$project))
@@ -84,7 +84,7 @@ dev.off()
 
 velocity_cat_count <- read.csv(sprintf("/tmp/%s/tranche_velocity_count.csv", args$project))
 velocity_cat_count$date <- as.Date(velocity_cat_count$date, "%Y-%m-%d")
-velocity_output <- png(filename = sprintf("~/html/%s_tranche%s_velocity_count.png", args$project, args$tranche_num), width=1000, height=700, units="px", pointsize=10)
+velocity_output <- png(filename = sprintf("~/html/%s_tranche%s_velocity_count.png", args$project, args$tranche_num), width=1000, height=300, units="px", pointsize=10)
 velocity_cat_count <- velocity_cat_count[velocity_cat_count$category == args$tranche_name,]
 vlong_count <- melt(velocity_cat_count, id=c("date", "category"))
 
@@ -99,7 +99,7 @@ dev.off()
 forecast <- read.csv(sprintf("/tmp/%s/forecast.csv", args$project))
 forecast$date <- as.Date(forecast$date, "%Y-%m-%d")
 forecast <- forecast[forecast$category == args$tranche_name,]
-forecast_points_output <- png(filename = sprintf("~/html/%s_tranche%s_forecast_points.png", args$project, args$tranche_num), width=1000, height=700, units="px", pointsize=10)
+forecast_points_output <- png(filename = sprintf("~/html/%s_tranche%s_forecast_points.png", args$project, args$tranche_num), width=1000, height=300, units="px", pointsize=10)
 
 ggplot(forecast) +
    geom_line(aes(x=date, y=pes_points_fore), size=1, color="red") +
@@ -111,7 +111,7 @@ ggplot(forecast) +
 theme_fivethirtynine()
 dev.off()
 
-forecast_count_output <- png(filename = sprintf("~/html/%s_tranche%s_forecast_count.png", args$project, args$tranche_num), width=1000, height=700, units="px", pointsize=10)
+forecast_count_output <- png(filename = sprintf("~/html/%s_tranche%s_forecast_count.png", args$project, args$tranche_num), width=1000, height=300, units="px", pointsize=10)
 
 ggplot(forecast) +
    geom_line(aes(x=date, y=pes_count_fore), size=1, color="red") +
