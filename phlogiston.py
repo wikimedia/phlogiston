@@ -330,7 +330,11 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
                               FROM task_history
                              WHERE source like %(source)s"""
         cur.execute(max_date_query, {'source': source_prefix})
-        start_date = cur.fetchone()[0].date()
+        try:
+            start_date = cur.fetchone()[0].date()
+        except AttributeError:
+            print("No data available for incremental run.\nProbably this reconstruction should be run without --incremental.")
+            sys.exit(1)
     else:
         cur.execute('SELECT wipe_reconstruction(%(source_prefix)s)',
                     {'source_prefix': source_prefix})
