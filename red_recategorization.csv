@@ -1,0 +1,10 @@
+sort_order,zoom_list,title,matchstring
+1,True,OOJSUI and VE,%OOJSUI and VE%
+2,True,QA,%QA%
+3,True,Special:Userlogin,%Userlogin%
+4,True,Talk,%Talk%
+5,True,UI,%Backlog: UI%
+6,True,Wikidata MobileFrontend and Wikigrok,%Wikidata MobileFrontend%
+7,True,Wikitext Editing,%Wikitext Editing%
+8,True,Code Review,%Code ReviewTalk%
+9,True,Other,PhlogOther
