@@ -36,7 +36,7 @@ CREATE TABLE maniphest_transaction (
        object_phid text,
        transaction_type text,
        new_value text,
-       date_modified timestamp,
+       date_modified timestamp with time zone,
        has_edge_data boolean,
        active_projects int array
 );

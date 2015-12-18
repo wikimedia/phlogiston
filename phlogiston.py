@@ -7,6 +7,7 @@ import json
 import os.path
 import psycopg2
 import sys
+import pytz
 import getopt
 import subprocess
 import time
@@ -576,7 +577,7 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
            default_points, project_name_list):
     # note that all the COPY commands in the psql scripts run
     # server-side as user postgres
-
+  
     ######################################################################
     # Prepare the data
     ######################################################################
@@ -702,6 +703,7 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
                     format(source_prefix), shell=True)
     subprocess.call('mv /tmp/phlog/* /tmp/{0}/'.
                     format(source_prefix), shell=True)
+    subprocess.call('rm ~/html/{0}*'.format(source_prefix), shell=True)
     subprocess.call(
         'sed s/phl_/{0}_/g html/phl.html | sed s/Phlogiston/{1}/g > ~/html/{0}.html'.
         format(source_prefix, source_title), shell=True)
@@ -836,26 +838,45 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
     f.write(html_string)
     f.close()
 
-    max_date_query = """SELECT MAX(date)
-                          FROM task_history
-                         WHERE source like %(source)s"""
-
-    cur.execute(max_date_query, {'source': source_prefix})
-    max_date = cur.fetchone()[0]
-    script_dir = os.path.dirname(__file__)
-    f = open('{0}../html/{1}_max_date.csv'.
-             format(script_dir, source_prefix), 'w')
-    f.write(max_date.strftime('%c %Z'))
-
     ######################################################################
     # Make the rest of the charts
     ######################################################################
     subprocess.call("Rscript make_charts.R {0} {1}".
                     format(source_prefix, source_title), shell=True)
 
-    f = open('{0}../html/{1}_report_date.csv'.
+    ######################################################################
+    # Update dates
+    ######################################################################
+
+    html_string = """<p><table border="1px solid lightgray" cellpadding="6" cellspacing="0">
+    <tr><th></th><th>UTC</th><th>PT</th></tr>"""
+
+    max_date_query = """
+        SELECT MAX(date_modified), now()
+          FROM task_history th, maniphest_transaction mt
+         WHERE th.source = %(source)s
+           AND th.id = mt.task_id"""
+
+    cur.execute(max_date_query, {'source': source_prefix})
+    result = cur.fetchone()
+    max_date = result[0]
+    now_db = result[1]
+    utc = pytz.utc
+    pt = pytz.timezone('America/Los_Angeles')
+    max_date_utc = max_date.astimezone(utc).strftime('%a %Y-%b-%d %I:%M %p') 
+    max_date_pt =  max_date.astimezone(pt).strftime('%a %Y-%b-%d %I:%M %p')
+    now_utc = now_db.astimezone(utc).strftime('%a %Y-%b-%d %I:%M %p')
+    now_pt = now_db.astimezone(pt).strftime('%a %Y-%b-%d %I:%M %p') 
+
+    html_string += "<tr><th>Most Recent Data</th><th>{0}</th><th>{1}</th></tr>".format(max_date_utc, max_date_pt)
+    html_string += "<tr><th>Report Date</th><th>{0}</th><th>{1}</th></tr>".format(now_utc, now_pt)
+    html_string += "</table></p>"
+
+    script_dir = os.path.dirname(__file__)
+    f = open('{0}../html/{1}_dates.html'.
              format(script_dir, source_prefix), 'w')
-    f.write(datetime.datetime.now().strftime('%c %Z'))
+    f.write(html_string)
+
     f.close
 
     cur.close()
