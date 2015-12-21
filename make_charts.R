@@ -38,13 +38,12 @@ theme_fivethirtynine <- function(base_size = 12, base_family = "sans"){
 backlog <- read.csv(sprintf("/tmp/%s/backlog.csv", args$project))
 backlog$date <- as.Date(backlog$date, "%Y-%m-%d")
 backlog_output=png(filename = sprintf("~/html/%s_backlog_burnup.png", args$project), width=2000, height=1125, units="px", pointsize=30)
-backlog$category <- factor(backlog$category, levels=rev(backlog$category))
-
+backlog$category <- factor(backlog$category, levels=rev(unique(backlog$category)))
 burnup <- read.csv(sprintf("/tmp/%s/burnup.csv", args$project))
 burnup$date <- as.Date(burnup$date, "%Y-%m-%d")
 
 ggplot(backlog) +
-  geom_area(position='stack', aes(x = date, y = points, group=category, fill=category, order=-as.numeric(category))) +
+  geom_area(position='stack', aes(x = date, y = points, group=category, fill=category, order=-category)) +
   geom_line(data=burnup, aes(x=date, y=points), size=2) +
   theme_fivethirtynine() +
   scale_fill_brewer(palette="Set3") +
@@ -57,7 +56,7 @@ dev.off()
 backlog_count_output=png(filename = sprintf("~/html/%s_backlog_count_burnup.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 
 ggplot(backlog) +
-  geom_area(position='stack', aes(x = date, y = count, group=category, fill=category, order=-as.numeric(category))) +
+  geom_area(position='stack', aes(x = date, y = count, group=category, fill=category, order=-category)) +
   geom_line(data=burnup, aes(x=date, y=count), size=2) +
   theme_fivethirtynine() +
   scale_fill_brewer(palette="Set3") +
