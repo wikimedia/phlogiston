@@ -1,6 +1,6 @@
 sort_order,zoom_list,title,matchstring
-1,FALSE,Other,PhlogOther
-2,TRUE,Interrupt,%TR0%
+2,FALSE,Other,PhlogOther
+1,TRUE,Interrupt,%TR0%
 3,TRUE,Anon A/B test on enwiki,%experiment defaulting anonymous editors to the visual editor on%
 4,TRUE,On by default for IPs on enwiki,%Re-enable VisualEditor by default for all logged-out users of the English Wikipedia%
 5,TRUE,On by default for IPs and new users on enwiki,%TR1%
