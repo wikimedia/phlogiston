@@ -34,4 +34,4 @@ SELECT source,
 UPDATE tall_backlog
    SET maint_type = 'New Functionality'
  WHERE source = :'prefix'
-   AND maint_type IS NULL;
+   AND maint_type = '';
