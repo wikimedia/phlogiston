@@ -1,6 +1,7 @@
 sort_order,zoom_list,title,matchstring
-1,True,Rev Slider,%RevSlider%
-2,True,WikiProject tools,%WikiProject-tools%
-3,True,Gadgets 2.0,%Gadgets-2.0%
-4,True,CopyVio tools,%CopyVio-tools%
-5,True,Other,PhlogOther
+1,True,Fixes,%Community-Tech-fixes%
+2,True,Rev Slider,%RevSlider%
+3,True,WikiProject tools,%WikiProject-tools%
+4,True,Gadgets 2.0,%Gadgets-2.0%
+5,True,CopyVio tools,%CopyVio-tools%
+6,True,Other,PhlogOther
