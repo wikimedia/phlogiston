@@ -1,7 +1,7 @@
 sort_order,zoom_list,title,matchstring
 1,True,Wayback Machine,%Migrate dead links to Wayback Machine%
 2,True,Improve diffs,%Improve diff compare screen%
-3,True,Global repository,%Central Global Repository for Templates, Lua modules, and Gadgets%
+3,True,Global repository,"%Central Global Repository for Templates, Lua modules, and Gadgets%"
 4,True,Cross-wiki watchlists,%Cross-wiki watchlists%
 5,True,Numerical sorting,%Natural number sorting in category listings%
 6,True,Commons translated categories,%Allow categories in Commons in all languages%
