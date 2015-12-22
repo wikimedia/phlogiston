@@ -7,7 +7,7 @@ sort_order,zoom_list,title,matchstring
 6,True,Commons translated categories,%Allow categories in Commons in all languages%
 7,True,Pageview Stats,%Pageview Stats tool%
 8,True,Global user talk,%Provide global user talk page (header)%
-9,True,Copy and paste detection,%Improve the "copy and paste detection" bot%
+9,True,Copy and paste detection,%copy and paste detection%
 10,True,User watchlist,%that lists all recent contributions of a set of users%
 11,True,Fixes,%Community-Tech-fixes%
 12,True,Rev Slider,%RevSlider%
