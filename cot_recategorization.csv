@@ -5,3 +5,5 @@ sort_order,zoom_list,title,matchstring
 4,True,Gadgets 2.0,%Gadgets-2.0%
 5,True,CopyVio tools,%CopyVio-tools%
 6,True,Other,PhlogOther
+7,False,Blocked,%Blocked%
+8,False,Frozen,%Frozen%
