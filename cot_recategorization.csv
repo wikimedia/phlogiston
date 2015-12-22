@@ -1,9 +1,19 @@
 sort_order,zoom_list,title,matchstring
-1,True,Fixes,%Community-Tech-fixes%
-2,True,Rev Slider,%RevSlider%
-3,True,WikiProject tools,%WikiProject-tools%
-4,True,Gadgets 2.0,%Gadgets-2.0%
-5,True,CopyVio tools,%CopyVio-tools%
-6,True,Other,PhlogOther
-7,False,Blocked,%Blocked%
-8,False,Frozen,%Frozen%
+1,True,Wayback Machine,%Migrate dead links to Wayback Machine%
+2,True,Improve diffs,%Improve diff compare screen%
+3,True,Global repository,%Central Global Repository for Templates, Lua modules, and Gadgets%
+4,True,Cross-wiki watchlists,%Cross-wiki watchlists%
+5,True,Numerical sorting,%Natural number sorting in category listings%
+6,True,Commons translated categories,%Allow categories in Commons in all languages%
+7,True,Pageview Stats,%Pageview Stats tool%
+8,True,Global user talk,%Provide global user talk page (header)%
+9,True,Copy and paste detection,%Improve the "copy and paste detection" bot%
+10,True,User watchlist,%that lists all recent contributions of a set of users%
+11,True,Fixes,%Community-Tech-fixes%
+12,True,Rev Slider,%RevSlider%
+13,True,WikiProject tools,%WikiProject-tools%
+14,True,Gadgets 2.0,%Gadgets-2.0%
+15,True,CopyVio tools,%CopyVio-tools%
+16,True,Other,PhlogOther
+17,False,Blocked,%Blocked%
+18,False,Frozen,%Frozen%
