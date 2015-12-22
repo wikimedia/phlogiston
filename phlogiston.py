@@ -703,7 +703,7 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
                     format(source_prefix), shell=True)
     subprocess.call('mv /tmp/phlog/* /tmp/{0}/'.
                     format(source_prefix), shell=True)
-    subprocess.call('rm ~/html/{0}*'.format(source_prefix), shell=True)
+    subprocess.call('rm ~/html/{0}_*'.format(source_prefix), shell=True)
     subprocess.call(
         'sed s/phl_/{0}_/g html/phl.html | sed s/Phlogiston/{1}/g > ~/html/{0}.html'.
         format(source_prefix, source_title), shell=True)
@@ -751,6 +751,9 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
     max_tranche_height_count = cur.fetchone()[0]
 
     colors = []
+    if len(zoom_list) > 12:
+        print("Zoom List should be kept to 12 or less")
+        del zoom_list[12:]
     proc = subprocess.check_output("Rscript get_palette.R {0}".
                                    format(len(zoom_list)), shell=True)
     color_output = proc.decode().split()
@@ -758,34 +761,36 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
         if '#' in item:
             colors.append(item)
     i = 0
-    html_string = ""
+    tab_string = '<table><tr>'
+    html_string = '<div class="tabs">'
     for category in reversed(zoom_list):
-        if i > 8:
-            # if there are more than 9 tranches, probably this data
-            # doesn't make much sense and there could be dozens more.
-            break
         color = colors[i]
         chart_result = subprocess.call(
             "Rscript make_tranche_chart.R {0} {1} \"{2}\" \"{3}\" {4} {5}".
             format(source_prefix, i, color, category,
                    max_tranche_height_points, max_tranche_height_count),
             shell=True)
+        tab_string += '<td><a href="#tab{0}">{1}</a></td>'.format(i,category)
+        html_string += '<p id="tab{0}"><table>'.format(i)
         points_png_name = "{0}_tranche{1}_burnup_points.png".format(source_prefix, i)
         count_png_name = "{0}_tranche{1}_burnup_count.png".format(source_prefix, i)
-        html_string += '<p><table><tr><td><a href="{0}"><img src="{0}"/></a></td>'.format(points_png_name)
-        html_string += '<td><a href="{0}"><img src="{0}"/></a></tr></table></p>'.format(count_png_name)
+        html_string += '<tr><td><a href="{0}"><img src="{0}"/></a></td>'.format(points_png_name)
+        html_string += '<td><a href="{0}"><img src="{0}"/></a></tr>\n'.format(count_png_name)
         points_png_name = "{0}_tranche{1}_velocity_points.png".format(source_prefix, i)
         count_png_name = "{0}_tranche{1}_velocity_count.png".format(source_prefix, i)
-        html_string += '<p><table><tr><td><a href="{0}"><img src="{0}"/></a></td>'.format(points_png_name)
-        html_string += '<td><a href="{0}"><img src="{0}"/></a></tr></table></p>'.format(count_png_name)
+        html_string += '<tr><td><a href="{0}"><img src="{0}"/></a></td>'.format(points_png_name)
+        html_string += '<td><a href="{0}"><img src="{0}"/></a></tr>\n'.format(count_png_name)
         points_png_name = "{0}_tranche{1}_forecast_points.png".format(source_prefix, i)
         count_png_name = "{0}_tranche{1}_forecast_count.png".format(source_prefix, i)
-        html_string += '<p><table><tr><td><a href="{0}"><img src="{0}"/></a></td>'.format(points_png_name)
-        html_string += '<td><a href="{0}"><img src="{0}"/></a></tr></table></p>'.format(count_png_name)
+        html_string += '<tr><td><a href="{0}"><img src="{0}"/></a></td>'.format(points_png_name)
+        html_string += '<td><a href="{0}"><img src="{0}"/></a></tr>\n'.format(count_png_name)
+        html_string += '</table></p>\n'
         i += 1
-
+    tab_string += '</tr></table>'
+    html_string += '</div>'
     f = open('{0}../html/{1}_tranches.html'.
              format(script_dir, source_prefix), 'w')
+    f.write(tab_string)
     f.write(html_string)
     f.close()
 

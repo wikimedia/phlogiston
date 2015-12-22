@@ -1,0 +1,6 @@
+img {
+    width:100%
+}
+
+div.tabs p {display: none}
+div.tabs p:target {display: block}
