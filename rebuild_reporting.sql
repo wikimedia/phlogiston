@@ -110,6 +110,9 @@ BEGIN
     DELETE FROM recently_closed
      WHERE source = source_param;
 
+    DELETE FROM recently_closed_individual
+     WHERE source = source_param;
+
     DELETE FROM maintenance_week
      WHERE source = source_param;
 
@@ -172,7 +175,7 @@ DECLARE
   daterow record;
 BEGIN
 
-    DELETE FROM recently_closed
+    DELETE FROM recently_closed_individual
      WHERE source = source_prefix;
 
     FOR daterow IN SELECT DISTINCT date

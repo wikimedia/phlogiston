@@ -72,8 +72,7 @@ Postgresql database named "phab"   <- data goes here
      * `mkdir ~/html`
      * `cp ~/phlogiston/html/index.html ~/html`
      * `cp ~/phlogiston/html/caution.html ~/html`
-     * `pip3 install virtualenv`
-     * `pip3 install psycopg2`
+     * `pip3 install virtualenv pyscopg2 pytz`
 5. Set up the script to run via cron
    * `crontab -e`
    * put `0   4    *   *   *   bash ~/phlogiston/batch_report.bash` at the end of the crontab and save and exit

@@ -30,3 +30,8 @@ SELECT source,
   FROM task_history
  WHERE source = :'prefix'
  GROUP BY status, category, maint_type, date, source);
+
+UPDATE tall_backlog
+   SET maint_type = 'New Functionality'
+ WHERE source = :'prefix'
+   AND maint_type = '';

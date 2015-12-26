@@ -36,7 +36,7 @@ CREATE TABLE maniphest_transaction (
        object_phid text,
        transaction_type text,
        new_value text,
-       date_modified timestamp,
+       date_modified timestamp with time zone,
        has_edge_data boolean,
        active_projects int array
 );
@@ -55,22 +55,24 @@ CREATE INDEX ON maniphest_edge (task);
 CREATE INDEX ON maniphest_edge (project);
 
 
-
-DROP TABLE IF EXISTS maniphest_blocked_phid;
-
 -- No RI for this table because otherwise we would have to load all
 -- tasks before any blocks
+DROP TABLE IF EXISTS maniphest_blocked_phid;
+
 CREATE TABLE maniphest_blocked_phid (
        blocked_date date,
-       phid text,
-       blocked_phid text
+       blocks_phid text,
+       blocked_by_phid text
 );
+
+CREATE INDEX ON maniphest_blocked_phid (blocks_phid);
+CREATE INDEX ON maniphest_blocked_phid (blocked_by_phid);
 
 CREATE TABLE maniphest_blocked (
        blocked_date date,
-       id int references maniphest_task (id),
-       blocked_id int references maniphest_task (id)
+       parent_id int references maniphest_task (id),
+       child_id int references maniphest_task (id)
 );
 
-CREATE INDEX ON maniphest_blocked (id);
-CREATE INDEX ON maniphest_blocked (blocked_id);
+CREATE INDEX ON maniphest_blocked (parent_id);
+CREATE INDEX ON maniphest_blocked (child_id);

@@ -65,14 +65,14 @@ as the category. */
 INSERT INTO tall_backlog (source, date, category, status, points, count) (
 SELECT source,
        date,
-       projectcolumn as category,
+       COALESCE(projectcolumn,'') || ' ' ||
+       COALESCE(milestone_title,'') as category,
        status,
        SUM(points) as points,
        COUNT(title) as count
   FROM task_history
  WHERE project = 'VisualEditor'
    AND projectcolumn SIMILAR TO 'TR%'
-   AND (priority = '80' OR priority = '100')
    AND source = :'prefix'
    AND date >= '2015-06-18'
 GROUP BY status, category, date, source);
@@ -92,7 +92,8 @@ SELECT source,
   FROM (
 SELECT source,
        date,
-       CAST('Uncategorized' AS text) as category,
+       CAST('Uncategorized' AS text) || ' ' ||
+       COALESCE(milestone_title,'') as category,
        status,
        points,
        title
@@ -106,11 +107,7 @@ GROUP BY status, category, date, source);
 /* Set Maintenance flags, since VE uses tranches instead of tags to determine this */
 
 UPDATE tall_backlog
-   SET maint_type = 'Maintenance'
- WHERE category = 'TR0: Interrupt'
-   AND source = :'prefix';
-
-UPDATE tall_backlog
-   SET maint_type = 'New Functionality'
- WHERE category <> 'TR0: Interrupt'
-   AND source = :'prefix';
+   SET maint_type = CASE WHEN category LIKE '%TR0%' THEN 'Maintenance'
+                         ELSE 'New Functionality'
+                    END
+ WHERE source = :'prefix';

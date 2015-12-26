@@ -10,4 +10,4 @@ parser$add_argument("size", nargs=1, help="size")
 args <- parser$parse_args()
 
 print(args$size)
-print(brewer.pal(as.numeric(args$size), "PuOr"))
+print(brewer.pal(as.numeric(args$size), "Set3"))

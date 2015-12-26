@@ -1,20 +1,23 @@
 <html>
   <head><title>Phlogiston Burnup Charts</title></head>
-  <style>
-    img {width:100%}
-    </style>
+  <link rel="stylesheet" type="text/css" href="phlogiston.css">
   <body>
     <h1>Phlogiston Charts</h1>
+    <table><tr><td>
     <p><a href="#burnups">Burnup charts</a></p>
     <p><a href="#velocity">Velocity Charts: Velocity, Recently Closed</a></p>
     <p><a href="#analysis">Analysis charts: Maintenance fraction, backlog growth</a></p>
-    <p>Most recent data: <b><!--# include file="phl_max_date.csv" --></b>. Report generated: <b><!--# include file="phl_report_date.csv" --></b>.  Unpointed stories are defaulted to <b><!--# include file="phl_default_points.csv" --></b>points. These charts include data from the following Phabricator projects, in this order:</p>
+        </td>
+        <td>
+    <!--# include file="phl_dates.html" -->
+    <p>Unpointed stories are defaulted to <b><!--# include file="phl_default_points.csv" --></b>points. <a href="phl_category_possibilities.txt">Full list</a> of possible categories. These charts include data from the following Phabricator projects, in this order:</p>
     <b><pre><!--# include file="phl_projects.csv" --></pre></b>
+    </td>
     <h2>Forecasts</h2>
     <b><pre><!--# include file="phl_current_forecasts.html" --></pre></b>
     <p>Tasks included in several of these projects are only counted in the first matching project.</p>
     <a name="burnups"><h2>Project Burnup</h2></a>
-    <p>The complete backlog and burnup for all VE work.  The black line represents total completed tasks, and since it includes tasks from various tranches, does not exactly correlate to the tranches.</p>
+    <p>The complete backlog and burnup for all planned work.  The black line represents total completed tasks, and since it includes tasks from various tranches, does not exactly correlate to the tranches.</p>
     <p>
       <table>
 	<tr>
@@ -54,7 +57,7 @@
 	  </td>
 	</tr>
       </table>
-    <p><a href="phl_recently_closed.html">List of recently closed tasks</a></p>
+    <!--<p><a href="phl_recently_closed.html">List of recently closed tasks</a></p>-->
     <a name="analysis"><h2>Analysis</h2></a>
     <p>The percentage of completed work per week that was spent on "maintenance" work.  The total fraction is <!--# include file="phl_maintenance_fraction_total_by_points.csv" -->% by points, or <!--# include file="phl_maintenance_fraction_total_by_count.csv" -->% by count.</p>
       <table>

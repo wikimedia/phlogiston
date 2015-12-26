@@ -1,16 +1,19 @@
 COPY (
 SELECT date,
        t.category,
+       MAX(z.sort_order) as sort_order,
        SUM(points) as points,
        SUM(count) as count
-  FROM tall_backlog t
+  FROM tall_backlog t, zoom_list z
  WHERE t.source = :'prefix'
    AND t.category in (SELECT category
                       FROM zoom_list
                      WHERE source = :'prefix')
+   AND t.source = z.source
+   AND t.category = z.category
  GROUP BY date, t.category
- ORDER BY t.category, date
-) to '/tmp/phlog/backlog.csv' DELIMITER ',' CSV HEADER;
+ ORDER BY sort_order, date
+) TO '/tmp/phlog/backlog.csv' DELIMITER ',' CSV HEADER;
 
 COPY (
 SELECT date,
@@ -24,7 +27,7 @@ SELECT date,
                      WHERE source = :'prefix')
  GROUP BY date
  ORDER BY date
-) to '/tmp/phlog/burnup.csv' DELIMITER ',' CSV HEADER;
+) TO '/tmp/phlog/burnup.csv' DELIMITER ',' CSV HEADER;
 
 COPY (
 SELECT date,
@@ -39,7 +42,18 @@ SELECT date,
                      WHERE source = :'prefix')
  GROUP BY date, category
  ORDER BY category, date
-) to '/tmp/phlog/burnup_categories.csv' DELIMITER ',' CSV HEADER;
+) TO '/tmp/phlog/burnup_categories.csv' DELIMITER ',' CSV HEADER;
+
+COPY (
+SELECT COUNT(*),
+       milestone_title,
+       project,
+       projectcolumn
+  FROM task_history
+ WHERE source = :'prefix'
+ GROUP BY milestone_title, project, projectcolumn
+ ORDER BY milestone_title, project, projectcolumn
+) TO '/tmp/phlog/category_possibilities.txt';
 
 /* ####################################################################
    Maintenance fraction
@@ -271,6 +285,7 @@ SELECT date,
        count
   FROM recently_closed
  WHERE source = :'prefix'
+   AND date >= current_date - interval '3 months'
  ORDER BY date, category
 ) to '/tmp/phlog/recently_closed.csv' DELIMITER ',' CSV HEADER;
 

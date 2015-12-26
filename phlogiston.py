@@ -7,6 +7,7 @@ import json
 import os.path
 import psycopg2
 import sys
+import pytz
 import getopt
 import subprocess
 import time
@@ -40,7 +41,7 @@ def main(argv):
     global PHAB_TAGS
     PHAB_TAGS = dict(new=1453,
                      maint=1454,
-                     milestone=942)
+                     milestone=1656)
 
     end_date = datetime.datetime.now().date()
     for opt, arg in opts:
@@ -173,9 +174,14 @@ def load(conn, end_date, VERBOSE, DEBUG):
         count = len(data['project']['columns'])
         print("Load {0} projectcolumns".format(count))
     for row in data['project']['columns']:
-        cur.execute(column_insert,
-                    {'id': row[0], 'phid': row[1],
-                     'name': row[2], 'project_phid': row[5]})
+        phid = row[1]
+        project_phid = row[5]
+        if project_phid in project_phid_to_id_dict:
+            cur.execute(column_insert,
+                        {'id': row[0], 'phid': phid,
+                         'name': row[2], 'project_phid': project_phid})
+        else:
+            print("Data error for column {0}: project {1} doesn't exist.Skipping.".format(phid, project_phid))
 
     ######################################################################
     # Load transactions and edges
@@ -244,13 +250,13 @@ def load(conn, end_date, VERBOSE, DEBUG):
                         jblob = json.loads(new_value)
                         if jblob:
                             for key in jblob.keys():
-                                try:
-                                    if jblob[key]['type'] == 41:
-                                        has_edge_data = True
+                                if jblob[key]['type'] == 41:
+                                    has_edge_data = True
+                                    if key in project_phid_to_id_dict:
                                         proj_id = project_phid_to_id_dict[key]
                                         active_proj.append(proj_id)
-                                except:
-                                    print("Error loading {0}".format(trans))
+                                    else:
+                                        print("Data error for transaction {0}: project {1} doesn't exist. Skipping.".format(trans[1], key))
 
                     cur.execute(transaction_insert,
                                 {'id': trans[0],
@@ -269,8 +275,8 @@ def load(conn, end_date, VERBOSE, DEBUG):
           FROM maniphest_blocked_phid mb,
                maniphest_task mt1,
                maniphest_task mt2
-         WHERE mb.phid = mt1.phid
-           AND mb.blocked_phid = mt2.phid"""
+         WHERE mb.blocks_phid = mt1.phid
+           AND mb.blocked_by_phid = mt2.phid"""
 
     cur.execute(convert_blocked_phid_to_id_sql)
     cur.close()
@@ -325,7 +331,11 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
                               FROM task_history
                              WHERE source like %(source)s"""
         cur.execute(max_date_query, {'source': source_prefix})
-        start_date = cur.fetchone()[0].date()
+        try:
+            start_date = cur.fetchone()[0].date()
+        except AttributeError:
+            print("No data available for incremental run.\nProbably this reconstruction should be run without --incremental.")
+            sys.exit(1)
     else:
         cur.execute('SELECT wipe_reconstruction(%(source_prefix)s)',
                     {'source_prefix': source_prefix})
@@ -511,25 +521,25 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
         # https://phabricator.wikimedia.org/T115936#1847188
 
         milestones_on_day_query = """
-          SELECT task
+          SELECT DISTINCT task
             FROM task_history t, maniphest_edge m
            WHERE t.source = %(source)s
              AND m.edge_date = %(working_date)s
              AND t.id = m.task
-             AND m.project = %(milestone_id)s"""
+             AND m.project = %(milestone_tag_id)s"""
 
         cur.execute(milestones_on_day_query,
                     {'source': source_prefix,
                      'working_date': working_date,
-                     'milestone_id': PHAB_TAGS['milestone']})
+                     'milestone_tag_id': PHAB_TAGS['milestone']})
         for row in cur.fetchall():
             milestone_id = row[0]
             task_milestone_insert = """
             INSERT INTO task_milestone (
             SELECT %(source)s,
                    %(working_date)s,
-                   %(milestone_id)s,
-                   id
+                   id,
+                   %(milestone_id)s
               FROM (SELECT *
                       FROM find_descendents(%(milestone_id)s,
                                             %(working_date)s)) as x)"""
@@ -538,14 +548,36 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
                          'milestone_id': milestone_id,
                          'working_date': working_date})
 
-    cur.close()
+    milestones_sql = """
+        UPDATE task_history th
+           SET milestone_title = (
+               SELECT string_agg(title, ' ') 
+                 FROM (
+                       SELECT th_foo.id, mt.title
+                         FROM maniphest_task mt,
+                              task_milestone tm,
+                              task_history th_foo
+                        WHERE th_foo.id = tm.task_id
+                          AND th_foo.source = tm.source
+                          AND th_foo.date = tm.date
+                          AND tm.milestone_id = mt.id
+                          AND tm.source = %(source)s
+                        GROUP BY th_foo.id, mt.title
+                        ) as foo
+                WHERE id = th.id
+                )
+         WHERE source = %(source)s
+           AND date >= %(start_date)s"""
 
+    cur.execute(milestones_sql,{'source': source_prefix, 'start_date': start_date})
+    cur.close()
+    
 
 def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
            default_points, project_name_list):
     # note that all the COPY commands in the psql scripts run
     # server-side as user postgres
-
+  
     ######################################################################
     # Prepare the data
     ######################################################################
@@ -600,7 +632,7 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
                             SET category = CASE {1}
                                            ELSE '{2}'
                                            END
-                          WHERE source = '{3}'"""
+                          WHERE source = '{3}' """
 
         unsafe_recat_update = recat_update.format(
             'tall_backlog', recat_cases, recat_else, source_prefix)
@@ -671,11 +703,13 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
                     format(source_prefix), shell=True)
     subprocess.call('mv /tmp/phlog/* /tmp/{0}/'.
                     format(source_prefix), shell=True)
+    subprocess.call('rm ~/html/{0}_*'.format(source_prefix), shell=True)
     subprocess.call(
         'sed s/phl_/{0}_/g html/phl.html | sed s/Phlogiston/{1}/g > ~/html/{0}.html'.
         format(source_prefix, source_title), shell=True)
     subprocess.call('cp /tmp/{0}/maintenance_fraction_total_by_points.csv ~/html/{0}_maintenance_fraction_total_by_points.csv'.format(source_prefix), shell=True)
     subprocess.call('cp /tmp/{0}/maintenance_fraction_total_by_count.csv ~/html/{0}_maintenance_fraction_total_by_count.csv'.format(source_prefix), shell=True)
+    subprocess.call('cp /tmp/{0}/category_possibilities.txt ~/html/{0}_category_possibilities.txt'.format(source_prefix), shell=True)
 
     script_dir = os.path.dirname(__file__)
     f = open('{0}../html/{1}_projects.csv'.
@@ -717,6 +751,9 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
     max_tranche_height_count = cur.fetchone()[0]
 
     colors = []
+    if len(zoom_list) > 12:
+        print("Zoom List should be kept to 12 or less")
+        del zoom_list[12:]
     proc = subprocess.check_output("Rscript get_palette.R {0}".
                                    format(len(zoom_list)), shell=True)
     color_output = proc.decode().split()
@@ -724,34 +761,36 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
         if '#' in item:
             colors.append(item)
     i = 0
-    html_string = ""
+    tab_string = '<table><tr>'
+    html_string = '<div class="tabs">'
     for category in reversed(zoom_list):
-        if i > 8:
-            # if there are more than 9 tranches, probably this data
-            # doesn't make much sense and there could be dozens more.
-            break
         color = colors[i]
         chart_result = subprocess.call(
             "Rscript make_tranche_chart.R {0} {1} \"{2}\" \"{3}\" {4} {5}".
             format(source_prefix, i, color, category,
                    max_tranche_height_points, max_tranche_height_count),
             shell=True)
+        tab_string += '<td><a href="#tab{0}">{1}</a></td>'.format(i,category)
+        html_string += '<p id="tab{0}"><table>'.format(i)
         points_png_name = "{0}_tranche{1}_burnup_points.png".format(source_prefix, i)
         count_png_name = "{0}_tranche{1}_burnup_count.png".format(source_prefix, i)
-        html_string += '<p><table><tr><td><a href="{0}"><img src="{0}"/></a></td>'.format(points_png_name)
-        html_string += '<td><a href="{0}"><img src="{0}"/></a></tr></table></p>'.format(count_png_name)
+        html_string += '<tr><td><a href="{0}"><img src="{0}"/></a></td>'.format(points_png_name)
+        html_string += '<td><a href="{0}"><img src="{0}"/></a></tr>\n'.format(count_png_name)
         points_png_name = "{0}_tranche{1}_velocity_points.png".format(source_prefix, i)
         count_png_name = "{0}_tranche{1}_velocity_count.png".format(source_prefix, i)
-        html_string += '<p><table><tr><td><a href="{0}"><img src="{0}"/></a></td>'.format(points_png_name)
-        html_string += '<td><a href="{0}"><img src="{0}"/></a></tr></table></p>'.format(count_png_name)
+        html_string += '<tr><td><a href="{0}"><img src="{0}"/></a></td>'.format(points_png_name)
+        html_string += '<td><a href="{0}"><img src="{0}"/></a></tr>\n'.format(count_png_name)
         points_png_name = "{0}_tranche{1}_forecast_points.png".format(source_prefix, i)
         count_png_name = "{0}_tranche{1}_forecast_count.png".format(source_prefix, i)
-        html_string += '<p><table><tr><td><a href="{0}"><img src="{0}"/></a></td>'.format(points_png_name)
-        html_string += '<td><a href="{0}"><img src="{0}"/></a></tr></table></p>'.format(count_png_name)
+        html_string += '<tr><td><a href="{0}"><img src="{0}"/></a></td>'.format(points_png_name)
+        html_string += '<td><a href="{0}"><img src="{0}"/></a></tr>\n'.format(count_png_name)
+        html_string += '</table></p>\n'
         i += 1
-
+    tab_string += '</tr></table>'
+    html_string += '</div>'
     f = open('{0}../html/{1}_tranches.html'.
              format(script_dir, source_prefix), 'w')
+    f.write(tab_string)
     f.write(html_string)
     f.close()
 
@@ -804,26 +843,45 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
     f.write(html_string)
     f.close()
 
-    max_date_query = """SELECT MAX(date)
-                          FROM task_history
-                         WHERE source like %(source)s"""
-
-    cur.execute(max_date_query, {'source': source_prefix})
-    max_date = cur.fetchone()[0]
-    script_dir = os.path.dirname(__file__)
-    f = open('{0}../html/{1}_max_date.csv'.
-             format(script_dir, source_prefix), 'w')
-    f.write(max_date.strftime('%c %Z'))
-
     ######################################################################
     # Make the rest of the charts
     ######################################################################
     subprocess.call("Rscript make_charts.R {0} {1}".
                     format(source_prefix, source_title), shell=True)
 
-    f = open('{0}../html/{1}_report_date.csv'.
+    ######################################################################
+    # Update dates
+    ######################################################################
+
+    html_string = """<p><table border="1px solid lightgray" cellpadding="6" cellspacing="0">
+    <tr><th></th><th>UTC</th><th>PT</th></tr>"""
+
+    max_date_query = """
+        SELECT MAX(date_modified), now()
+          FROM task_history th, maniphest_transaction mt
+         WHERE th.source = %(source)s
+           AND th.id = mt.task_id"""
+
+    cur.execute(max_date_query, {'source': source_prefix})
+    result = cur.fetchone()
+    max_date = result[0]
+    now_db = result[1]
+    utc = pytz.utc
+    pt = pytz.timezone('America/Los_Angeles')
+    max_date_utc = max_date.astimezone(utc).strftime('%a %Y-%b-%d %I:%M %p') 
+    max_date_pt =  max_date.astimezone(pt).strftime('%a %Y-%b-%d %I:%M %p')
+    now_utc = now_db.astimezone(utc).strftime('%a %Y-%b-%d %I:%M %p')
+    now_pt = now_db.astimezone(pt).strftime('%a %Y-%b-%d %I:%M %p') 
+
+    html_string += "<tr><th>Most Recent Data</th><th>{0}</th><th>{1}</th></tr>".format(max_date_utc, max_date_pt)
+    html_string += "<tr><th>Report Date</th><th>{0}</th><th>{1}</th></tr>".format(now_utc, now_pt)
+    html_string += "</table></p>"
+
+    script_dir = os.path.dirname(__file__)
+    f = open('{0}../html/{1}_dates.html'.
              format(script_dir, source_prefix), 'w')
-    f.write(datetime.datetime.now().strftime('%c %Z'))
+    f.write(html_string)
+
     f.close
 
     cur.close()
