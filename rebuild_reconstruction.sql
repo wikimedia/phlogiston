@@ -84,10 +84,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-
-END;
-$$ LANGUAGE plpgsql;
-
 CREATE OR REPLACE FUNCTION find_descendents(
        root_id int,
        run_date date
