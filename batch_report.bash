@@ -22,6 +22,3 @@ python3 phlogiston.py --reconstruct --report --project red_source.py
 python3 phlogiston.py --reconstruct --report --project rel_source.py
 python3 phlogiston.py --reconstruct --report --project tpg_source.py
 python3 phlogiston.py --reconstruct --report --project ve_source.py
-
-
-
