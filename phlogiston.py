@@ -80,10 +80,10 @@ def main(argv):
     if project_source:
         config = configparser.ConfigParser()
         config.read(project_source)
-        source_prefix = config.get("vars", "source_prefix")
-        source_title = config.get("vars", "source_title")
-        default_points = config.get("vars", "default_points")
-        project_name_list = list(config.get("vars", "project_list").split(','))
+        source_prefix = config['vars']['source_prefix']
+        source_title = config['vars']['source_title']
+        default_points = config['vars']['default_points']
+        project_name_list = list(config['vars']['project_list'].split(','))
         if not start_date:
             start_date = datetime.datetime.strptime(
                 config.get("vars", "start_date"), "%Y-%m-%d").date()
@@ -305,7 +305,10 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
 
     project_id_list = list()
     for project_name in project_name_list:
-        project_id_list.append(project_name_to_id_dict[project_name])
+        try:
+            project_id_list.append(project_name_to_id_dict[project_name])
+        except KeyError:
+            pass
 
     cur.execute("""SELECT pc.phid, pc.name
                      FROM phabricator_column pc,
@@ -751,9 +754,6 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
     max_tranche_height_count = cur.fetchone()[0]
 
     colors = []
-    if len(zoom_list) > 12:
-        print("Zoom List should be kept to 12 or less")
-        del zoom_list[12:]
     proc = subprocess.check_output("Rscript get_palette.R {0}".
                                    format(len(zoom_list)), shell=True)
     color_output = proc.decode().split()
