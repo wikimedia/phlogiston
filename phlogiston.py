@@ -142,16 +142,16 @@ Optionally:
 
 def do_initialize(conn, VERBOSE, DEBUG):
     cur = conn.cursor()
-    cur.execute(open("rebuild_loading_tables.sql", "r").read())
-    cur.execute(open("rebuild_reconstruction_tables.sql", "r").read())
-    cur.execute(open("rebuild_reconstruction_functions.sql", "r").read())
-    cur.execute(open("rebuild_reporting_tables.sql", "r").read())
-    cur.execute(open("rebuild_reporting_functions.sql", "r").read())
+    cur.execute(open("loading_tables.sql", "r").read())
+    cur.execute(open("reconstruction_tables.sql", "r").read())
+    cur.execute(open("reconstruction_functions.sql", "r").read())
+    cur.execute(open("reporting_tables.sql", "r").read())
+    cur.execute(open("reporting_functions.sql", "r").read())
 
 
 def load(conn, end_date, VERBOSE, DEBUG):
     cur = conn.cursor()
-    cur.execute(open("rebuild_loading_tables.sql", "r").read())
+    cur.execute(open("loading_tables.sql", "r").read())
 
     if VERBOSE:
         print("Loading dump file")

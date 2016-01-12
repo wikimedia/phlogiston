@@ -3,16 +3,20 @@
   <link rel="stylesheet" type="text/css" href="phlogiston.css">
   <body>
     <h1>Phlogiston Charts</h1>
-    <table><tr><td>
-    <p><a href="#burnups">Burnup charts</a></p>
-    <p><a href="#velocity">Velocity Charts: Velocity, Recently Closed</a></p>
-    <p><a href="#analysis">Analysis charts: Maintenance fraction, backlog growth</a></p>
+    <table>
+      <tr>
+        <td>
+          <p><a href="#burnups">Burnup charts</a></p>
+          <p><a href="#velocity">Velocity Charts: Velocity, Recently Closed</a></p>
+          <p><a href="#analysis">Analysis charts: Maintenance fraction, backlog growth</a></p>
         </td>
         <td>
-    <!--# include file="phl_dates.html" -->
-    <p>Unpointed stories are defaulted to <b><!--# include file="phl_default_points.csv" --></b>points. <a href="phl_category_possibilities.txt">Full list</a> of possible categories. These charts include data from the following Phabricator projects, in this order:</p>
-    <b><pre><!--# include file="phl_projects.csv" --></pre></b>
-    </td>
+          <!--# include file="phl_dates.html" -->
+          <p>Unpointed stories are defaulted to <b><!--# include file="phl_default_points.csv" --></b>points. <a href="phl_category_possibilities.txt">Full list</a> of possible categories. These charts include data from the following Phabricator projects, in this order:</p>
+          <b><pre><!--# include file="phl_projects.csv" --></pre></b>
+        </td>
+      </tr>
+    </table>
     <h2>Forecasts</h2>
     <b><pre><!--# include file="phl_current_forecasts.html" --></pre></b>
     <p>Tasks included in several of these projects are only counted in the first matching project.</p>
@@ -47,30 +51,39 @@
       </table>
     </p>
     <p>What has been completed.</p>
-      <table>
-	<tr>
-	  <td>
-	    <a href="phl_done.png"><img src="phl_done.png"/></a>
-	  </td>
-	  <td>
-	    <a href="phl_done_count.png"><img src="phl_done_count.png"/></a>
-	  </td>
-	</tr>
-      </table>
+    <table>
+      <tr>
+	<td>
+	  <a href="phl_done.png"><img src="phl_done.png"/></a>
+	</td>
+	<td>
+	  <a href="phl_done_count.png"><img src="phl_done_count.png"/></a>
+	</td>
+      </tr>
+    </table>
     <!--<p><a href="phl_recently_closed.html">List of recently closed tasks</a></p>-->
     <a name="analysis"><h2>Analysis</h2></a>
     <p>The percentage of completed work per week that was spent on "maintenance" work.  The total fraction is <!--# include file="phl_maintenance_fraction_total_by_points.csv" -->% by points, or <!--# include file="phl_maintenance_fraction_total_by_count.csv" -->% by count.</p>
-      <table>
-	<tr>
-	  <td>
-	    <a href="phl_maint_frac.png"><img src="phl_maint_frac.png"/></a>
-	  </td>
-	  <td>
-	    <a href="phl_maint_count_frac.png"><img src="phl_maint_count_frac.png"/></a>
-	  </td>
-	</tr>
-      </table>
-    <p>The size of the Phlogiston Backlog, that is, work that is planned or requested for Phlogiston and not completed.</p>
-    <p><a href="phl_net_growth.png"><img src="phl_net_growth.png"/></a></p>
+    <table>
+      <tr>
+	<td>
+	  <a href="phl_maint_frac.png"><img src="phl_maint_frac.png"/></a>
+	</td>
+	<td>
+	  <a href="phl_maint_count_frac.png"><img src="phl_maint_count_frac.png"/></a>
+	</td>
+      </tr>
+    </table>
+    <p>Changes in the size of Phlogiston Backlog, that is, work that is planned or requested for Phlogiston and not completed.</p>
+    <table>
+      <tr>
+        <td>
+          <a href="phl_net_growth_points.png"><img src="phl_net_growth_points.png"/></a>
+        </td>
+        <td>
+          <a href="phl_net_growth_count.png"><img src="phl_net_growth_count.png"/></a>
+        </td>
+      </tr>
+    </table>
   </body>
 </html>

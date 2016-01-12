@@ -96,12 +96,20 @@ dev.off()
 net_growth <- read.csv(sprintf("/tmp/%s/net_growth.csv", args$project))
 net_growth$date <- as.Date(net_growth$date, "%Y-%m-%d")
 
-net_growth_output <- png(filename = sprintf("~/html/%s_net_growth.png", args$project), width=2000, height=1125, units="px", pointsize=30)
+net_growth_points_output <- png(filename = sprintf("~/html/%s_net_growth_points.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 
 ggplot(net_growth, aes(date, points)) +
   geom_bar(stat="identity") +
   theme_fivethirtynine() +
   labs(title=sprintf("%s Net change in open backlog by points", args$title), y="Story Points")
+dev.off()
+
+net_growth_count_output <- png(filename = sprintf("~/html/%s_net_growth_count.png", args$project), width=2000, height=1125, units="px", pointsize=30)
+
+ggplot(net_growth, aes(date, count)) +
+  geom_bar(stat="identity") +
+  theme_fivethirtynine() +
+  labs(title=sprintf("%s Net change in open backlog by count", args$title), y="Task Count")
 dev.off()
 
 ######################################################################
