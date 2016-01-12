@@ -122,7 +122,7 @@ done$date <- as.Date(done$date, "%Y-%m-%d")
 done_output <- png(filename = sprintf("~/html/%s_done.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 ggplot(done, aes(x=date, y=points, fill=factor(category), order=-as.numeric(category))) +
   geom_bar(stat="identity", width=7) +
-  scale_fill_discrete(name="Milestones") + 
+  scale_fill_brewer(name="Milestones", palette="YlOrRd") +
   theme_fivethirtynine() +
   theme(legend.position='bottom', legend.direction='vertical') +
   labs(title=sprintf("%s Completed work by points", args$title), y="Points", x="Month", aesthetic="Milestone")
@@ -130,7 +130,7 @@ dev.off()
 done_count_output <- png(filename = sprintf("~/html/%s_done_count.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 ggplot(done, aes(x=date, y=count, fill=factor(category), order=-as.numeric(category))) +
   geom_bar(stat="identity", width=7) +
-  scale_fill_discrete(name="Milestones") +
+  scale_fill_brewer(name="Milestones", palette="YlOrRd") +
   theme_fivethirtynine() +
   theme(legend.position='bottom', legend.direction='vertical') +
   labs(title=sprintf("%s Completed work by count", args$title), y="Count", x="Month", aesthetic="Milestone")
