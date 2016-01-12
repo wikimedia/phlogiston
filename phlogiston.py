@@ -770,7 +770,10 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
     tab_string = '<table><tr>'
     html_string = '<div class="tabs">'
     for category in reversed(zoom_list):
-        color = colors[i]
+        try:
+            color = colors[i]
+        except:
+            color = '#FEFEFE'
         chart_result = subprocess.call(
             "Rscript make_tranche_chart.R {0} {1} \"{2}\" \"{3}\" {4} {5}".
             format(source_prefix, i, color, category,
