@@ -16,8 +16,8 @@ import time
 def main(argv):
     try:
         opts, args = getopt.getopt(
-            argv, "cde:hilnp:rs:v",
-            ["reconstruct", "debug", "enddate", "help", "initialize",
+            argv, "b:cde:hilnp:rs:v",
+            ["dbname", "reconstruct", "debug", "enddate", "help", "initialize",
              "load", "incremental", "project=", "report", "startdate=",
              "verbose"])
     except getopt.GetoptError as e:
@@ -34,6 +34,7 @@ def main(argv):
     default_points = 5
     project_source = ''
     start_date = ''
+    dbname = 'phab'
 
     # Wikimedia Phabricator constants
     # using Epic tag as temporary test pending
@@ -45,7 +46,9 @@ def main(argv):
 
     end_date = datetime.datetime.now().date()
     for opt, arg in opts:
-        if opt in ("-c", "--reconstruct"):
+        if opt in ("-b", "--dbname"):
+            dbname = arg
+        elif opt in ("-c", "--reconstruct"):
             reconstruct_data = True
         elif opt in ("-d", "--debug"):
             DEBUG = True
@@ -68,7 +71,8 @@ def main(argv):
             start_date = datetime.datetime.strptime(arg, "%Y-%m-%d").date()
         elif opt in ("-v", "--verbose"):
             VERBOSE = True
-    conn = psycopg2.connect("dbname=phab")
+
+    conn = psycopg2.connect('dbname={0}'.format(dbname))
     conn.autocommit = True
 
     if initialize:
@@ -138,14 +142,16 @@ Optionally:
 
 def do_initialize(conn, VERBOSE, DEBUG):
     cur = conn.cursor()
-    cur.execute(open("rebuild_loading.sql", "r").read())
-    cur.execute(open("rebuild_reconstruction.sql", "r").read())
-    cur.execute(open("rebuild_reporting.sql", "r").read())
+    cur.execute(open("rebuild_loading_tables.sql", "r").read())
+    cur.execute(open("rebuild_reconstruction_tables.sql", "r").read())
+    cur.execute(open("rebuild_reconstruction_functions.sql", "r").read())
+    cur.execute(open("rebuild_reporting_tables.sql", "r").read())
+    cur.execute(open("rebuild_reporting_functions.sql", "r").read())
 
 
 def load(conn, end_date, VERBOSE, DEBUG):
     cur = conn.cursor()
-    cur.execute(open("rebuild_loading.sql", "r").read())
+    cur.execute(open("rebuild_loading_tables.sql", "r").read())
 
     if VERBOSE:
         print("Loading dump file")

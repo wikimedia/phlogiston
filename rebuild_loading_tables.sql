@@ -1,5 +1,3 @@
--- Tables for loading
-
 CREATE EXTENSION IF NOT EXISTS intarray;
 
 DROP TABLE IF EXISTS maniphest_edge;
