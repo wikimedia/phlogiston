@@ -18,6 +18,7 @@ args <- parser$parse_args()
 now <- Sys.Date()
 forecast_start <- as.Date(c("2016-01-01"))
 forecast_end <- as.Date(c("2016-09-30"))
+three_months_ago <- now - 91
 
 # common theme from https://github.com/Ironholds/wmf/blob/master/R/dataviz.R
 theme_fivethirtynine <- function(base_size = 12, base_family = "sans"){
@@ -51,7 +52,8 @@ ggplot(backlog) +
   geom_line(data=burnup, aes(x=date, y=points), size=2) +
   theme_fivethirtynine() +
   scale_fill_brewer(palette="Set3") +
-  theme(legend.position='bottom', legend.direction='vertical') +
+  scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%d %b\n%Y")) +
+  theme(legend.position='bottom', legend.direction='vertical', axis.title.x=element_blank()) +
   guides(col = guide_legend(reverse=TRUE)) +
   labs(title=sprintf("%s backlog by points", args$title), y="Story Point Total") +
   geom_vline(aes(xintercept=as.numeric(as.Date(c('2015-10-01'))), color="gray"))
@@ -64,7 +66,8 @@ ggplot(backlog) +
   geom_line(data=burnup, aes(x=date, y=count), size=2) +
   theme_fivethirtynine() +
   scale_fill_brewer(palette="Set3") + 
- theme(legend.position='bottom', legend.direction='vertical') +
+  scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%d %b\n%Y")) +
+  theme(legend.position='bottom', legend.direction='vertical', axis.title.x=element_blank()) +
   guides(col = guide_legend(reverse=TRUE)) +
   labs(title=sprintf("%s backlog by count", args$title), y="Task Count") +
   geom_vline(aes(xintercept=as.numeric(as.Date(c('2015-10-01'))), color="gray")) +
@@ -83,6 +86,8 @@ velocity_points_output <- png(filename = sprintf("~/html/%s_velocity.png", args$
 ggplot(velocity, aes(date, points)) +
   geom_bar(stat="identity") +
   theme_fivethirtynine() +
+  theme(axis.title.x=element_blank()) +
+  scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%d %b\n%Y")) +
   labs(title=sprintf("%s weekly velocity by points", args$title), y="Story Points")
 dev.off()
 
@@ -91,6 +96,8 @@ velocity_count_output <- png(filename = sprintf("~/html/%s_velocity_count.png", 
 ggplot(velocity, aes(date, count)) +
   geom_bar(stat="identity") +
   theme_fivethirtynine() +
+  theme(axis.title.x=element_blank()) +
+  scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%d %b\n%Y")) +
   labs(title=sprintf("%s weekly velocity by count", args$title), y="Tasks")
 dev.off()
 
@@ -106,15 +113,15 @@ forecast$pes_count_date <- as.Date(forecast$pes_count_date, "%Y-%m-%d")
 forecast$nom_count_date <- as.Date(forecast$nom_count_date, "%Y-%m-%d")
 forecast$opt_count_date <- as.Date(forecast$opt_count_date, "%Y-%m-%d")
 
-forecast$category <- factor(forecast$category, levels=forecast$category[order(rev(forecast$sort_order))])
 forecast$category = strtrim(forecast$category, 35)
+forecast$category <- factor(forecast$category, levels=forecast$category[order(rev(forecast$sort_order))])
 forecast_points_output  <- png(filename = sprintf("~/html/%s_forecast.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 
 ggplot(forecast, aes(category, nom_points_date, ymax=pes_points_date, ymin=opt_points_date)) +
   geom_point(stat="identity", aes(size=25)) +
   geom_errorbar(aes(size=15), width=.5) +
   geom_hline(aes(yintercept=as.numeric(now)), color="blue") +
-  scale_y_date(limits=c(forecast_start, forecast_end), minor_breaks="1 month", label=date_format("%b %Y")) +
+  scale_y_date(limits=c(forecast_start, forecast_end), minor_breaks="1 month", label=date_format("%d %b\n%Y")) +
   coord_flip() +
   theme_fivethirtynine() +
   labs(title=sprintf("%s forecast completion dates", args$title), y="Forecast range based on points velocity", x="Milestones (high priority on top)") +
@@ -127,7 +134,7 @@ ggplot(forecast, aes(category, nom_count_date, ymax=pes_count_date, ymin=opt_cou
   geom_point(stat="identity", aes(size=25)) +
   geom_errorbar(aes(size=15), width=.5) +
   geom_hline(aes(yintercept=as.numeric(now)), color="blue") +
-  scale_y_date(limits=c(forecast_start, forecast_end), minor_breaks="1 month", label=date_format("%b %Y")) +
+  scale_y_date(limits=c(forecast_start, forecast_end), minor_breaks="1 month", label=date_format("%d %b\n%Y")) +
   coord_flip() +
   theme_fivethirtynine() +
   labs(title=sprintf("%s forecast completion dates", args$title), y="Forecast range based on count velocity", x="Milestones (high priority on top)") +
@@ -146,7 +153,9 @@ net_growth_points_output <- png(filename = sprintf("~/html/%s_net_growth_points.
 ggplot(net_growth, aes(date, points)) +
   geom_bar(stat="identity") +
   theme_fivethirtynine() +
-  labs(title=sprintf("%s Net change in open backlog by points", args$title), y="Story Points")
+  theme(axis.title.x=element_blank()) +
+  scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%d %b\n%Y")) +
+labs(title=sprintf("%s Net change in open backlog by points", args$title), y="Story Points")
 dev.off()
 
 net_growth_count_output <- png(filename = sprintf("~/html/%s_net_growth_count.png", args$project), width=2000, height=1125, units="px", pointsize=30)
@@ -154,6 +163,8 @@ net_growth_count_output <- png(filename = sprintf("~/html/%s_net_growth_count.pn
 ggplot(net_growth, aes(date, count)) +
   geom_bar(stat="identity") +
   theme_fivethirtynine() +
+  theme(axis.title.x=element_blank()) +
+  scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%d %b\n%Y")) +
   labs(title=sprintf("%s Net change in open backlog by count", args$title), y="Task Count")
 dev.off()
 
@@ -169,7 +180,9 @@ ggplot(done, aes(x=date, y=points, fill=factor(category), order=priority)) +
   geom_bar(stat="identity", width=7) +
   scale_fill_brewer(name="(Priority) Milestone", palette="YlOrRd") +
   theme_fivethirtynine() +
-  theme(legend.position='bottom', legend.direction='vertical') +
+  theme(axis.title.x=element_blank()) +
+  scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%d %b\n%Y")) +
+  theme(legend.position='bottom', legend.direction='vertical', axis.title.x=element_blank()) +
   labs(title=sprintf("%s Completed work by points", args$title), y="Points", x="Month", aesthetic="Milestone")
 dev.off()
 done_count_output <- png(filename = sprintf("~/html/%s_done_count.png", args$project), width=2000, height=1125, units="px", pointsize=30)
@@ -177,7 +190,8 @@ ggplot(done, aes(x=date, y=count, fill=factor(category), order=priority)) +
   geom_bar(stat="identity", width=7) +
   scale_fill_brewer(name="(Priority) Milestone:", palette="YlOrRd") +
   theme_fivethirtynine() +
-  theme(legend.position='bottom', legend.direction='vertical') +
+  scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%d %b\n%Y")) +
+  theme(legend.position='bottom', legend.direction='vertical', axis.title.x=element_blank()) +
   labs(title=sprintf("%s Completed work by count", args$title), y="Count", x="Month", aesthetic="Milestone")
 dev.off()
 
@@ -193,7 +207,9 @@ status_output <- png(filename = sprintf("~/html/%s_maint_frac.png", args$project
 ggplot(maint_frac, aes(date, maint_frac_points)) +
   geom_bar(stat="identity") +
   scale_y_continuous(labels=percent, limits=c(0,1)) +
+  scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%d %b\n%Y")) +
   theme_fivethirtynine() +
+  theme(axis.title.x=element_blank()) +
   labs(title=sprintf("%s Maintenance Fraction by points", args$title), y="Fraction of completed work that is maintenance")
 dev.off()
 
@@ -202,5 +218,7 @@ ggplot(maint_frac, aes(date, maint_frac_count)) +
   geom_bar(stat="identity") +
   scale_y_continuous(labels=percent, limits=c(0,1)) + 
   theme_fivethirtynine() +
+  theme(axis.title.x=element_blank()) +
+  scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%d %b\n%Y")) +
   labs(title=sprintf("%s Maintenance Fraction by count", args$title), y="Fraction of completed work that is maintenance")
 dev.off()
