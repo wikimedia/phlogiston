@@ -16,8 +16,8 @@ parser$add_argument("title", nargs=1, help="Project title")
 args <- parser$parse_args()
 
 now <- Sys.Date()
-three_months <- now + 91
-six_months <- now +  182
+forecast_start <- as.Date(c("2016-01-01"))
+forecast_end <- as.Date(c("2016-09-30"))
 
 # common theme from https://github.com/Ironholds/wmf/blob/master/R/dataviz.R
 theme_fivethirtynine <- function(base_size = 12, base_family = "sans"){
@@ -63,8 +63,8 @@ ggplot(backlog) +
   geom_area(position='stack', aes(x = date, y = count, group=category, fill=category, order=-category)) +
   geom_line(data=burnup, aes(x=date, y=count), size=2) +
   theme_fivethirtynine() +
-  scale_fill_brewer(palette="Set3") +
-  theme(legend.position='bottom', legend.direction='vertical') +
+  scale_fill_brewer(palette="Set3") + 
+ theme(legend.position='bottom', legend.direction='vertical') +
   guides(col = guide_legend(reverse=TRUE)) +
   labs(title=sprintf("%s backlog by count", args$title), y="Task Count") +
   geom_vline(aes(xintercept=as.numeric(as.Date(c('2015-10-01'))), color="gray")) +
@@ -107,40 +107,31 @@ forecast$nom_count_date <- as.Date(forecast$nom_count_date, "%Y-%m-%d")
 forecast$opt_count_date <- as.Date(forecast$opt_count_date, "%Y-%m-%d")
 
 forecast$category <- factor(forecast$category, levels=forecast$category[order(rev(forecast$sort_order))])
-
+forecast$category = strtrim(forecast$category, 35)
 forecast_points_output  <- png(filename = sprintf("~/html/%s_forecast.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 
 ggplot(forecast, aes(category, nom_points_date, ymax=pes_points_date, ymin=opt_points_date)) +
   geom_point(stat="identity", aes(size=25)) +
-  geom_errorbar(aes(size=15)) +
-  scale_y_date(minor_breaks="1 year", label=date_format("%Y")) +
+  geom_errorbar(aes(size=15), width=.5) +
+  geom_hline(aes(yintercept=as.numeric(now)), color="blue") +
+  scale_y_date(limits=c(forecast_start, forecast_end), minor_breaks="1 month", label=date_format("%b %Y")) +
   coord_flip() +
   theme_fivethirtynine() +
   labs(title=sprintf("%s forecast completion dates", args$title), y="Forecast range based on points velocity", x="Milestones (high priority on top)") +
-  theme(legend.position = "none", axis.text.x = element_text(hjust=0))
-dev.off()
-
-forecast_points_zoom_output  <- png(filename = sprintf("~/html/%s_forecast_zoom.png", args$project), width=2000, height=1125, units="px", pointsize=30)
-
-ggplot(forecast, aes(category, nom_points_date, ymax=pes_points_date, ymin=opt_points_date)) +
-  geom_point(stat="identity", aes(size=25)) +
-  geom_errorbar(aes(size=15)) +
-  scale_y_date(limits=c(now, six_months), minor_breaks="3 months", label=date_format("%b %Y")) +
-  coord_flip() +
-  theme_fivethirtynine() +
-  labs(title=sprintf("%s forecast completion dates", args$title), y="Forecast range based on points velocity", x="Milestones (high priority on top)") +
-  theme(legend.position = "none", axis.text.x = element_text(hjust=1))
+  theme(legend.position = "none", axis.text.y = element_text(hjust=1))
 dev.off()
 
 forecast_count_output  <- png(filename = sprintf("~/html/%s_forecast_count.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 
 ggplot(forecast, aes(category, nom_count_date, ymax=pes_count_date, ymin=opt_count_date)) +
   geom_point(stat="identity", aes(size=25)) +
-  geom_errorbar(aes(size=15)) +
+  geom_errorbar(aes(size=15), width=.5) +
+  geom_hline(aes(yintercept=as.numeric(now)), color="blue") +
+  scale_y_date(limits=c(forecast_start, forecast_end), minor_breaks="1 month", label=date_format("%b %Y")) +
   coord_flip() +
   theme_fivethirtynine() +
   labs(title=sprintf("%s forecast completion dates", args$title), y="Forecast range based on count velocity", x="Milestones (high priority on top)") +
-  theme(legend.position = "none")
+  theme(legend.position = "none", axis.text.y = element_text(hjust=1))
 dev.off()
 
 ######################################################################
