@@ -172,12 +172,14 @@ dev.off()
 ## Recently Closed
 ######################################################################
 
+print("foo")
 done <- read.csv(sprintf("/tmp/%s/recently_closed.csv", args$project))
 done$date <- as.Date(done$date, "%Y-%m-%d")
+done$category <- factor(done$category, levels=rev(done$category[order(done$priority)]))
 
 done_output <- png(filename = sprintf("~/html/%s_done.png", args$project), width=2000, height=1125, units="px", pointsize=30)
-ggplot(done, aes(x=date, y=points, fill=factor(category), order=priority)) +
-  geom_bar(stat="identity", width=7) +
+ggplot(done, aes(x=date, y=points, fill=factor(category))) +
+  geom_bar(stat="identity")+ 
   scale_fill_brewer(name="(Priority) Milestone", palette="YlOrRd") +
   theme_fivethirtynine() +
   theme(axis.title.x=element_blank()) +
@@ -185,9 +187,10 @@ ggplot(done, aes(x=date, y=points, fill=factor(category), order=priority)) +
   theme(legend.position='bottom', legend.direction='vertical', axis.title.x=element_blank()) +
   labs(title=sprintf("%s Completed work by points", args$title), y="Points", x="Month", aesthetic="Milestone")
 dev.off()
+
 done_count_output <- png(filename = sprintf("~/html/%s_done_count.png", args$project), width=2000, height=1125, units="px", pointsize=30)
-ggplot(done, aes(x=date, y=count, fill=factor(category), order=priority)) +
-  geom_bar(stat="identity", width=7) +
+ggplot(done, aes(x=date, y=count, fill=factor(category))) +
+  geom_bar(stat="identity") +
   scale_fill_brewer(name="(Priority) Milestone:", palette="YlOrRd") +
   theme_fivethirtynine() +
   scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
