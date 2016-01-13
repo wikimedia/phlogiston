@@ -176,7 +176,6 @@ dev.off()
 ## Recently Closed
 ######################################################################
 
-print("foo")
 done <- read.csv(sprintf("/tmp/%s/recently_closed.csv", args$project))
 done$date <- as.Date(done$date, "%Y-%m-%d")
 done$category <- factor(done$category, levels=rev(done$category[order(done$priority)]))
