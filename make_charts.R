@@ -106,23 +106,25 @@ forecast$category <- factor(forecast$category, levels=forecast$category[order(re
 
 forecast_points_output  <- png(filename = sprintf("~/html/%s_forecast.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 
-ggplot(forecast, aes(category, nom_points_date, ymax=pes_points_date, ymin=opt_points_date, size=50)) +
-  geom_point(stat="identity") +
-  geom_errorbar() +    
+ggplot(forecast, aes(category, nom_points_date, ymax=pes_points_date, ymin=opt_points_date)) +
+  geom_point(stat="identity", aes(size=25)) +
+  geom_errorbar(aes(size=15)) +
   scale_y_date() +
   coord_flip() +
-  theme_fivethirtynine() +    
-  labs(title=sprintf("%s forecast completion dates", args$title), y="Forecast range based on points velocity", x="Milestones (high priority on top)")
+  theme_fivethirtynine() +
+  labs(title=sprintf("%s forecast completion dates", args$title), y="Forecast range based on points velocity", x="Milestones (high priority on top)") +
+  theme(legend.position = "none")
 dev.off()
 
 forecast_count_output  <- png(filename = sprintf("~/html/%s_forecast_count.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 
 ggplot(forecast, aes(category, nom_count_date, ymax=pes_count_date, ymin=opt_count_date)) +
-  geom_point(stat="identity") +
-  geom_errorbar() +    
+  geom_point(stat="identity", aes(size=25)) +
+  geom_errorbar(aes(size=15)) +
   coord_flip() +
   theme_fivethirtynine() +
-  labs(title=sprintf("%s forecast completion dates", args$title), y="Forecast range based on count velocity", x="Milestones (high priority on top)")
+  labs(title=sprintf("%s forecast completion dates", args$title), y="Forecast range based on count velocity", x="Milestones (high priority on top)") +
+  theme(legend.position = "none")
 dev.off()
 
 ######################################################################
