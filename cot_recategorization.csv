@@ -14,6 +14,6 @@ sort_order,zoom_list,title,matchstring
 13,True,WikiProject tools,%WikiProject-tools%
 14,True,Gadgets 2.0,%Gadgets-2.0%
 15,True,CopyVio tools,%CopyVio-tools%
-16,True,Other,PhlogOther
+19,True,Other,PhlogOther
 17,False,Blocked,%Blocked%
 18,False,Frozen,%Frozen%
