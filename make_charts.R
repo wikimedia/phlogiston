@@ -63,7 +63,8 @@ ggplot(backlog) +
   theme(legend.position='bottom', legend.direction='vertical') +
   guides(col = guide_legend(reverse=TRUE)) +
   labs(title=sprintf("%s backlog by count", args$title), y="Task Count") +
-  geom_vline(aes(xintercept=as.numeric(as.Date(c('2015-10-01'))), color="gray"))
+  geom_vline(aes(xintercept=as.numeric(as.Date(c('2015-10-01'))), color="gray")) +
+  geom_vline(aes(xintercept=as.numeric(as.Date(c('2016-01-01'))), color="gray"))
 dev.off()
 
 ######################################################################
@@ -73,7 +74,7 @@ dev.off()
 velocity <- read.csv(sprintf("/tmp/%s/velocity.csv", args$project))
 velocity$date <- as.Date(velocity$date, "%Y-%m-%d")
 
-velocity_output <- png(filename = sprintf("~/html/%s_velocity.png", args$project), width=2000, height=1125, units="px", pointsize=30)
+velocity_points_output <- png(filename = sprintf("~/html/%s_velocity.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 
 ggplot(velocity, aes(date, points)) +
   geom_bar(stat="identity") +
@@ -88,6 +89,22 @@ ggplot(velocity, aes(date, count)) +
   theme_fivethirtynine() +
   labs(title=sprintf("%s weekly velocity by count", args$title), y="Tasks")
 dev.off()
+
+######################################################################
+## Forecast
+######################################################################
+
+## forecast <- read.csv(sprintf("/tmp/%s/forecast.csv", args$project))
+## forecast$date <- as.Date(forecast$date, "%Y-%m-%d")
+
+## forecast_points_output  <- png(filename = sprintf("~/html/%s_forecast.png", args$project), width=2000, height=1125, units="px", pointsize=30)
+
+## ggplot(forecast, aes(category, points)) +
+##   geom_bar(stat="identity") +
+##   theme_fivethirtynine() +
+##   labs(title=sprintf("%s weekly velocity by points", args$title), y="Story Points")
+## dev.off()
+
 
 ######################################################################
 ## Velocity vs backlog
@@ -120,17 +137,17 @@ done <- read.csv(sprintf("/tmp/%s/recently_closed.csv", args$project))
 done$date <- as.Date(done$date, "%Y-%m-%d")
 
 done_output <- png(filename = sprintf("~/html/%s_done.png", args$project), width=2000, height=1125, units="px", pointsize=30)
-ggplot(done, aes(x=date, y=points, fill=factor(category), order=-as.numeric(category))) +
+ggplot(done, aes(x=date, y=points, fill=factor(category), order=priority)) +
   geom_bar(stat="identity", width=7) +
-  scale_fill_brewer(name="Milestones", palette="YlOrRd") +
+  scale_fill_brewer(name="(Priority) Milestone", palette="YlOrRd") +
   theme_fivethirtynine() +
   theme(legend.position='bottom', legend.direction='vertical') +
   labs(title=sprintf("%s Completed work by points", args$title), y="Points", x="Month", aesthetic="Milestone")
 dev.off()
 done_count_output <- png(filename = sprintf("~/html/%s_done_count.png", args$project), width=2000, height=1125, units="px", pointsize=30)
-ggplot(done, aes(x=date, y=count, fill=factor(category), order=-as.numeric(category))) +
+ggplot(done, aes(x=date, y=count, fill=factor(category), order=priority)) +
   geom_bar(stat="identity", width=7) +
-  scale_fill_brewer(name="Milestones", palette="YlOrRd") +
+  scale_fill_brewer(name="(Priority) Milestone:", palette="YlOrRd") +
   theme_fivethirtynine() +
   theme(legend.position='bottom', legend.direction='vertical') +
   labs(title=sprintf("%s Completed work by count", args$title), y="Count", x="Month", aesthetic="Milestone")

@@ -773,7 +773,7 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
         try:
             color = colors[i]
         except:
-            color = '#FEFEFE'
+            color = '#DDDDDD'
         subprocess.call(
             "Rscript make_tranche_chart.R {0} {1} \"{2}\" \"{3}\" {4} {5}".
             format(source_prefix, i, color, category,
