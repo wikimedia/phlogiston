@@ -15,6 +15,10 @@ parser$add_argument("title", nargs=1, help="Project title")
 
 args <- parser$parse_args()
 
+now <- Sys.Date()
+three_months <- now + 91
+six_months <- now +  182
+
 # common theme from https://github.com/Ironholds/wmf/blob/master/R/dataviz.R
 theme_fivethirtynine <- function(base_size = 12, base_family = "sans"){
   (theme_foundation(base_size = base_size, base_family = base_family) +
@@ -109,11 +113,23 @@ forecast_points_output  <- png(filename = sprintf("~/html/%s_forecast.png", args
 ggplot(forecast, aes(category, nom_points_date, ymax=pes_points_date, ymin=opt_points_date)) +
   geom_point(stat="identity", aes(size=25)) +
   geom_errorbar(aes(size=15)) +
-  scale_y_date() +
+  scale_y_date(minor_breaks="1 year", label=date_format("%Y")) +
   coord_flip() +
   theme_fivethirtynine() +
   labs(title=sprintf("%s forecast completion dates", args$title), y="Forecast range based on points velocity", x="Milestones (high priority on top)") +
-  theme(legend.position = "none")
+  theme(legend.position = "none", axis.text.x = element_text(hjust=0))
+dev.off()
+
+forecast_points_zoom_output  <- png(filename = sprintf("~/html/%s_forecast_zoom.png", args$project), width=2000, height=1125, units="px", pointsize=30)
+
+ggplot(forecast, aes(category, nom_points_date, ymax=pes_points_date, ymin=opt_points_date)) +
+  geom_point(stat="identity", aes(size=25)) +
+  geom_errorbar(aes(size=15)) +
+  scale_y_date(limits=c(now, six_months), minor_breaks="3 months", label=date_format("%b %Y")) +
+  coord_flip() +
+  theme_fivethirtynine() +
+  labs(title=sprintf("%s forecast completion dates", args$title), y="Forecast range based on points velocity", x="Milestones (high priority on top)") +
+  theme(legend.position = "none", axis.text.x = element_text(hjust=1))
 dev.off()
 
 forecast_count_output  <- png(filename = sprintf("~/html/%s_forecast_count.png", args$project), width=2000, height=1125, units="px", pointsize=30)
