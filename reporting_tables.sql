@@ -80,7 +80,13 @@ CREATE TABLE velocity (
     pes_points_fore int,
     opt_count_fore int,
     nom_count_fore int,
-    pes_count_fore int
+    pes_count_fore int,
+    opt_points_date timestamp,
+    nom_points_date timestamp,
+    pes_points_date timestamp,
+    opt_count_date timestamp,
+    nom_count_date timestamp,
+    pes_count_date timestamp
 );
 
 DROP TABLE IF EXISTS open_backlog_size;

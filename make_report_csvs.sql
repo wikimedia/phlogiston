@@ -274,19 +274,38 @@ SELECT source,
  ORDER BY date
 ) to '/tmp/phlog/forecast.csv' DELIMITER ',' CSV HEADER;
 
+COPY (
+SELECT z.sort_order,
+       z.category,
+       v.pes_points_date,
+       v.nom_points_date,
+       v.opt_points_date,
+       v.pes_count_date,
+       v.nom_count_date,
+       v.opt_count_date
+  FROM zoom_list Z LEFT OUTER JOIN velocity v
+    ON v.source = z.source
+   AND v.category = z.category
+   AND v.date = (SELECT MAX(date)
+                   FROM velocity
+                   WHERE source = :'prefix')
+ WHERE z.source = :'prefix'
+ ORDER BY sort_order
+) TO '/tmp/phlog/current_forecast.csv' DELIMITER ',' CSV HEADER;
 
 /* ####################################################################
 Recently Closed */
 
 COPY (
-SELECT date,
-       category,
-       points,
-       count
-  FROM recently_closed
+SELECT rc.date,
+       z.sort_order as priority,
+       '(' || z.sort_order || ') ' || rc.category as category,
+       rc.points,
+       rc.count
+  FROM recently_closed rc LEFT OUTER JOIN zoom_list z USING (source, category)
  WHERE source = :'prefix'
    AND date >= current_date - interval '3 months'
- ORDER BY date, category
+ ORDER BY date, sort_order
 ) to '/tmp/phlog/recently_closed.csv' DELIMITER ',' CSV HEADER;
 
 /* ####################################################################

@@ -94,17 +94,36 @@ dev.off()
 ## Forecast
 ######################################################################
 
-## forecast <- read.csv(sprintf("/tmp/%s/forecast.csv", args$project))
-## forecast$date <- as.Date(forecast$date, "%Y-%m-%d")
+forecast <- read.csv(sprintf("/tmp/%s/current_forecast.csv", args$project))
+forecast$pes_points_date <- as.Date(forecast$pes_points_date, "%Y-%m-%d")
+forecast$nom_points_date <- as.Date(forecast$nom_points_date, "%Y-%m-%d")
+forecast$opt_points_date <- as.Date(forecast$opt_points_date, "%Y-%m-%d")
+forecast$pes_count_date <- as.Date(forecast$pes_count_date, "%Y-%m-%d")
+forecast$nom_count_date <- as.Date(forecast$nom_count_date, "%Y-%m-%d")
+forecast$opt_count_date <- as.Date(forecast$opt_count_date, "%Y-%m-%d")
 
-## forecast_points_output  <- png(filename = sprintf("~/html/%s_forecast.png", args$project), width=2000, height=1125, units="px", pointsize=30)
+forecast$category <- factor(forecast$category, levels=forecast$category[order(rev(forecast$sort_order))])
 
-## ggplot(forecast, aes(category, points)) +
-##   geom_bar(stat="identity") +
-##   theme_fivethirtynine() +
-##   labs(title=sprintf("%s weekly velocity by points", args$title), y="Story Points")
-## dev.off()
+forecast_points_output  <- png(filename = sprintf("~/html/%s_forecast.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 
+ggplot(forecast, aes(category, nom_points_date, ymax=pes_points_date, ymin=opt_points_date, size=50)) +
+  geom_point(stat="identity") +
+  geom_errorbar() +    
+  scale_y_date() +
+  coord_flip() +
+  theme_fivethirtynine() +    
+  labs(title=sprintf("%s forecast completion dates", args$title), y="Forecast range based on points velocity", x="Milestones (high priority on top)")
+dev.off()
+
+forecast_count_output  <- png(filename = sprintf("~/html/%s_forecast_count.png", args$project), width=2000, height=1125, units="px", pointsize=30)
+
+ggplot(forecast, aes(category, nom_count_date, ymax=pes_count_date, ymin=opt_count_date)) +
+  geom_point(stat="identity") +
+  geom_errorbar() +    
+  coord_flip() +
+  theme_fivethirtynine() +
+  labs(title=sprintf("%s forecast completion dates", args$title), y="Forecast range based on count velocity", x="Milestones (high priority on top)")
+dev.off()
 
 ######################################################################
 ## Velocity vs backlog

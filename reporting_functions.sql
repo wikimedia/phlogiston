@@ -119,12 +119,6 @@ DECLARE
   min_count_vel float;
   avg_count_vel float;
   max_count_vel float;
-  min_points_fore float;
-  avg_points_fore float;
-  max_points_fore float;
-  min_count_fore float;
-  avg_count_fore float;
-  max_count_fore float;
 BEGIN
 
     FOR weekrow IN SELECT DISTINCT date
@@ -202,70 +196,37 @@ BEGIN
                AND subqv.source = source_prefix
                AND subqv.category = tranche.category;
 
-            -- for why this is GREATEST instead of NULLIF,
-            -- see https://phabricator.wikimedia.org/T122609 for 
-            SELECT points::float / GREATEST(min_points_vel,1)
-	      INTO min_points_fore
-	      FROM open_backlog_size
-             WHERE source = source_prefix
-	       AND date = weekrow.date
-	       AND category = tranche.category;
-
-            SELECT points::float / GREATEST(avg_points_vel,1)
-	      INTO avg_points_fore
-	      FROM open_backlog_size
-             WHERE source = source_prefix
-	       AND date = weekrow.date
-	       AND category = tranche.category;
-
-            SELECT points::float / GREATEST(max_points_vel,1)
-	      INTO max_points_fore
-	      FROM open_backlog_size
-             WHERE source = source_prefix
-	       AND date = weekrow.date
-	       AND category = tranche.category;
-
-            -- for why this is GREATEST instead of NULLIF,
-            -- see https://phabricator.wikimedia.org/T122609 for 
-            SELECT count::float / GREATEST(min_count_vel,1)
-	      INTO min_count_fore
-	      FROM open_backlog_size
-             WHERE source = source_prefix
-	       AND date = weekrow.date
-	       AND category = tranche.category;
-
-            SELECT count::float / GREATEST(avg_count_vel,1)
-	      INTO avg_count_fore
-	      FROM open_backlog_size
-             WHERE source = source_prefix
-	       AND date = weekrow.date
-	       AND category = tranche.category;
-
-            SELECT count::float / GREATEST(max_count_vel,1)
-	      INTO max_count_fore
-	      FROM open_backlog_size
-             WHERE source = source_prefix
-	       AND date = weekrow.date
-	       AND category = tranche.category;
-
             UPDATE velocity
                SET pes_points_vel = round(min_points_vel),
                    nom_points_vel = round(avg_points_vel),
                    opt_points_vel = round(max_points_vel),
                    pes_count_vel = round(min_count_vel),
                    nom_count_vel = round(avg_count_vel),
-                   opt_count_vel = round(max_count_vel),
-		   pes_points_fore = round(min_points_fore),
-		   nom_points_fore = round(avg_points_fore),
-  		   opt_points_fore = round(max_points_fore),
-		   pes_count_fore = round(min_count_fore),
-		   nom_count_fore = round(avg_count_fore),
-  		   opt_count_fore = round(max_count_fore)
+                   opt_count_vel = round(max_count_vel)
              WHERE source = source_prefix
                AND category = tranche.category
                AND date = weekrow.date;
         END LOOP;
     END LOOP;
+
+    UPDATE velocity
+       SET pes_points_fore = round(points::float / GREATEST(pes_points_vel,1)),
+           nom_points_fore = round(points::float / GREATEST(nom_points_vel,1)),
+           opt_points_fore = round(points::float / GREATEST(opt_points_vel,1)),
+           pes_count_fore = round(points::float / GREATEST(pes_count_vel,1)),
+           nom_count_fore = round(points::float / GREATEST(nom_count_vel,1)),
+           opt_count_fore = round(points::float / GREATEST(opt_count_vel,1))
+     WHERE source = source_prefix;
+
+    UPDATE velocity
+       SET pes_points_date = date_trunc('day', date + (pes_points_fore * interval '1 week')),
+           nom_points_date = date_trunc('day', date + (nom_points_fore * interval '1 week')),
+           opt_points_date = date_trunc('day', date + (opt_points_fore * interval '1 week')),
+           pes_count_date = date_trunc('day', date + (pes_count_fore * interval '1 week')),
+           nom_count_date = date_trunc('day', date + (nom_count_fore * interval '1 week')),
+           opt_count_date = date_trunc('day', date + (opt_count_fore * interval '1 week'))
+     WHERE source = source_prefix;
+
     RETURN;
 END;
 $$ LANGUAGE plpgsql;
