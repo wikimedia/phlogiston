@@ -1,17 +1,17 @@
 sort_order,zoom_list,title,matchstring
-2,FALSE,Other,PhlogOther
+1000,FALSE,Backlog,PhlogOther
 1,TRUE,Interrupt,%TR0%
-3,TRUE,Anon A/B test on enwiki,%experiment defaulting anonymous editors to the visual editor on%
-4,TRUE,On by default for IPs on enwiki,%Re-enable VisualEditor by default for all logged-out users of the English Wikipedia%
-5,TRUE,On by default for IPs and new users on enwiki,%TR1%
-6,TRUE,OK for jawiki,%Make VisualEditor good enough to use with all common IMEs for Japanese%
-7,TRUE,OK for kowiki,%Make VisualEditor good enough to use with all common IMEs for Korean%
-8,TRUE,OK for arwiki,%Make VisualEditor good enough to use with all common IMEs for Arabic script wikis%
-9,TRUE,OK for hiwiki,%Make VisualEditor good enough to use with all common IMEs for Indic script wikis%
-10,TRUE,OK for zh_yuewiki,%Make VisualEditor good enough to use with all common IMEs for Han script wikis%
-11,TRUE,"Language support defaults on for ja, ko, ar, hi, zh_yue",%TR3%
-12,TRUE,Better link editing,%TR4%
-13,TRUE,Better formula editing,%Improve support for math editing by improving the UX of the Math extension and researching its usability%
-14,TRUE,Better chart editing,%easier to create and edit charts from within VisualEditor%
-15,TRUE,"Charts, formulae, sheet music, and media available or improved in VE",%TR5%
-16,FALSE,Mobile MVP released,%TR2%
+2,TRUE,Enwiki IP A/B test,%experiment defaulting anonymous editors to the visual editor on%
+3,TRUE,Enwiki on for IPs,%Re-enable VisualEditor by default for all logged-out users of the English Wikipedia%
+4,TRUE,Enwiki on for all,%TR1%
+5,TRUE,Japanese,%Make VisualEditor good enough to use with all common IMEs for Japanese%
+6,TRUE,Korean,%Make VisualEditor good enough to use with all common IMEs for Korean%
+7,TRUE,Arabic,%Make VisualEditor good enough to use with all common IMEs for Arabic script wikis%
+8,TRUE,Indic,%Make VisualEditor good enough to use with all common IMEs for Indic script wikis%
+9,TRUE,Han,%Make VisualEditor good enough to use with all common IMEs for Han script wikis%
+10,TRUE,Language support,%TR3%
+11,TRUE,Links,%TR4%
+12,TRUE,Formulae,%Improve support for math editing by improving the UX of the Math extension and researching its usability%
+13,TRUE,Charts,%easier to create and edit charts from within VisualEditor%
+14,TRUE,Rich media,%TR5%
+15,FALSE,Mobile,%TR2%
