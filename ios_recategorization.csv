@@ -1,5 +1,4 @@
 sort_order,zoom_list,title,matchstring
-1,True,App 5.0 Alpha,%app-alpha%
-2,True,App 5.0 Beta,%app-beta%
-3,True,App 5.0 Production,%app-production%
-4,False,Other,PhlogOther
+1,True,App 5.0 is Released to Production,%iOS-app-v5-production%
+2,True,Core Data,%Data Layer Improvements%
+3,True,Other,PhlogOther
