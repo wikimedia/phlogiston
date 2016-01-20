@@ -241,7 +241,7 @@ ggplot(maint_prop, aes(x=date, y=points, fill=factor(maint_type))) +
   scale_fill_brewer(name="Type of work", palette="YlOrBr") +
   scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   theme_fivethirtynine() +
-  theme(axis.title.x=element_blank()) +
+  theme(legend.position='bottom', legend.direction='vertical', axis.title.x=element_blank()) +
   labs(title=sprintf("%s Core/Strat type by points", args$title), y="Amount of completed work by type")
 dev.off()
 
@@ -252,6 +252,6 @@ ggplot(maint_prop, aes(x=date, y=count, fill=factor(maint_type))) +
   scale_fill_brewer(name="Type of work", palette="YlOrBr") +
   scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   theme_fivethirtynine() +
-  theme(axis.title.x=element_blank()) +
+  theme(legend.position='bottom', legend.direction='vertical', axis.title.x=element_blank()) +
   labs(title=sprintf("%s Core/Strat type by count", args$title), y="Amount of completed work by type")
 dev.off()
