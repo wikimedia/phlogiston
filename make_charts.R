@@ -56,7 +56,7 @@ ggplot(backlog) +
   theme(legend.position='bottom', legend.direction='vertical', axis.title.x=element_blank()) +
   guides(col = guide_legend(reverse=TRUE)) +
   labs(title=sprintf("%s backlog by points", args$title), y="Story Point Total") +
-  geom_vline(aes(xintercept=as.numeric(as.Date(c('2015-10-01'))), color="gray"))
+  geom_vline(aes(xintercept=as.numeric(as.Date(c('2016-01-01'))), color="gray"))
 dev.off()
 
 backlog_count_output=png(filename = sprintf("~/html/%s_backlog_count_burnup.png", args$project), width=2000, height=1125, units="px", pointsize=30)
@@ -70,7 +70,6 @@ ggplot(backlog) +
   theme(legend.position='bottom', legend.direction='vertical', axis.title.x=element_blank()) +
   guides(col = guide_legend(reverse=TRUE)) +
   labs(title=sprintf("%s backlog by count", args$title), y="Task Count") +
-  geom_vline(aes(xintercept=as.numeric(as.Date(c('2015-10-01'))), color="gray")) +
   geom_vline(aes(xintercept=as.numeric(as.Date(c('2016-01-01'))), color="gray"))
 dev.off()
 
@@ -121,6 +120,8 @@ ggplot(forecast, aes(category, nom_points_date, ymax=pes_points_date, ymin=opt_p
   geom_point(stat="identity", aes(size=25)) +
   geom_errorbar(aes(size=15), width=.5) +
   geom_hline(aes(yintercept=as.numeric(now)), color="blue") +
+  geom_hline(aes(yintercept=as.numeric(as.Date(c('2016-01-01'))), color="gray")) +
+  geom_hline(aes(yintercept=as.numeric(as.Date(c('2016-04-01'))), color="gray")) +
   scale_y_date(limits=c(forecast_start, forecast_end), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   coord_flip() +
   theme_fivethirtynine() +
@@ -136,6 +137,8 @@ ggplot(forecast, aes(category, nom_count_date, ymax=pes_count_date, ymin=opt_cou
   geom_point(stat="identity", aes(size=25)) +
   geom_errorbar(aes(size=15), width=.5) +
   geom_hline(aes(yintercept=as.numeric(now)), color="blue") +
+  geom_hline(aes(yintercept=as.numeric(as.Date(c('2016-01-01'))), color="gray")) +
+  geom_hline(aes(yintercept=as.numeric(as.Date(c('2016-04-01'))), color="gray")) +
   scale_y_date(limits=c(forecast_start, forecast_end), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   coord_flip() +
   theme_fivethirtynine() +
