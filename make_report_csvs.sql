@@ -122,6 +122,7 @@ SELECT source,
  ORDER BY date, maint_type
  ) TO '/tmp/phlog/maintenance_proportion.csv' DELIMITER ',' CSV HEADER;
 
+COPY (
 SELECT date,
        maint_frac_points,
        maint_frac_count
@@ -130,8 +131,7 @@ SELECT date,
        maint_points::float / nullif((maint_points + new_points),0) as maint_frac_points,
        maint_count::float / nullif((maint_count + new_count),0) as maint_frac_count
   FROM maintenance_delta
- WHERE source = :'prefix'
-  ) as maintenance_fraction
+ WHERE source = :'prefix' ) as maintenance_fraction
 ) TO '/tmp/phlog/maintenance_fraction.csv' DELIMITER ',' CSV HEADER;
 
 COPY (
@@ -197,35 +197,6 @@ SELECT date,
 
 /* ####################################################################
 Burnup and Velocity and Forecasts */
-
-DELETE FROM velocity where source = :'prefix';
-
-INSERT INTO velocity (
-SELECT source,
-       category,
-       date,
-       SUM(points) AS points,
-       SUM(count) AS count
-  FROM tall_backlog
- WHERE status = '"resolved"'
-   AND EXTRACT(dow from date) = 0 
-   AND date >= current_date - interval '6 months'
-   AND source = :'prefix'
- GROUP BY date, source, category);
-
-UPDATE velocity
-   SET delta_points = COALESCE(subq.delta_points,0),
-       delta_count = COALESCE(subq.delta_count,0)
-  FROM (SELECT source,
-               date,
-               category,
-               count - lag(count) OVER (PARTITION BY source, category ORDER BY date) as delta_count,
-               points - lag(points) OVER (PARTITION BY source, category ORDER BY date) as delta_points
-	  FROM velocity
-	 WHERE source = :'prefix') as subq
-  WHERE velocity.source = subq.source
-    AND velocity.date = subq.date
-    AND velocity.category = subq.category;   
 
 SELECT calculate_velocities(:'prefix');
 			      

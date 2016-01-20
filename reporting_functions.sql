@@ -121,10 +121,57 @@ DECLARE
   max_count_vel float;
 BEGIN
 
-    FOR weekrow IN SELECT DISTINCT date
-                     FROM velocity
-                    WHERE source = source_prefix
-                    ORDER BY date
+    DELETE FROM velocity where source = source_prefix;
+
+    INSERT INTO velocity (
+    SELECT source,
+           category,
+           date,
+           SUM(points) AS points_resolved,
+           SUM(count) AS count_resolved
+      FROM tall_backlog
+     WHERE status = '"resolved"'
+       AND EXTRACT(dow from date) = 0 
+       AND date >= current_date - interval '6 months'
+       AND source = source_prefix
+     GROUP BY date, source, category);
+
+    UPDATE velocity v
+       SET points_open = sum_points_open,
+           count_open = sum_count_open
+      FROM (SELECT source,
+                   date,
+                   category,
+                   SUM(points) AS sum_points_open,
+                   SUM(count) AS sum_count_open
+              FROM tall_backlog
+             WHERE status = '"open"'
+               AND source = source_prefix
+             GROUP BY source, date, category) as t
+     WHERE t.date = v.date
+       AND t.category = v.category
+       AND t.source = v.source
+       AND v.source = source_prefix;
+
+    UPDATE velocity
+       SET delta_points = COALESCE(subq.delta_points,0),
+           delta_count = COALESCE(subq.delta_count,0)
+      FROM (SELECT source,
+                   date,
+                   category,
+                   count_resolved - lag(count_resolved) OVER (PARTITION BY source, category ORDER BY date) as delta_count,
+                   points_resolved - lag(points_resolved) OVER (PARTITION BY source, category ORDER BY date) as delta_points
+      FROM velocity
+     WHERE source = source_prefix) as subq
+     WHERE velocity.source = subq.source
+       AND velocity.date = subq.date
+       AND velocity.category = subq.category;   
+
+
+FOR weekrow IN SELECT DISTINCT date
+                 FROM velocity
+                WHERE source = source_prefix
+                ORDER BY date
     LOOP
         FOR tranche IN SELECT DISTINCT category
 	                 FROM tall_backlog
@@ -210,12 +257,12 @@ BEGIN
     END LOOP;
 
     UPDATE velocity
-       SET pes_points_fore = round(points::float / GREATEST(pes_points_vel,1)),
-           nom_points_fore = round(points::float / GREATEST(nom_points_vel,1)),
-           opt_points_fore = round(points::float / GREATEST(opt_points_vel,1)),
-           pes_count_fore = round(points::float / GREATEST(pes_count_vel,1)),
-           nom_count_fore = round(points::float / GREATEST(nom_count_vel,1)),
-           opt_count_fore = round(points::float / GREATEST(opt_count_vel,1))
+       SET pes_points_fore = round(points_open::float / GREATEST(pes_points_vel,1)),
+           nom_points_fore = round(points_open::float / GREATEST(nom_points_vel,1)),
+           opt_points_fore = round(points_open::float / GREATEST(opt_points_vel,1)),
+           pes_count_fore = round(count_open::float / GREATEST(pes_count_vel,1)),
+           nom_count_fore = round(count_open::float / GREATEST(nom_count_vel,1)),
+           opt_count_fore = round(count_open::float / GREATEST(opt_count_vel,1))
      WHERE source = source_prefix;
 
     UPDATE velocity
