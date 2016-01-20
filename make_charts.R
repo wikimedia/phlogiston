@@ -231,6 +231,8 @@ dev.off()
 
 maint_prop <- read.csv(sprintf("/tmp/%s/maintenance_proportion.csv", args$project))
 maint_prop$date <- as.Date(maint_prop$date, "%Y-%m-%d")
+maint_prop$maint_type <- factor(maint_prop$maint_type, levels=rev(maint_prop$maint_type[order(maint_prop$maint_type)]))
+
 
 status_output <- png(filename = sprintf("~/html/%s_maint_prop.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 
