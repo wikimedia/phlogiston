@@ -88,7 +88,9 @@ SELECT source,
    AND source = :'prefix'
  ORDER BY date, maint_type, source
 );
- 
+
+
+
 UPDATE maintenance_delta a
    SET new_points = (SELECT points
                        FROM (SELECT date,
@@ -110,6 +112,16 @@ UPDATE maintenance_delta a
                         AND source = :'prefix');
 
 COPY (
+SELECT source,
+       date,
+       maint_type,
+       count - LAG(count) OVER (PARTITION BY maint_type ORDER BY date) AS count,
+       points - LAG(points) OVER (PARTITION BY maint_type ORDER BY date) AS points
+  FROM maintenance_week
+ WHERE source = :'prefix'
+ ORDER BY date, maint_type
+ ) TO '/tmp/phlog/maintenance_proportion.csv' DELIMITER ',' CSV HEADER;
+
 SELECT date,
        maint_frac_points,
        maint_frac_count

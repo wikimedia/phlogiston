@@ -183,7 +183,7 @@ done$category <- factor(done$category, levels=rev(done$category[order(done$prior
 done_output <- png(filename = sprintf("~/html/%s_done.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 ggplot(done, aes(x=date, y=points, fill=factor(category))) +
   geom_bar(stat="identity")+ 
-  scale_fill_brewer(name="(Priority) Milestone", palette="YlOrRd") +
+  scale_fill_brewer(name="(Priority) Milestone", palette="PuBuGn") +
   theme_fivethirtynine() +
   theme(axis.title.x=element_blank()) +
   scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
@@ -194,7 +194,7 @@ dev.off()
 done_count_output <- png(filename = sprintf("~/html/%s_done_count.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 ggplot(done, aes(x=date, y=count, fill=factor(category))) +
   geom_bar(stat="identity") +
-  scale_fill_brewer(name="(Priority) Milestone:", palette="YlOrRd") +
+  scale_fill_brewer(name="(Priority) Milestone:", palette="PuBuGn") +
   theme_fivethirtynine() +
   scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   theme(legend.position='bottom', legend.direction='vertical', axis.title.x=element_blank()) +
@@ -205,26 +205,51 @@ dev.off()
 ## Maintenance Fraction
 ######################################################################
 
-maint_frac <- read.csv(sprintf("/tmp/%s/maintenance_fraction.csv", args$project))
-maint_frac$date <- as.Date(maint_frac$date, "%Y-%m-%d")
+## maint_frac <- read.csv(sprintf("/tmp/%s/maintenance_fraction.csv", args$project))
+## maint_frac$date <- as.Date(maint_frac$date, "%Y-%m-%d")
 
-status_output <- png(filename = sprintf("~/html/%s_maint_frac.png", args$project), width=2000, height=1125, units="px", pointsize=30)
+## status_output <- png(filename = sprintf("~/html/%s_maint_frac.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 
-ggplot(maint_frac, aes(date, maint_frac_points)) +
+## ggplot(maint_frac, aes(date, maint_frac_points)) +
+##   geom_bar(stat="identity") +
+##   scale_y_continuous(labels=percent, limits=c(0,1)) +
+##   scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
+##   theme_fivethirtynine() +
+##   theme(axis.title.x=element_blank()) +
+##   labs(title=sprintf("%s Maintenance Fraction by points", args$title), y="Fraction of completed work that is maintenance")
+## dev.off()
+
+## status_output_count <- png(filename = sprintf("~/html/%s_maint_count_frac.png", args$project), width=2000, height=1125, units="px", pointsize=30)
+## ggplot(maint_frac, aes(date, maint_frac_count)) +
+##   geom_bar(stat="identity") +
+##   scale_y_continuous(labels=percent, limits=c(0,1)) + 
+##   theme_fivethirtynine() +
+##   theme(axis.title.x=element_blank()) +
+##   scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
+##   labs(title=sprintf("%s Maintenance Fraction by count", args$title), y="Fraction of completed work that is maintenance")
+## dev.off()
+
+maint_prop <- read.csv(sprintf("/tmp/%s/maintenance_proportion.csv", args$project))
+maint_prop$date <- as.Date(maint_prop$date, "%Y-%m-%d")
+
+status_output <- png(filename = sprintf("~/html/%s_maint_prop.png", args$project), width=2000, height=1125, units="px", pointsize=30)
+
+ggplot(maint_prop, aes(x=date, y=points, fill=factor(maint_type))) +
   geom_bar(stat="identity") +
-  scale_y_continuous(labels=percent, limits=c(0,1)) +
+  scale_fill_brewer(name="Type of work", palette="YlOrBr") +
   scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   theme_fivethirtynine() +
   theme(axis.title.x=element_blank()) +
-  labs(title=sprintf("%s Maintenance Fraction by points", args$title), y="Fraction of completed work that is maintenance")
+  labs(title=sprintf("%s Core/Strat type by points", args$title), y="Amount of completed work by type")
 dev.off()
 
-status_output_count <- png(filename = sprintf("~/html/%s_maint_count_frac.png", args$project), width=2000, height=1125, units="px", pointsize=30)
-ggplot(maint_frac, aes(date, maint_frac_count)) +
+status_output <- png(filename = sprintf("~/html/%s_maint_prop_count.png", args$project), width=2000, height=1125, units="px", pointsize=30)
+
+ggplot(maint_prop, aes(x=date, y=count, fill=factor(maint_type))) +
   geom_bar(stat="identity") +
-  scale_y_continuous(labels=percent, limits=c(0,1)) + 
+  scale_fill_brewer(name="Type of work", palette="YlOrBr") +
+  scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   theme_fivethirtynine() +
   theme(axis.title.x=element_blank()) +
-  scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
-  labs(title=sprintf("%s Maintenance Fraction by count", args$title), y="Fraction of completed work that is maintenance")
+  labs(title=sprintf("%s Core/Strat type by count", args$title), y="Amount of completed work by type")
 dev.off()
