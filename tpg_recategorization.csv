@@ -1,10 +1,14 @@
 sort_order,zoom_list,title,matchstring
-
-1,True,Burn-up charts actively used by three teams,%Burn-up charts actively used by three teams% 
-2,True,Defined and documented strategy for the Team Practices Group,%Defined and documented strategy for the Team Practices Group%
-3,True,Five high-priority project management-related Phabricator feature requests upstreamed,%Five high-priority project management-related Phabricator feature requests% upstreamed
-4,True,Five teams sample their maintenance fraction and two teams track it throughout the quarter,%Five teams sample their maintenance fraction and two teams track it% throughout the quarter
-6,True,Q2 Team Health Check Rethink,%Q2 Team Health Check Rethink%
-7,True,Work Breakdown aspect of SPDPP piloted for three teams,%Work Breakdown aspect of SPDPP piloted for three teams%
-8,True,General Backlog,%General Backlog%
-9,True,Other,PhlogOther
+1,TRUE,Core defined,%A documented and agreed upon definition%
+2,,Teams can report Core,%Audience-facing product teams able to produce%
+3,,50% of Strategic tests executed,%of tests against strategic possibilities executed%
+4,,Maintain 4 of 5 on KPIs,%Maintain minimum 4 out of 5%
+5,,Evaluate 2 new KPIs,%Evaluate 2 possible new KPIs%
+6,True,Burn-up charts actively used by three teams,%Burn-up charts actively used by three teams% 
+7,True,Defined and documented strategy for the Team Practices Group,%Defined and documented strategy for the Team Practices Group%
+8,True,Five high-priority project management-related Phabricator feature requests upstreamed,%Five high-priority project management-related Phabricator feature requests% upstreamed
+9,True,Five teams sample their maintenance fraction and two teams track it throughout the quarter,%Five teams sample their maintenance fraction and two teams track it% throughout the quarter
+10,True,Q2 Team Health Check Rethink,%Q2 Team Health Check Rethink%
+11,True,Work Breakdown aspect of SPDPP piloted for three teams,%Work Breakdown aspect of SPDPP piloted for three teams%
+12,True,General Backlog,%General Backlog%
+13,True,Other,PhlogOther
