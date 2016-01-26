@@ -51,7 +51,6 @@ ggplot(backlog[backlog$category==args$tranche_name,]) +
    theme(legend.title=element_blank(), axis.title.x=element_blank()) +
    geom_area(position='stack', aes(x = date, y = points, ymin=0), fill=args$color) +
    scale_x_date(limits=c(cutoff_date, now), minor_breaks="1 week", label=date_format("%b %d\n%Y"))+
-   scale_y_continuous(limits=c(0, as.numeric(args$points_height))) +
 geom_line(data=burnup_cat[burnup_cat$category==args$tranche_name,], aes(x=date, y=points), size=2)
 dev.off()
 
@@ -62,7 +61,6 @@ ggplot(backlog[backlog$category==args$tranche_name,]) +
   theme(legend.title=element_blank(), axis.title.x=element_blank()) +
   geom_area(position='stack', aes(x = date, y = count, ymin=0), fill=args$color) +
   scale_x_date(limits=c(cutoff_date, now), minor_breaks="1 week", label=date_format("%b %d\n%Y"))+
-  scale_y_continuous(limits=c(0, as.numeric(args$count_height))) +
 geom_line(data=burnup_cat[burnup_cat$category==args$tranche_name,], aes(x=date, y=count), size=2)
 dev.off()
 
