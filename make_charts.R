@@ -114,9 +114,11 @@ forecast$opt_count_date <- as.Date(forecast$opt_count_date, "%Y-%m-%d")
 
 forecast$category = strtrim(forecast$category, 35)
 forecast$category <- factor(forecast$category, levels=forecast$category[order(rev(forecast$sort_order))])
+forecast$weeks_old <- factor(forecast$weeks_old)
 forecast_points_output  <- png(filename = sprintf("~/html/%s_forecast.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 
-ggplot(forecast, aes(category, nom_points_date, ymax=pes_points_date, ymin=opt_points_date)) +
+ggplot(forecast, aes(category, nom_points_date, ymax=pes_points_date, ymin=opt_points_date, color=weeks_old)) +
+  scale_color_brewer("RdBu") +
   geom_point(stat="identity", aes(size=25)) +
   geom_errorbar(aes(size=15), width=.5) +
   geom_hline(aes(yintercept=as.numeric(now)), color="blue") +
@@ -133,8 +135,9 @@ dev.off()
 
 forecast_count_output  <- png(filename = sprintf("~/html/%s_forecast_count.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 
-ggplot(forecast, aes(category, nom_count_date, ymax=pes_count_date, ymin=opt_count_date)) +
+ggplot(forecast, aes(category, nom_count_date, ymax=pes_count_date, ymin=opt_count_date, color=weeks_old)) +
   geom_point(stat="identity", aes(size=25)) +
+  scale_color_brewer("RdBu") +
   geom_errorbar(aes(size=15), width=.5) +
   geom_hline(aes(yintercept=as.numeric(now)), color="blue") +
   geom_hline(aes(yintercept=as.numeric(as.Date(c('2016-01-01'))), color="gray")) +
