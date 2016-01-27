@@ -41,7 +41,8 @@ BEGIN
 
     FOR weekrow IN SELECT DISTINCT date
                      FROM task_history
-                    WHERE EXTRACT(dow from date) = 0
+                    WHERE EXTRACT(epoch FROM age(date - INTERVAL '1 day'))/604800 = ROUND(
+                          EXTRACT(epoch FROM age(date - INTERVAL '1 day'))/604800)
                       AND source = source_prefix
                     ORDER BY date
     LOOP
@@ -131,7 +132,8 @@ BEGIN
            SUM(count) AS count_resolved
       FROM tall_backlog
      WHERE status = '"resolved"'
-       AND EXTRACT(dow from date) = 0 
+       AND EXTRACT(epoch FROM age(date - INTERVAL '1 day'))/604800 = ROUND(
+           EXTRACT(epoch FROM age(date - INTERVAL '1 day'))/604800)
        AND date >= current_date - interval '6 months'
        AND source = source_prefix
      GROUP BY date, source, category);

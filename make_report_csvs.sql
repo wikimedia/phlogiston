@@ -69,8 +69,9 @@ SELECT source,
        SUM(points) as points,
        SUM(count) as count
   FROM tall_backlog
-  WHERE status = '"resolved"'
-   AND EXTRACT(dow FROM date) = 0
+ WHERE status = '"resolved"'
+   AND EXTRACT(epoch FROM age(date - INTERVAL '1 day'))/604800 = ROUND(
+       EXTRACT(epoch FROM age(date - INTERVAL '1 day'))/604800)
    AND date >= current_date - interval '3 months'
    AND source = :'prefix'
  GROUP BY maint_type, date, source
@@ -167,7 +168,8 @@ SELECT source,
        SUM(count) AS count
   FROM tall_backlog
  WHERE status != '"resolved"'
-   AND EXTRACT(dow from date) = 0
+   AND EXTRACT(epoch FROM age(date - INTERVAL '1 day'))/604800 = ROUND(
+       EXTRACT(epoch FROM age(date - INTERVAL '1 day'))/604800)
    AND source = :'prefix'
  GROUP BY date, source, category);
 
@@ -258,7 +260,8 @@ SELECT source,
 ) to '/tmp/phlog/forecast.csv' DELIMITER ',' CSV HEADER;
 
 COPY (
-SELECT z.sort_order,
+SELECT EXTRACT(epoch FROM age(date - INTERVAL '1 day'))/604800 as weeks_old,
+       z.sort_order,
        z.category,
        v.pes_points_date,
        v.nom_points_date,
@@ -266,13 +269,12 @@ SELECT z.sort_order,
        v.pes_count_date,
        v.nom_count_date,
        v.opt_count_date
-  FROM zoom_list Z LEFT OUTER JOIN velocity v
+  FROM zoom_list z LEFT OUTER JOIN velocity v
     ON v.source = z.source
    AND v.category = z.category
-   AND v.date = (SELECT MAX(date)
-                   FROM velocity
-                   WHERE source = :'prefix')
  WHERE z.source = :'prefix'
+   AND EXTRACT(epoch FROM age(date - INTERVAL '1 day'))/604800 = ROUND(
+       EXTRACT(epoch FROM age(date - INTERVAL '1 day'))/604800)
  ORDER BY sort_order
 ) TO '/tmp/phlog/current_forecast.csv' DELIMITER ',' CSV HEADER;
 
