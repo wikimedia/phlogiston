@@ -260,8 +260,7 @@ SELECT source,
 ) to '/tmp/phlog/forecast.csv' DELIMITER ',' CSV HEADER;
 
 COPY (
-SELECT EXTRACT(epoch FROM age(date - INTERVAL '1 day'))/604800 as weeks_old,
-       z.sort_order,
+SELECT z.sort_order,
        z.category,
        v.pes_points_date,
        v.nom_points_date,
@@ -273,8 +272,9 @@ SELECT EXTRACT(epoch FROM age(date - INTERVAL '1 day'))/604800 as weeks_old,
     ON v.source = z.source
    AND v.category = z.category
  WHERE z.source = :'prefix'
-   AND EXTRACT(epoch FROM age(date - INTERVAL '1 day'))/2419200 = ROUND(
-       EXTRACT(epoch FROM age(date - INTERVAL '1 day'))/2419200)
+   AND v.date = (SELECT MAX(date)
+                   FROM velocity
+                  WHERE source = :'prefix')
  ORDER BY sort_order
 ) TO '/tmp/phlog/current_forecast.csv' DELIMITER ',' CSV HEADER;
 
