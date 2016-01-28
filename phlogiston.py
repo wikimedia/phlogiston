@@ -580,6 +580,8 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
          WHERE source = %(source)s
            AND date >= %(start_date)s"""
 
+    if VERBOSE:
+        print("Updating Milestone Titles")
     cur.execute(milestones_sql,{'source': source_prefix, 'start_date': start_date})
 
     correct_status_sql = """
@@ -598,9 +600,11 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
                         GROUP BY task_id) as flipflops
                 WHERE num_of_changes = 1
                           AND trans_status <> status_at_load) os
-         WHERE th.source = :'prefix'
+         WHERE th.source = %(source)s
            AND th.id = os.task_id"""
 
+    if VERBOSE:
+        print("Correcting corrupted task status info")
     cur.execute(correct_status_sql,{'source': source_prefix})
     cur.close()
     
