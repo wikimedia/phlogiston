@@ -273,8 +273,8 @@ SELECT EXTRACT(epoch FROM age(date - INTERVAL '1 day'))/604800 as weeks_old,
     ON v.source = z.source
    AND v.category = z.category
  WHERE z.source = :'prefix'
-   AND EXTRACT(epoch FROM age(date - INTERVAL '1 day'))/604800 = ROUND(
-       EXTRACT(epoch FROM age(date - INTERVAL '1 day'))/604800)
+   AND EXTRACT(epoch FROM age(date - INTERVAL '1 day'))/2419200 = ROUND(
+       EXTRACT(epoch FROM age(date - INTERVAL '1 day'))/2419200)
  ORDER BY sort_order
 ) TO '/tmp/phlog/current_forecast.csv' DELIMITER ',' CSV HEADER;
 
