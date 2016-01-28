@@ -581,6 +581,27 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
            AND date >= %(start_date)s"""
 
     cur.execute(milestones_sql,{'source': source_prefix, 'start_date': start_date})
+
+    correct_status_sql = """
+        UPDATE task_history th
+           SET status = os.status_at_load
+          FROM (SELECT task_id,
+                       status_at_load
+                  FROM (
+                        SELECT mt.task_id,
+                               left(max(mt.new_value),15) as trans_status,
+                               count(mt.date_modified) as num_of_changes,
+                               max('"' || mta.status_at_load || '"') as status_at_load
+                         FROM maniphest_transaction mt, maniphest_task mta
+                        WHERE mt.transaction_type = 'status'
+                          AND mt.task_id = mta.id
+                        GROUP BY task_id) as flipflops
+                WHERE num_of_changes = 1
+                          AND trans_status <> status_at_load) os
+         WHERE th.source = :'prefix'
+           AND th.id = os.task_id"""
+
+    cur.execute(correct_status_sql,{'source': source_prefix})
     cur.close()
     
 
