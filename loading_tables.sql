@@ -17,7 +17,8 @@ CREATE TABLE maniphest_task (
        id int primary key,
        phid text unique,
        title text,
-       story_points text
+       story_points text,
+       status_at_load text
 );
 
 CREATE TABLE phabricator_column (

@@ -201,7 +201,7 @@ def load(conn, end_date, VERBOSE, DEBUG):
 
     task_insert = """
       INSERT INTO maniphest_task
-      VALUES (%(task_id)s, %(phid)s, %(title)s, %(story_points)s) """
+      VALUES (%(task_id)s, %(phid)s, %(title)s, %(story_points)s, %(status_at_load)s) """
 
     blocked_insert = """
       INSERT INTO maniphest_blocked_phid
@@ -212,13 +212,14 @@ def load(conn, end_date, VERBOSE, DEBUG):
               format(count=len(data['task'].keys())))
 
     for task_id in data['task'].keys():
-
         task = data['task'][task_id]
         if task['info']:
             task_phid = task['info'][1]
+            status_at_load = task['info'][5]
             title = task['info'][7]
         else:
             task_phid = ''
+            status_at_load = ''
             title = ''
         if task['storypoints']:
             story_points = task['storypoints'][2]
@@ -227,7 +228,8 @@ def load(conn, end_date, VERBOSE, DEBUG):
         cur.execute(task_insert, {'task_id': task_id,
                                   'phid': task_phid,
                                   'title': title,
-                                  'story_points': story_points})
+                                  'story_points': story_points,
+                                  'status_at_load': status_at_load})
 
         # Load blocked info for this task. When transactional data
         # becomes available, this should use that instead
