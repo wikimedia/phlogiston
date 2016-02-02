@@ -137,9 +137,6 @@ forecast_future_count <- forecast[forecast$nom_count_date > forecast_end & forec
                                    
 forecast_points_output  <- png(filename = sprintf("~/html/%s_forecast.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 
-## push nominals to the right
-## fix count
-
 ggplot(forecast_done) +
   geom_rect(aes(xmin=first_cat, xmax=last_cat, ymin=quarter_start, ymax=quarter_end), fill="white", alpha=0.05) +
   geom_hline(aes(yintercept=as.numeric(now)), color="blue") +
@@ -159,27 +156,31 @@ ggplot(forecast_done) +
   theme(legend.position = "none",
         axis.text.y = element_text(hjust=1),
         axis.title.x = element_blank())
-
 dev.off()
 
-## forecast_count_output  <- png(filename = sprintf("~/html/%s_forecast_count.png", args$project), width=2000, height=1125, units="px", pointsize=30)
+forecast_count_output  <- png(filename = sprintf("~/html/%s_forecast_count.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 
-## ggplot(forecast_done) +
-##   geom_point(aes(x=category, y=last_open_date, size=25), shape=18) +
-##   geom_errorbar(data = forecast, aes(x=category, y=nom_count_date, ymax=pes_count_date, ymin=opt_count_date, color=weeks_old), width=.5, position="dodge") +
-##   geom_hline(aes(yintercept=as.numeric(now))) +
-##   geom_hline(aes(yintercept=as.numeric(as.Date(c('2016-01-01'))))) +
-##   geom_hline(aes(yintercept=as.numeric(as.Date(c('2016-04-01'))))) +
-## ##  geom_text(data = forecast_future_count, aes(x=category, y=forecast_end, label=paste("nominal\n", nom_count_date)), size=8) +
-##   geom_text(data = forecast_done_early, aes(x=category, y=forecast_start, label=paste("done\n", last_open_date)), size=8) +
-##   scale_y_date(limits=c(forecast_start, forecast_end), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
-##   coord_flip() +
-##   theme_fivethirtynine() +
-##   labs(title=sprintf("%s forecast completion dates based on count velocity", args$title), x="Milestones (high priority on top)") +
-##   theme(legend.position = "none",
-##         axis.text.y = element_text(hjust=1),
-##         axis.title.x = element_blank())
-## dev.off()
+ggplot(forecast_done) +
+  geom_rect(aes(xmin=first_cat, xmax=last_cat, ymin=quarter_start, ymax=quarter_end), fill="white", alpha=0.05) +
+  geom_hline(aes(yintercept=as.numeric(now)), color="blue") +
+  geom_point(aes(x=category, y=last_open_date), size=12, shape=18) +
+  geom_errorbar(data = forecast, aes(x=category, y=nom_count_date, ymax=pes_count_date, ymin=opt_count_date, color=weeks_old), width=.3, size=2, position="dodge", alpha=.2) +
+  geom_point(data = forecast, aes(x=category, y=nom_count_date, color=weeks_old), size=10, shape=5) +
+  geom_point(data = forecast_current, aes(x=category, y=nom_count_date), size=13, shape=5, color="Black") +
+  geom_text(data = forecast_current, aes(x=category, y=nom_count_date, label=format(nom_count_date, format="%b %d\n%Y")), size=8, shape=5, color="DarkSlateGray") +
+  geom_text(data = forecast_future_count, aes(x=category, y=forecast_end_plus, label=format(nom_count_date, format="nominal\n%b %Y")), size=8, color="SlateGray") +
+  geom_text(data = done_before_quarter, aes(x=category, y=quarter_start, label=format(last_open_date, format="%b %d\n%Y")), size=8) +
+  geom_text(data = done_during_quarter, aes(x=category, y=last_open_date,  label=format(last_open_date, format="%b %d\n%Y")), size=8) +
+  scale_x_discrete(limits = rev(forecast_done$category)) +
+  scale_y_date(limits=c(forecast_start, forecast_end_plus), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
+  coord_flip() +
+  theme_fivethirtynine() +
+  labs(title=sprintf("%s forecast completion dates based on count velocity", args$title), x="Milestones (high priority on top)") +
+  theme(legend.position = "none",
+        axis.text.y = element_text(hjust=1),
+        axis.title.x = element_blank())
+dev.off()
+
 
 ######################################################################
 ## Velocity vs backlog
