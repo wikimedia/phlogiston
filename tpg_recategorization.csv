@@ -6,7 +6,7 @@ sort_order,zoom_list,title,matchstring
 5,True,Process Results from Q3 CSAT,%Process Results from Q3 CSAT%
 6,True,Other TPG Strategy,%TPG follows a selected and documented strategy%
 7,True,Evaluate 2 new KPIs,%evaluate 2 possible new KPIs%
-8,True,Other KPI/CSAT work,"%Maintain, improve, and refine TPG's KPIs (Q3 CSAT)%"
+8,True,Other KPI/CSAT work,"%Maintain, improve, and refine TPG%s KPIs (Q3 CSAT)%"
 9,True,Burn-up charts actively used by three teams,%Burn-up charts actively used by three teams% 
 10,True,Defined and documented strategy for the Team Practices Group,%Defined and documented strategy for the Team Practices Group%
 11,True,Five high-priority project management-related Phabricator feature requests upstreamed,%Five high-priority project management-related Phabricator feature requests% upstreamed
