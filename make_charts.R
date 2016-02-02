@@ -6,6 +6,7 @@ library(scales)
 library(RColorBrewer)
 library(ggthemes)
 library(argparse)
+library(stringr)
 
 suppressPackageStartupMessages(library("argparse"))
 parser <- ArgumentParser(formatter_class= 'argparse.RawTextHelpFormatter')
@@ -17,7 +18,10 @@ args <- parser$parse_args()
 
 now <- Sys.Date()
 forecast_start <- as.Date(c("2016-01-01"))
-forecast_end <- as.Date(c("2016-09-30"))
+forecast_end   <- as.Date(c("2016-07-01"))
+forecast_end_plus <- forecast_end + 10
+quarter_start  <- as.Date(c("2016-01-01"))
+quarter_end    <- as.Date(c("2016-04-01"))
 three_months_ago <- now - 91
 
 # common theme from https://github.com/Ironholds/wmf/blob/master/R/dataviz.R
@@ -110,65 +114,72 @@ dev.off()
 ## forecasts out of range
 
 forecast_done <- read.csv(sprintf("/tmp/%s/forecast_done.csv", args$project))
-forecast_done$category <- factor(forecast_done$category, levels=forecast_done$category[order(rev(forecast_done$sort_order))])
 forecast_done$last_open_date <- as.Date(forecast_done$last_open_date, "%Y-%m-%d")
-forecast_done$last_open_date <- as.Date(forecast_done$last_open_date, "%Y-%m-%d")
-forecast_done_early <- forecast_done[forecast_done$last_open_date < forecast_start, ]
-forecast_done_early$category <- factor(forecast_done_early$category, levels=forecast_done_early$category[order(rev(forecast_done_early$sort_order))])
+forecast_done$category <- paste(sprintf("%02d",forecast_done$sort_order), forecast_done$category)
+first_cat = forecast_done$category[1]
+last_cat = tail(forecast_done$category,1)
+
+done_before_quarter <- forecast_done[forecast_done$last_open_date <= quarter_start, ]
+done_during_quarter <- forecast_done[forecast_done$last_open_date > quarter_start, ]
 
 forecast <- read.csv(sprintf("/tmp/%s/forecast.csv", args$project))
 forecast <- forecast[forecast$weeks_old < 5,]
+forecast$category <- paste(sprintf("%02d",forecast$sort_order), forecast$category)
 forecast$pes_points_date <- as.Date(forecast$pes_points_date, "%Y-%m-%d")
 forecast$nom_points_date <- as.Date(forecast$nom_points_date, "%Y-%m-%d")
 forecast$opt_points_date <- as.Date(forecast$opt_points_date, "%Y-%m-%d")
 forecast$pes_count_date <- as.Date(forecast$pes_count_date, "%Y-%m-%d")
 forecast$nom_count_date <- as.Date(forecast$nom_count_date, "%Y-%m-%d")
 forecast$opt_count_date <- as.Date(forecast$opt_count_date, "%Y-%m-%d")
-forecast$category <- factor(forecast$category, levels=forecast$category[order(rev(forecast$sort_order))])
-
+forecast_current <- forecast[forecast$weeks_old == 1,]
 forecast_future_points <- forecast[forecast$nom_points_date > forecast_end & forecast$weeks_old == 1, ]
-forecast_future_points$category <- factor(forecast_future_points$category, levels=forecast_future_points$category[order(rev(forecast$sort_order))])
 forecast_future_count <- forecast[forecast$nom_count_date > forecast_end & forecast$weeks_old == 1, ]
-forecast_future_count$category <- factor(forecast_future_count$category, levels=forecast_future_count$category[order(rev(forecast$sort_order))])
                                    
 forecast_points_output  <- png(filename = sprintf("~/html/%s_forecast.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 
+## push nominals to the right
+## fix count
+
 ggplot(forecast_done) +
-  geom_point(aes(x=category, y=last_open_date, size=25), shape=18) +
-  geom_errorbar(data = forecast, aes(x=category, y=nom_points_date, ymax=pes_points_date, ymin=opt_points_date, color=weeks_old), width=.3, size=2, position="dodge") +
+  geom_rect(aes(xmin=first_cat, xmax=last_cat, ymin=quarter_start, ymax=quarter_end), fill="white", alpha=0.05) +
+  geom_hline(aes(yintercept=as.numeric(now)), color="blue") +
+  geom_point(aes(x=category, y=last_open_date), size=12, shape=18) +
+  geom_errorbar(data = forecast, aes(x=category, y=nom_points_date, ymax=pes_points_date, ymin=opt_points_date, color=weeks_old), width=.3, size=2, position="dodge", alpha=.2) +
   geom_point(data = forecast, aes(x=category, y=nom_points_date, color=weeks_old), size=10, shape=5) +
-  geom_hline(aes(yintercept=as.numeric(now))) +
-  geom_hline(aes(yintercept=as.numeric(as.Date(c('2016-01-01'))))) +
-  geom_hline(aes(yintercept=as.numeric(as.Date(c('2016-04-01'))))) +
-  geom_text(data = forecast_future_points, aes(x=category, y=forecast_end, label=paste("nominal\n", nom_points_date)), size=8) +
-  geom_text(data = forecast_done_early, aes(x=category, y=forecast_start, label=paste("done\n", last_open_date)), size=8) +
-  scale_y_date(limits=c(forecast_start, forecast_end), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
+  geom_point(data = forecast_current, aes(x=category, y=nom_points_date), size=13, shape=5, color="Black") +
+  geom_text(data = forecast_current, aes(x=category, y=nom_points_date, label=format(nom_points_date, format="%b %d\n%Y")), size=8, shape=5, color="DarkSlateGray") +
+  geom_text(data = forecast_future_points, aes(x=category, y=forecast_end_plus, label=format(nom_points_date, format="nominal\n%b %Y")), size=8, color="SlateGray") +
+  geom_text(data = done_before_quarter, aes(x=category, y=quarter_start, label=format(last_open_date, format="%b %d\n%Y")), size=8) +
+  geom_text(data = done_during_quarter, aes(x=category, y=last_open_date,  label=format(last_open_date, format="%b %d\n%Y")), size=8) +
+  scale_x_discrete(limits = rev(forecast_done$category)) +
+  scale_y_date(limits=c(forecast_start, forecast_end_plus), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   coord_flip() +
   theme_fivethirtynine() +
   labs(title=sprintf("%s forecast completion dates based on points velocity", args$title), x="Milestones (high priority on top)") +
   theme(legend.position = "none",
         axis.text.y = element_text(hjust=1),
         axis.title.x = element_blank())
+
 dev.off()
 
-forecast_count_output  <- png(filename = sprintf("~/html/%s_forecast_count.png", args$project), width=2000, height=1125, units="px", pointsize=30)
+## forecast_count_output  <- png(filename = sprintf("~/html/%s_forecast_count.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 
-ggplot(forecast_done) +
-  geom_point(aes(x=category, y=last_open_date, size=25), shape=18) +
-  geom_errorbar(data = forecast, aes(x=category, y=nom_count_date, ymax=pes_count_date, ymin=opt_count_date, color=weeks_old), width=.5, position="dodge") +
-  geom_hline(aes(yintercept=as.numeric(now))) +
-  geom_hline(aes(yintercept=as.numeric(as.Date(c('2016-01-01'))))) +
-  geom_hline(aes(yintercept=as.numeric(as.Date(c('2016-04-01'))))) +
-##  geom_text(data = forecast_future_count, aes(x=category, y=forecast_end, label=paste("nominal\n", nom_count_date)), size=8) +
-  geom_text(data = forecast_done_early, aes(x=category, y=forecast_start, label=paste("done\n", last_open_date)), size=8) +
-  scale_y_date(limits=c(forecast_start, forecast_end), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
-  coord_flip() +
-  theme_fivethirtynine() +
-  labs(title=sprintf("%s forecast completion dates based on count velocity", args$title), x="Milestones (high priority on top)") +
-  theme(legend.position = "none",
-        axis.text.y = element_text(hjust=1),
-        axis.title.x = element_blank())
-dev.off()
+## ggplot(forecast_done) +
+##   geom_point(aes(x=category, y=last_open_date, size=25), shape=18) +
+##   geom_errorbar(data = forecast, aes(x=category, y=nom_count_date, ymax=pes_count_date, ymin=opt_count_date, color=weeks_old), width=.5, position="dodge") +
+##   geom_hline(aes(yintercept=as.numeric(now))) +
+##   geom_hline(aes(yintercept=as.numeric(as.Date(c('2016-01-01'))))) +
+##   geom_hline(aes(yintercept=as.numeric(as.Date(c('2016-04-01'))))) +
+## ##  geom_text(data = forecast_future_count, aes(x=category, y=forecast_end, label=paste("nominal\n", nom_count_date)), size=8) +
+##   geom_text(data = forecast_done_early, aes(x=category, y=forecast_start, label=paste("done\n", last_open_date)), size=8) +
+##   scale_y_date(limits=c(forecast_start, forecast_end), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
+##   coord_flip() +
+##   theme_fivethirtynine() +
+##   labs(title=sprintf("%s forecast completion dates based on count velocity", args$title), x="Milestones (high priority on top)") +
+##   theme(legend.position = "none",
+##         axis.text.y = element_text(hjust=1),
+##         axis.title.x = element_blank())
+## dev.off()
 
 ######################################################################
 ## Velocity vs backlog
