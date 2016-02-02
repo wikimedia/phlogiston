@@ -169,8 +169,8 @@ ggplot(forecast_done) +
   geom_point(data = forecast_current, aes(x=category, y=nom_count_date), size=13, shape=5, color="Black") +
   geom_text(data = forecast_current, aes(x=category, y=nom_count_date, label=format(nom_count_date, format="%b %d\n%Y")), size=8, shape=5, color="DarkSlateGray") +
   geom_text(data = forecast_future_count, aes(x=category, y=forecast_end_plus, label=format(nom_count_date, format="nominal\n%b %Y")), size=8, color="SlateGray") +
-  geom_text(data = done_before_quarter, aes(x=category, y=quarter_start, label=format(last_open_date, format="%b %d\n%Y")), size=8) +
-  geom_text(data = done_during_quarter, aes(x=category, y=last_open_date,  label=format(last_open_date, format="%b %d\n%Y")), size=8) +
+  geom_text(data = done_before_quarter, aes(x=category, y=quarter_start, label=format(last_open_date, format="%b %d\n%Y")), size=5) +
+  geom_text(data = done_during_quarter, aes(x=category, y=last_open_date,  label=format(last_open_date, format="%b %d\n%Y")), size=5) +
   scale_x_discrete(limits = rev(forecast_done$category)) +
   scale_y_date(limits=c(forecast_start, forecast_end_plus), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   coord_flip() +
