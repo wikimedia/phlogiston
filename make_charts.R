@@ -11,7 +11,7 @@ library(stringr)
 suppressPackageStartupMessages(library("argparse"))
 parser <- ArgumentParser(formatter_class= 'argparse.RawTextHelpFormatter')
 
-parser$add_argument("project", nargs=1, help="Project prefix")
+parser$add_argument("project", nargs=1, help="Project prefix", default='an')
 parser$add_argument("title", nargs=1, help="Project title")
 
 args <- parser$parse_args()
@@ -119,8 +119,8 @@ forecast_done$category <- paste(sprintf("%02d",forecast_done$sort_order), foreca
 first_cat = forecast_done$category[1]
 last_cat = tail(forecast_done$category,1)
 
-done_before_quarter <- forecast_done[forecast_done$last_open_date <= quarter_start, ]
-done_during_quarter <- forecast_done[forecast_done$last_open_date > quarter_start, ]
+done_before_quarter <- na.omit(forecast_done[forecast_done$last_open_date <= quarter_start, ])
+done_during_quarter <- na.omit(forecast_done[forecast_done$last_open_date > quarter_start, ])
 
 forecast <- read.csv(sprintf("/tmp/%s/forecast.csv", args$project))
 forecast <- forecast[forecast$weeks_old < 5,]
@@ -131,13 +131,13 @@ forecast$opt_points_date <- as.Date(forecast$opt_points_date, "%Y-%m-%d")
 forecast$pes_count_date <- as.Date(forecast$pes_count_date, "%Y-%m-%d")
 forecast$nom_count_date <- as.Date(forecast$nom_count_date, "%Y-%m-%d")
 forecast$opt_count_date <- as.Date(forecast$opt_count_date, "%Y-%m-%d")
-forecast_current <- forecast[forecast$weeks_old == 1,]
-forecast_future_points <- forecast[forecast$nom_points_date > forecast_end & forecast$weeks_old == 1, ]
-forecast_future_count <- forecast[forecast$nom_count_date > forecast_end & forecast$weeks_old == 1, ]
+forecast_current <- na.omit(forecast[forecast$weeks_old == 1,])
+forecast_future_points <- na.omit(forecast[forecast$nom_points_date > forecast_end & forecast$weeks_old == 1, ])
+forecast_future_count <- na.omit(forecast[forecast$nom_count_date > forecast_end & forecast$weeks_old == 1, ])
 
-forecast_points_output  <- png(filename = sprintf("~/html/%s_forecast.png", args$project), width=2000, height=1125, units="px", pointsize=30)
+png(filename = sprintf("~/html/%s_forecast.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 
-ggplot(forecast_done) +
+p <- ggplot(forecast_done) +
   geom_rect(aes(xmin=first_cat, xmax=last_cat, ymin=quarter_start, ymax=quarter_end), fill="white", alpha=0.05) +
   geom_hline(aes(yintercept=as.numeric(now)), color="blue") +
   geom_point(aes(x=category, y=last_open_date), size=8, shape=18) +
@@ -145,9 +145,6 @@ ggplot(forecast_done) +
   geom_point(data = forecast, aes(x=category, y=nom_points_date, color=weeks_old), size=10, shape=5) +
   geom_point(data = forecast_current, aes(x=category, y=nom_points_date), size=13, shape=5, color="Black") +
   geom_text(data = forecast_current, aes(x=category, y=nom_points_date, label=format(nom_points_date, format="%b %d\n%Y")), size=8, shape=5, color="DarkSlateGray") +
-  geom_text(data = forecast_future_points, aes(x=category, y=forecast_end_plus, label=format(nom_points_date, format="nominal\n%b %Y")), size=8, color="SlateGray") +
-  geom_text(data = done_before_quarter, aes(x=category, y=quarter_start, label=format(last_open_date, format="%b %d\n%Y")), size=8) +
-  geom_text(data = done_during_quarter, aes(x=category, y=last_open_date,  label=format(last_open_date, format="%b %d\n%Y")), size=8) +
   scale_x_discrete(limits = rev(forecast_done$category)) +
   scale_y_date(limits=c(forecast_start, forecast_end_plus), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   coord_flip() +
@@ -156,11 +153,24 @@ ggplot(forecast_done) +
   theme(legend.position = "none",
         axis.text.y = element_text(hjust=1),
         axis.title.x = element_blank())
+
+if(nrow(forecast_future_points) > 0) {
+   p = p + geom_text(data = forecast_future_points, aes(x=category, y=forecast_end_plus, label=format(nom_points_date, format="nominal\n%b %Y")), size=8, color="SlateGray")
+}
+
+if(nrow(done_before_quarter) > 0) {
+  p = p + geom_text(data = done_before_quarter, aes(x=category, y=quarter_start, label=format(last_open_date, format="%b %d\n%Y")), size=8)
+}
+
+if(nrow(done_during_quarter) > 0) {
+  p = p + geom_text(data = done_during_quarter, aes(x=category, y=last_open_date, label=format(last_open_date, format="%b %d\n%Y")), size=8)
+}
+p
 dev.off()
 
-forecast_count_output  <- png(filename = sprintf("~/html/%s_forecast_count.png", args$project), width=2000, height=1125, units="px", pointsize=30)
+png(filename = sprintf("~/html/%s_forecast_count.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 
-ggplot(forecast_done) +
+p <- ggplot(forecast_done) +
   geom_rect(aes(xmin=first_cat, xmax=last_cat, ymin=quarter_start, ymax=quarter_end), fill="white", alpha=0.05) +
   geom_hline(aes(yintercept=as.numeric(now)), color="blue") +
   geom_point(aes(x=category, y=last_open_date), size=8, shape=18) +
@@ -168,9 +178,6 @@ ggplot(forecast_done) +
   geom_point(data = forecast, aes(x=category, y=nom_count_date, color=weeks_old), size=10, shape=5) +
   geom_point(data = forecast_current, aes(x=category, y=nom_count_date), size=13, shape=5, color="Black") +
   geom_text(data = forecast_current, aes(x=category, y=nom_count_date, label=format(nom_count_date, format="%b %d\n%Y")), size=8, shape=5, color="DarkSlateGray") +
-  geom_text(data = forecast_future_count, aes(x=category, y=forecast_end_plus, label=format(nom_count_date, format="nominal\n%b %Y")), size=8, color="SlateGray") +
-  geom_text(data = done_before_quarter, aes(x=category, y=quarter_start, label=format(last_open_date, format="%b %d\n%Y")), size=8) +
-  geom_text(data = done_during_quarter, aes(x=category, y=last_open_date,  label=format(last_open_date, format="%b %d\n%Y")), size=8) +
   scale_x_discrete(limits = rev(forecast_done$category)) +
   scale_y_date(limits=c(forecast_start, forecast_end_plus), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   coord_flip() +
@@ -179,6 +186,19 @@ ggplot(forecast_done) +
   theme(legend.position = "none",
         axis.text.y = element_text(hjust=1),
         axis.title.x = element_blank())
+
+if(nrow(forecast_future_count) > 0) {
+  p = p + geom_text(data = forecast_future_count, aes(x=category, y=forecast_end_plus, label=format(nom_count_date, format="nominal\n%b %Y")), size=8, color="SlateGray")
+}
+
+if(nrow(done_before_quarter) > 0) {
+  p = p + geom_text(data = done_before_quarter, aes(x=category, y=quarter_start, label=format(last_open_date, format="%b %d\n%Y")), size=8)
+}
+
+if(nrow(done_during_quarter) > 0) {
+  p = p + geom_text(data = done_during_quarter, aes(x=category, y=last_open_date, label=format(last_open_date, format="%b %d\n%Y")), size=8)
+}
+p
 dev.off()
 
 
