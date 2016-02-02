@@ -713,9 +713,11 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
     # any further, should split make_report_csvs into one data
     # processing file, and one file dumping to csv, so python can go
     # neatly in the middle
-
-    subprocess.call('psql -d phab -f make_recently_closed.sql -v prefix={0}'.
-                    format(source_prefix), shell=True)
+    
+    forecast_window_start = "2016-01-01"
+    forecast_window_end = "2016-06-30"
+    subprocess.call('psql -d phab -f make_recently_closed.sql -v prefix={0} -v fore_start={1} -v fore_end={2}'.
+                    format(source_prefix, forecast_window_start, forecast_window_end), shell=True)
     if os.path.isfile(grouping_data):
         unsafe_recat_update = recat_update.format(
             'recently_closed', recat_cases, recat_else, source_prefix)

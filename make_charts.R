@@ -103,26 +103,45 @@ dev.off()
 ######################################################################
 ## Forecast
 ######################################################################
+## plot X first, to get all labels and in the correct order
+## forecasts w/error bars
+## completed milestones in range
+## completed milestones out of range
+## forecasts out of range
 
-forecast <- read.csv(sprintf("/tmp/%s/current_forecast.csv", args$project))
+forecast_done <- read.csv(sprintf("/tmp/%s/forecast_done.csv", args$project))
+forecast_done$category <- factor(forecast_done$category, levels=forecast_done$category[order(rev(forecast_done$sort_order))])
+forecast_done$last_open_date <- as.Date(forecast_done$last_open_date, "%Y-%m-%d")
+forecast_done$last_open_date <- as.Date(forecast_done$last_open_date, "%Y-%m-%d")
+forecast_done_early <- forecast_done[forecast_done$last_open_date < forecast_start, ]
+forecast_done_early$category <- factor(forecast_done_early$category, levels=forecast_done_early$category[order(rev(forecast_done_early$sort_order))])
+
+forecast <- read.csv(sprintf("/tmp/%s/forecast.csv", args$project))
+forecast <- forecast[forecast$weeks_old < 5,]
 forecast$pes_points_date <- as.Date(forecast$pes_points_date, "%Y-%m-%d")
 forecast$nom_points_date <- as.Date(forecast$nom_points_date, "%Y-%m-%d")
 forecast$opt_points_date <- as.Date(forecast$opt_points_date, "%Y-%m-%d")
 forecast$pes_count_date <- as.Date(forecast$pes_count_date, "%Y-%m-%d")
 forecast$nom_count_date <- as.Date(forecast$nom_count_date, "%Y-%m-%d")
 forecast$opt_count_date <- as.Date(forecast$opt_count_date, "%Y-%m-%d")
-
-forecast$category = strtrim(forecast$category, 35)
 forecast$category <- factor(forecast$category, levels=forecast$category[order(rev(forecast$sort_order))])
+
+forecast_future_points <- forecast[forecast$nom_points_date > forecast_end & forecast$weeks_old == 1, ]
+forecast_future_points$category <- factor(forecast_future_points$category, levels=forecast_future_points$category[order(rev(forecast$sort_order))])
+forecast_future_count <- forecast[forecast$nom_count_date > forecast_end & forecast$weeks_old == 1, ]
+forecast_future_count$category <- factor(forecast_future_count$category, levels=forecast_future_count$category[order(rev(forecast$sort_order))])
+                                   
 forecast_points_output  <- png(filename = sprintf("~/html/%s_forecast.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 
-ggplot(forecast, aes(category, nom_points_date, ymax=pes_points_date, ymin=opt_points_date)) +
-  scale_color_brewer("RdBu") +
-  geom_point(stat="identity", aes(size=25)) +
-  geom_errorbar(aes(size=15), width=.5) +
-  geom_hline(aes(yintercept=as.numeric(now)), color="blue") +
-  geom_hline(aes(yintercept=as.numeric(as.Date(c('2016-01-01'))), color="gray")) +
-  geom_hline(aes(yintercept=as.numeric(as.Date(c('2016-04-01'))), color="gray")) +
+ggplot(forecast_done) +
+  geom_point(aes(x=category, y=last_open_date, size=25), shape=18) +
+  geom_errorbar(data = forecast, aes(x=category, y=nom_points_date, ymax=pes_points_date, ymin=opt_points_date, color=weeks_old), width=.3, size=2, position="dodge") +
+  geom_point(data = forecast, aes(x=category, y=nom_points_date, color=weeks_old), size=10, shape=5) +
+  geom_hline(aes(yintercept=as.numeric(now))) +
+  geom_hline(aes(yintercept=as.numeric(as.Date(c('2016-01-01'))))) +
+  geom_hline(aes(yintercept=as.numeric(as.Date(c('2016-04-01'))))) +
+  geom_text(data = forecast_future_points, aes(x=category, y=forecast_end, label=paste("nominal\n", nom_points_date)), size=8) +
+  geom_text(data = forecast_done_early, aes(x=category, y=forecast_start, label=paste("done\n", last_open_date)), size=8) +
   scale_y_date(limits=c(forecast_start, forecast_end), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   coord_flip() +
   theme_fivethirtynine() +
@@ -134,13 +153,14 @@ dev.off()
 
 forecast_count_output  <- png(filename = sprintf("~/html/%s_forecast_count.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 
-ggplot(forecast, aes(category, nom_count_date, ymax=pes_count_date, ymin=opt_count_date)) +
-  geom_point(stat="identity", aes(size=25)) +
-  scale_color_brewer("RdBu") +
-  geom_errorbar(aes(size=15), width=.5) +
-  geom_hline(aes(yintercept=as.numeric(now)), color="blue") +
-  geom_hline(aes(yintercept=as.numeric(as.Date(c('2016-01-01'))), color="gray")) +
-  geom_hline(aes(yintercept=as.numeric(as.Date(c('2016-04-01'))), color="gray")) +
+ggplot(forecast_done) +
+  geom_point(aes(x=category, y=last_open_date, size=25), shape=18) +
+  geom_errorbar(data = forecast, aes(x=category, y=nom_count_date, ymax=pes_count_date, ymin=opt_count_date, color=weeks_old), width=.5, position="dodge") +
+  geom_hline(aes(yintercept=as.numeric(now))) +
+  geom_hline(aes(yintercept=as.numeric(as.Date(c('2016-01-01'))))) +
+  geom_hline(aes(yintercept=as.numeric(as.Date(c('2016-04-01'))))) +
+##  geom_text(data = forecast_future_count, aes(x=category, y=forecast_end, label=paste("nominal\n", nom_count_date)), size=8) +
+  geom_text(data = forecast_done_early, aes(x=category, y=forecast_start, label=paste("done\n", last_open_date)), size=8) +
   scale_y_date(limits=c(forecast_start, forecast_end), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   coord_flip() +
   theme_fivethirtynine() +

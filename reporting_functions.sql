@@ -124,6 +124,7 @@ BEGIN
 
     DELETE FROM velocity where source = source_prefix;
 
+    -- Select dates every one week
     INSERT INTO velocity (
     SELECT source,
            category,

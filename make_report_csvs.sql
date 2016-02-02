@@ -245,38 +245,50 @@ SELECT date,
 ) TO '/tmp/phlog/tranche_velocity_count.csv' DELIMITER ',' CSV HEADER;
 
 COPY (
-SELECT source,
-       date,
-       category,
+SELECT date,
+       EXTRACT(epoch FROM age(date - INTERVAL '1 day'))/604800 as weeks_old,
+       v.category,
+       sort_order,
        opt_points_fore,
        nom_points_fore,
        pes_points_fore,
        opt_count_fore,
        nom_count_fore,
-       pes_count_fore
-  FROM velocity
- WHERE source = :'prefix'
+       pes_count_fore,
+       pes_points_date,
+       nom_points_date,
+       opt_points_date,
+       pes_count_date,
+       nom_count_date,
+       opt_count_date
+  FROM velocity v, zoom_list z
+ WHERE z.category = v.category
+   AND z.source = :'prefix'
  ORDER BY date
 ) to '/tmp/phlog/forecast.csv' DELIMITER ',' CSV HEADER;
 
 COPY (
-SELECT z.sort_order,
-       z.category,
-       v.pes_points_date,
-       v.nom_points_date,
-       v.opt_points_date,
-       v.pes_count_date,
-       v.nom_count_date,
-       v.opt_count_date
-  FROM zoom_list z LEFT OUTER JOIN velocity v
-    ON v.source = z.source
-   AND v.category = z.category
- WHERE z.source = :'prefix'
-   AND v.date = (SELECT MAX(date)
-                   FROM velocity
-                  WHERE source = :'prefix')
- ORDER BY sort_order
-) TO '/tmp/phlog/current_forecast.csv' DELIMITER ',' CSV HEADER;
+SELECT z.category,
+       z.sort_order,
+       first.first_open_date,
+       last.last_open_date
+  FROM zoom_list z
+  LEFT OUTER JOIN (SELECT category,
+                          MIN(date) as first_open_date
+                     FROM tall_backlog
+                    WHERE source = :'prefix'
+                      AND status = '"open"'
+                    GROUP BY category) AS first ON (z.category = first.category)
+  LEFT OUTER JOIN (SELECT category,
+                          MAX(date) as last_open_date
+                     FROM tall_backlog
+                    WHERE source = :'prefix'
+                      AND status = '"open"'
+                    GROUP BY category) AS last ON (z.category = last.category AND
+                                                date_trunc('day', last_open_date) <> (SELECT MAX(date) FROM tall_backlog WHERE source = :'prefix'))
+WHERE source = :'prefix'
+ORDER BY sort_order
+) TO '/tmp/phlog/forecast_done.csv' DELIMITER ',' CSV HEADER;
 
 /* ####################################################################
 Recently Closed */
