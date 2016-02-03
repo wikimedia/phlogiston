@@ -115,7 +115,7 @@ dev.off()
 
 forecast_done <- read.csv(sprintf("/tmp/%s/forecast_done.csv", args$project))
 forecast_done$resolved_date <- as.Date(forecast_done$resolved_date, "%Y-%m-%d")
-forecast_done$category <- paste(sprintf("%02d",forecast_done$sort_order), forecast_done$category)
+forecast_done$category <- paste(sprintf("%02d",forecast_done$sort_order), strtrim(forecast_done$category, 35))
 first_cat = forecast_done$category[1]
 last_cat = tail(forecast_done$category,1)
 
@@ -124,7 +124,7 @@ done_during_quarter <- na.omit(forecast_done[forecast_done$resolved_date > quart
 
 forecast <- read.csv(sprintf("/tmp/%s/forecast.csv", args$project))
 forecast <- forecast[forecast$weeks_old < 5,]
-forecast$category <- paste(sprintf("%02d",forecast$sort_order), forecast$category)
+forecast$category <- paste(sprintf("%02d",forecast$sort_order), strtrim(forecast$category, 35))
 forecast$pes_points_date <- as.Date(forecast$pes_points_date, "%Y-%m-%d")
 forecast$nom_points_date <- as.Date(forecast$nom_points_date, "%Y-%m-%d")
 forecast$opt_points_date <- as.Date(forecast$opt_points_date, "%Y-%m-%d")
