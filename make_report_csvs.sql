@@ -3,12 +3,11 @@ SELECT date,
        t.category,
        MAX(z.sort_order) as sort_order,
        SUM(points) as points,
-       SUM(count) as count
-  FROM tall_backlog t, zoom_list z
+       SUM(count) as count,
+       BOOL_OR(z.zoom) as zoom
+  FROM tall_backlog t, category_list z
  WHERE t.source = :'prefix'
-   AND t.category in (SELECT category
-                      FROM zoom_list
-                     WHERE source = :'prefix')
+   AND z.source = :'prefix'
    AND t.source = z.source
    AND t.category = z.category
  GROUP BY date, t.category
@@ -22,8 +21,23 @@ SELECT date,
   FROM tall_backlog
  WHERE status = '"resolved"'
    AND source = :'prefix'
-   AND category in (SELECT category
-                      FROM zoom_list
+   AND category IN (SELECT category
+                      FROM category_list
+                     WHERE source = :'prefix'
+                       AND zoom = True)
+ GROUP BY date
+ ORDER BY date
+) TO '/tmp/phlog/burnup_zoom.csv' DELIMITER ',' CSV HEADER;
+
+COPY (
+SELECT date,
+       SUM(points) as points,
+       SUM(count) as count
+  FROM tall_backlog
+ WHERE status = '"resolved"'
+   AND source = :'prefix'
+   AND category IN (SELECT category
+                      FROM category_list
                      WHERE source = :'prefix')
  GROUP BY date
  ORDER BY date
@@ -38,7 +52,7 @@ SELECT date,
  WHERE status = '"resolved"'
    AND source = :'prefix'
    AND category in (SELECT category
-                      FROM zoom_list
+                      FROM category_list
                      WHERE source = :'prefix')
  GROUP BY date, category
  ORDER BY category, date
@@ -248,6 +262,7 @@ COPY (
 SELECT date,
        EXTRACT(epoch FROM age(date - INTERVAL '1 day'))/604800 as weeks_old,
        v.category,
+       z.zoom,
        sort_order,
        opt_points_fore,
        nom_points_fore,
@@ -261,7 +276,7 @@ SELECT date,
        pes_count_date,
        nom_count_date,
        opt_count_date
-  FROM velocity v, zoom_list z
+  FROM velocity v, category_list z
  WHERE z.category = v.category
    AND z.source = :'prefix'
  ORDER BY date
@@ -269,10 +284,11 @@ SELECT date,
 
 COPY (
 SELECT z.category,
+       z.zoom,
        z.sort_order,
        first.first_open_date,
        last.last_open_date + INTERVAL '1 week' as resolved_date
-  FROM zoom_list z
+  FROM category_list z
   LEFT OUTER JOIN (SELECT category,
                           MIN(date) as first_open_date
                      FROM tall_backlog
@@ -299,7 +315,7 @@ SELECT rc.date,
        '(' || z.sort_order || ') ' || rc.category as category,
        rc.points,
        rc.count
-  FROM recently_closed rc LEFT OUTER JOIN zoom_list z USING (source, category)
+  FROM recently_closed rc LEFT OUTER JOIN category_list z USING (source, category)
  WHERE source = :'prefix'
    AND date >= current_date - interval '3 months'
  ORDER BY date, sort_order

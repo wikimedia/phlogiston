@@ -638,60 +638,64 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
     subprocess.call("psql -d phab -f {0} -v prefix={1}".
                     format(report_tables_script, source_prefix), shell=True)
 
-    # perform any additional re-categorization
-    grouping_data = '{0}_recategorization.csv'.format(source_prefix)
-    recat_cases = ''
-    recat_else = ''
-    zoom_list_present = False
-    zoom_delete = """DELETE FROM zoom_list WHERE source = %(source_prefix)s"""
-    cur.execute(zoom_delete, {'source_prefix': source_prefix})
-    zoom_save = """
-    INSERT INTO zoom_list
-    VALUES (%(source_prefix)s, %(sort_order)s, %(category)s)"""
-    if os.path.isfile(grouping_data):
-        with open(grouping_data, 'rt') as f:
+    # Reload the Recategorization mapping
+    recat_data = '{0}_recategorization.csv'.format(source_prefix)
+    if os.path.isfile(recat_data):
+        category_save = """
+        INSERT INTO category_list
+        VALUES (%(source_prefix)s, %(sort_order)s, %(category)s, %(matchstring)s, %(zoom)s)"""
+        recat_cases = ''
+        recat_else = ''
+        with open(recat_data, 'rt') as f:
             reader = csv.DictReader(f)
             for line in reader:
+                matchstring = '%' + line['matchstring'] + '%'
+                if line['zoom_list'].lower() in ['true', 't', '1', 'yes', 'y']:
+                    zoom = True
+                else:
+                    zoom = False
+                cur.execute(category_save,
+                            {'source_prefix': source_prefix,
+                             'sort_order': line['sort_order'],
+                             'category': line['title'],
+                             'matchstring': matchstring,
+                             'zoom': zoom})
+
+                # build up the recategorization query
                 if line['matchstring'] == 'PhlogOther':
                     recat_else = line['title']
                 else:
                     recat_cases += ' WHEN category LIKE \'{0}\' THEN \'{1}\''.format(  # noqa
                         line['matchstring'], line['title'])
-                if line['zoom_list'].lower() in ['true', 't', '1', 'yes', 'y']:
-                    zoom_list_present = True
-                    cur.execute(zoom_save,
-                                {'source_prefix': source_prefix,
-                                 'sort_order': line['sort_order'],
-                                 'category': line['title']})
 
         recat_update = """UPDATE {0}
-                            SET category = CASE {1}
-                                           ELSE '{2}'
-                                           END
-                          WHERE source = '{3}' """
+                             SET category = CASE {1}
+                                            ELSE '{2}'
+                                            END
+                           WHERE source = '{3}' """
 
         unsafe_recat_update = recat_update.format(
             'tall_backlog', recat_cases, recat_else, source_prefix)
         cur.execute(unsafe_recat_update)
-
-    # if no zoom_list was indicated in the data, use alphabetical order
-    # of categories to create one
-    if not zoom_list_present:
-        zoom_insert = """INSERT INTO zoom_list (
+    else:
+        # Build a category list from the data
+        category_insert = """INSERT INTO category_list (
                          SELECT %(source_prefix)s,
                                 row_number() OVER(ORDER BY category asc),
-                                category
+                                category,
+                                NULL,
+                                TRUE
                            FROM (SELECT DISTINCT category
                                    FROM tall_backlog
                                   WHERE source = %(source_prefix)s
                                   ORDER BY category) as foo)"""
-        cur.execute(zoom_insert, {'source_prefix': source_prefix})
+        cur.execute(category_insert, {'source_prefix': source_prefix})
 
-    zoom_query = """SELECT category
+    cat_query = """SELECT category
                       FROM (SELECT z.category,
                                    max(z.sort_order) as sort_order,
                                    sum(t.count) as xcount
-                              FROM zoom_list z, tall_backlog t
+                              FROM category_list z, tall_backlog t
                              WHERE z.source = %(source_prefix)s
                                AND z.source = t.source
                                AND z.category = t.category
@@ -699,26 +703,25 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
                      WHERE xcount > 0
                     ORDER BY sort_order"""
 
-    cur.execute(zoom_query, {'source_prefix': source_prefix})
-    zoom_list_of_tuples = cur.fetchall()
-    zoom_list = [item[0] for item in zoom_list_of_tuples]
+    cur.execute(cat_query, {'source_prefix': source_prefix})
+    cat_list_of_tuples = cur.fetchall()
+    cat_list = [item[0] for item in cat_list_of_tuples]
 
     # Have to load the recently closed table so that it can be
-    # recategorized this recat is done twice (once for tall_backlog,
-    # once for recently_closed) because these are the two tables
+    # recategorized. this recat is done twice, once for tall_backlog,
+    # once for recently_closed, because these are the two tables
     # derived from task_history, and we don't want to change
-    # task_history because it's raw data and we might want other
-    # reports from it later getting a litle bit spaghetti here because
-    # data processing is a now a mix of sql and python If this goes
+    # task_history because it's raw data. getting a litle bit spaghetti here because
+    # data processing is a now a mix of sql and python. If this goes
     # any further, should split make_report_csvs into one data
     # processing file, and one file dumping to csv, so python can go
     # neatly in the middle
-    
+
     forecast_window_start = "2016-01-01"
     forecast_window_end = "2016-06-30"
     subprocess.call('psql -d phab -f make_recently_closed.sql -v prefix={0} -v fore_start={1} -v fore_end={2}'.
                     format(source_prefix, forecast_window_start, forecast_window_end), shell=True)
-    if os.path.isfile(grouping_data):
+    if os.path.isfile(recat_data):
         unsafe_recat_update = recat_update.format(
             'recently_closed', recat_cases, recat_else, source_prefix)
         cur.execute(unsafe_recat_update)
@@ -764,33 +767,9 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
     ######################################################################
     # for each category, generate burnup charts
     ######################################################################
-    # consistent height for all charts
-    max_tranche_height_points_query = """SELECT MAX(points)
-                                     FROM (SELECT SUM(points) AS points
-                                             FROM tall_backlog
-                                            WHERE source = %(source_prefix)s
-                                              AND category IN %(zoom_list)s
-                                            GROUP BY date, category) AS x"""
-
-    cur.execute(max_tranche_height_points_query,
-                {'source_prefix': source_prefix,
-                 'zoom_list': tuple(zoom_list)})
-    max_tranche_height_points = cur.fetchone()[0]
-    max_tranche_height_count_query = """SELECT MAX(count)
-                                     FROM (SELECT SUM(count) AS count
-                                             FROM tall_backlog
-                                            WHERE source = %(source_prefix)s
-                                              AND category IN %(zoom_list)s
-                                            GROUP BY date, category) AS x"""
-
-    cur.execute(max_tranche_height_count_query,
-                {'source_prefix': source_prefix,
-                 'zoom_list': tuple(zoom_list)})
-    max_tranche_height_count = cur.fetchone()[0]
-
     colors = []
     proc = subprocess.check_output("Rscript get_palette.R {0}".
-                                   format(len(zoom_list)), shell=True)
+                                   format(len(cat_list)), shell=True)
     color_output = proc.decode().split()
     for item in color_output:
         if '#' in item:
@@ -798,16 +777,14 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
     i = 0
     tab_string = '<table><tr>'
     html_string = '<div class="tabs">'
-    for category in reversed(zoom_list):
+    for category in reversed(cat_list):
         try:
             color = colors[i]
         except:
             color = '#DDDDDD'
         subprocess.call(
-            "Rscript make_tranche_chart.R {0} {1} \"{2}\" \"{3}\" {4} {5}".
-            format(source_prefix, i, color, category,
-                   max_tranche_height_points, max_tranche_height_count),
-            shell=True)
+            "Rscript make_tranche_chart.R {0} {1} \"{2}\" \"{3}\"".
+            format(source_prefix, i, color, category), shell=True)
         tab_string += '<td><a href="#tab{0}">{1}</a></td>'.format(i,category)
         html_string += '<p id="tab{0}"><table>'.format(i)
         points_png_name = "{0}_tranche{1}_burnup_points.png".format(source_prefix, i)
@@ -840,7 +817,7 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
                pes_count_fore,
                nom_count_fore,
                opt_count_fore
-          FROM velocity v, zoom_list z
+          FROM velocity v, category_list z
          WHERE v.source = %(source_prefix)s
            AND v.source = z.source
            AND v.category = z.category
@@ -884,8 +861,11 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
     ######################################################################
     # Make the rest of the charts
     ######################################################################
-    subprocess.call("Rscript make_charts.R {0} {1}".
-                    format(source_prefix, source_title), shell=True)
+    subprocess.call("Rscript make_charts.R {0} {1} {2}".
+                    format(source_prefix, source_title, 'True'), shell=True)
+
+    subprocess.call("Rscript make_charts.R {0} {1} {2}".
+                    format(source_prefix, source_title, 'False'), shell=True)
 
     ######################################################################
     # Update dates

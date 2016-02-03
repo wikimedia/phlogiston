@@ -1,9 +1,11 @@
 DROP TABLE IF EXISTS zoom_list;
 
-CREATE TABLE zoom_list (
+CREATE TABLE category_list (
        source varchar(6),
        sort_order int,
-       category text
+       category text,
+       matchstring text,
+       zoom boolean
 );
 
 DROP TABLE IF EXISTS tall_backlog;

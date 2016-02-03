@@ -5,7 +5,7 @@ BEGIN
     DELETE FROM tall_backlog
      WHERE source = source_param;
 
-    DELETE FROM zoom_list
+    DELETE FROM category_list
      WHERE source = source_param;
 
     DELETE FROM recently_closed

@@ -13,9 +13,17 @@ parser <- ArgumentParser(formatter_class= 'argparse.RawTextHelpFormatter')
 
 parser$add_argument("project", nargs=1, help="Project prefix", default='an')
 parser$add_argument("title", nargs=1, help="Project title")
+parser$add_argument("zoom", nargs=1, help="If true, show only zoomed categories")
 
 args <- parser$parse_args()
 
+if (args$zoom == 'True') {
+  zoom_title = " (Zoomed)"
+  zoom_suffix = "_zoom"
+} else {
+  zoom_title = ""
+  zoom_suffix = ""
+}
 now <- Sys.Date()
 forecast_start <- as.Date(c("2016-01-01"))
 forecast_end   <- as.Date(c("2016-07-01"))
@@ -45,11 +53,18 @@ theme_fivethirtynine <- function(base_size = 12, base_family = "sans"){
 ######################################################################
 
 backlog <- read.csv(sprintf("/tmp/%s/backlog.csv", args$project))
-backlog$date <- as.Date(backlog$date, "%Y-%m-%d")
-backlog_output=png(filename = sprintf("~/html/%s_backlog_burnup.png", args$project), width=2000, height=1125, units="px", pointsize=30)
+if (args$zoom == 'True') {
+  backlog <- backlog[backlog$zoom == 't',]
+  burnup <- read.csv(sprintf("/tmp/%s/burnup_zoom.csv", args$project))
+} else {
+  burnup <- read.csv(sprintf("/tmp/%s/burnup.csv", args$project))
+}
+
 backlog$category <- factor(backlog$category, levels=rev(unique(backlog$category)))
-burnup <- read.csv(sprintf("/tmp/%s/burnup.csv", args$project))
+backlog$date <- as.Date(backlog$date, "%Y-%m-%d")
 burnup$date <- as.Date(burnup$date, "%Y-%m-%d")
+
+png(filename = sprintf("~/html/%s_backlog_burnup_points%s.png", args$project, zoom_suffix), width=2000, height=1125, units="px", pointsize=30)
 
 ggplot(backlog) +
   geom_area(position='stack', aes(x = date, y = points, group=category, fill=category, order=-category)) +
@@ -59,11 +74,11 @@ ggplot(backlog) +
   scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   theme(legend.position='bottom', legend.direction='vertical', axis.title.x=element_blank()) +
   guides(col = guide_legend(reverse=TRUE)) +
-  labs(title=sprintf("%s backlog by points", args$title), y="Story Point Total") +
+  labs(title=sprintf("%s backlog by points%s", args$title, zoom_title), y="Story Point Total") +
   geom_vline(aes(xintercept=as.numeric(as.Date(c('2016-01-01'))), color="gray"))
 dev.off()
 
-backlog_count_output=png(filename = sprintf("~/html/%s_backlog_count_burnup.png", args$project), width=2000, height=1125, units="px", pointsize=30)
+png(filename = sprintf("~/html/%s_backlog_burnup_count%s.png", args$project, zoom_suffix), width=2000, height=1125, units="px", pointsize=30)
 
 ggplot(backlog) +
   geom_area(position='stack', aes(x = date, y = count, group=category, fill=category, order=-category)) +
@@ -73,7 +88,7 @@ ggplot(backlog) +
   scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   theme(legend.position='bottom', legend.direction='vertical', axis.title.x=element_blank()) +
   guides(col = guide_legend(reverse=TRUE)) +
-  labs(title=sprintf("%s backlog by count", args$title), y="Task Count") +
+  labs(title=sprintf("%s backlog by count%s", args$title, zoom_title), y="Task Count") +
   geom_vline(aes(xintercept=as.numeric(as.Date(c('2016-01-01'))), color="gray"))
 dev.off()
 
@@ -84,7 +99,7 @@ dev.off()
 velocity <- read.csv(sprintf("/tmp/%s/velocity.csv", args$project))
 velocity$date <- as.Date(velocity$date, "%Y-%m-%d")
 
-velocity_points_output <- png(filename = sprintf("~/html/%s_velocity.png", args$project), width=2000, height=1125, units="px", pointsize=30)
+png(filename = sprintf("~/html/%s_velocity_points.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 
 ggplot(velocity, aes(date, points)) +
   geom_bar(stat="identity") +
@@ -94,7 +109,7 @@ ggplot(velocity, aes(date, points)) +
   labs(title=sprintf("%s weekly velocity by points", args$title), y="Story Points")
 dev.off()
 
-velocity_count_output <- png(filename = sprintf("~/html/%s_velocity_count.png", args$project), width=2000, height=1125, units="px", pointsize=30)
+png(filename = sprintf("~/html/%s_velocity_count.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 
 ggplot(velocity, aes(date, count)) +
   geom_bar(stat="identity") +
@@ -107,23 +122,22 @@ dev.off()
 ######################################################################
 ## Forecast
 ######################################################################
-## plot X first, to get all labels and in the correct order
-## forecasts w/error bars
-## completed milestones in range
-## completed milestones out of range
-## forecasts out of range
 
 forecast_done <- read.csv(sprintf("/tmp/%s/forecast_done.csv", args$project))
+forecast <- read.csv(sprintf("/tmp/%s/forecast.csv", args$project))
+forecast <- forecast[forecast$weeks_old < 5,]
+
+if (args$zoom == 'True') {
+  forecast_done <- forecast_done[forecast_done$zoom == 't',]
+  forecast <- forecast[forecast$zoom == 't',]
+}
+
 forecast_done$resolved_date <- as.Date(forecast_done$resolved_date, "%Y-%m-%d")
 forecast_done$category <- paste(sprintf("%02d",forecast_done$sort_order), strtrim(forecast_done$category, 35))
 first_cat = forecast_done$category[1]
 last_cat = tail(forecast_done$category,1)
-
 done_before_quarter <- na.omit(forecast_done[forecast_done$resolved_date <= quarter_start, ])
 done_during_quarter <- na.omit(forecast_done[forecast_done$resolved_date > quarter_start, ])
-
-forecast <- read.csv(sprintf("/tmp/%s/forecast.csv", args$project))
-forecast <- forecast[forecast$weeks_old < 5,]
 forecast$category <- paste(sprintf("%02d",forecast$sort_order), strtrim(forecast$category, 35))
 forecast$pes_points_date <- as.Date(forecast$pes_points_date, "%Y-%m-%d")
 forecast$nom_points_date <- as.Date(forecast$nom_points_date, "%Y-%m-%d")
@@ -135,10 +149,10 @@ forecast_current <- na.omit(forecast[forecast$weeks_old == 1,])
 forecast_future_points <- na.omit(forecast[forecast$nom_points_date > forecast_end & forecast$weeks_old == 1, ])
 forecast_future_count <- na.omit(forecast[forecast$nom_count_date > forecast_end & forecast$weeks_old == 1, ])
 
-png(filename = sprintf("~/html/%s_forecast.png", args$project), width=2000, height=1125, units="px", pointsize=30)
+png(filename = sprintf("~/html/%s_forecast_points%s.png", args$project, zoom_suffix), width=2000, height=1125, units="px", pointsize=30)
 
 p <- ggplot(forecast_done) +
-  geom_rect(aes(xmin=first_cat, xmax=last_cat, ymin=quarter_start, ymax=quarter_end), fill="white", alpha=0.05) +
+  geom_rect(aes(xmin=first_cat, xmax=last_cat, ymin=quarter_start, ymax=quarter_end), fill="white", alpha=0.09) +
   geom_hline(aes(yintercept=as.numeric(now)), color="blue") +
   geom_point(aes(x=category, y=resolved_date), size=8, shape=18) +
   geom_errorbar(data = forecast, aes(x=category, y=nom_points_date, ymax=pes_points_date, ymin=opt_points_date, color=weeks_old), width=.3, size=2, position="dodge", alpha=.2) +
@@ -149,7 +163,7 @@ p <- ggplot(forecast_done) +
   scale_y_date(limits=c(forecast_start, forecast_end_plus), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   coord_flip() +
   theme_fivethirtynine() +
-  labs(title=sprintf("%s forecast completion dates based on points velocity", args$title), x="Milestones (high priority on top)") +
+  labs(title=sprintf("%s forecast completion dates based on points velocity%s", args$title, zoom_title), x="Milestones") +
   theme(legend.position = "none",
         axis.text.y = element_text(hjust=1),
         axis.title.x = element_blank())
@@ -165,13 +179,14 @@ if(nrow(done_before_quarter) > 0) {
 if(nrow(done_during_quarter) > 0) {
   p = p + geom_text(data = done_during_quarter, aes(x=category, y=resolved_date, label=format(resolved_date, format="%b %d\n%Y")), size=8)
 }
+
 p
 dev.off()
 
-png(filename = sprintf("~/html/%s_forecast_count.png", args$project), width=2000, height=1125, units="px", pointsize=30)
+png(filename = sprintf("~/html/%s_forecast_count%s.png", args$project, zoom_suffix), width=2000, height=1125, units="px", pointsize=30)
 
 p <- ggplot(forecast_done) +
-  geom_rect(aes(xmin=first_cat, xmax=last_cat, ymin=quarter_start, ymax=quarter_end), fill="white", alpha=0.05) +
+  geom_rect(aes(xmin=first_cat, xmax=last_cat, ymin=quarter_start, ymax=quarter_end), fill="white", alpha=0.09) +
   geom_hline(aes(yintercept=as.numeric(now)), color="blue") +
   geom_point(aes(x=category, y=resolved_date), size=8, shape=18) +
   geom_errorbar(data = forecast, aes(x=category, y=nom_count_date, ymax=pes_count_date, ymin=opt_count_date, color=weeks_old), width=.3, size=2, position="dodge", alpha=.2) +
@@ -182,7 +197,7 @@ p <- ggplot(forecast_done) +
   scale_y_date(limits=c(forecast_start, forecast_end_plus), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   coord_flip() +
   theme_fivethirtynine() +
-  labs(title=sprintf("%s forecast completion dates based on count velocity", args$title), x="Milestones (high priority on top)") +
+  labs(title=sprintf("%s forecast completion dates based on count velocity%s", args$title, zoom_title), x="Milestones") +
   theme(legend.position = "none",
         axis.text.y = element_text(hjust=1),
         axis.title.x = element_blank())
@@ -209,7 +224,7 @@ dev.off()
 net_growth <- read.csv(sprintf("/tmp/%s/net_growth.csv", args$project))
 net_growth$date <- as.Date(net_growth$date, "%Y-%m-%d")
 
-net_growth_points_output <- png(filename = sprintf("~/html/%s_net_growth_points.png", args$project), width=2000, height=1125, units="px", pointsize=30)
+png(filename = sprintf("~/html/%s_net_growth_points.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 
 ggplot(net_growth, aes(date, points)) +
   geom_bar(stat="identity") +
@@ -219,7 +234,7 @@ ggplot(net_growth, aes(date, points)) +
 labs(title=sprintf("%s Net change in open backlog by points", args$title), y="Story Points")
 dev.off()
 
-net_growth_count_output <- png(filename = sprintf("~/html/%s_net_growth_count.png", args$project), width=2000, height=1125, units="px", pointsize=30)
+png(filename = sprintf("~/html/%s_net_growth_count.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 
 ggplot(net_growth, aes(date, count)) +
   geom_bar(stat="identity") +
@@ -237,7 +252,7 @@ done <- read.csv(sprintf("/tmp/%s/recently_closed.csv", args$project))
 done$date <- as.Date(done$date, "%Y-%m-%d")
 done$category <- factor(done$category, levels=rev(done$category[order(done$priority)]))
 
-done_output <- png(filename = sprintf("~/html/%s_done.png", args$project), width=2000, height=1125, units="px", pointsize=30)
+png(filename = sprintf("~/html/%s_done_points.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 ggplot(done, aes(x=date, y=points, fill=factor(category))) +
   geom_bar(stat="identity")+ 
   scale_fill_brewer(name="(Priority) Milestone", palette="PuBuGn") +
@@ -248,7 +263,7 @@ ggplot(done, aes(x=date, y=points, fill=factor(category))) +
   labs(title=sprintf("%s Completed work by points", args$title), y="Points", x="Month", aesthetic="Milestone")
 dev.off()
 
-done_count_output <- png(filename = sprintf("~/html/%s_done_count.png", args$project), width=2000, height=1125, units="px", pointsize=30)
+png(filename = sprintf("~/html/%s_done_count.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 ggplot(done, aes(x=date, y=count, fill=factor(category))) +
   geom_bar(stat="identity") +
   scale_fill_brewer(name="(Priority) Milestone:", palette="PuBuGn") +
@@ -318,7 +333,7 @@ dev.off()
 ######################################################################
 
 points_histogram <- read.csv(sprintf("/tmp/%s/points_histogram.csv", args$project))
-
+points_histogram$points <- factor(points_histogram$points)
 png(filename = sprintf("~/html/%s_points_histogram.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 
 ggplot(points_histogram, aes(points, count)) +
