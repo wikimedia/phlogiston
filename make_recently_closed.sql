@@ -1,2 +1,2 @@
 SELECT find_recently_closed(:'prefix');
---SELECT find_recently_closed_daily(:'prefix');
+SELECT find_recently_closed_task(:'prefix');

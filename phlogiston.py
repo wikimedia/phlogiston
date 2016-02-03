@@ -709,21 +709,22 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
 
     # Have to load the recently closed table so that it can be
     # recategorized. this recat is done twice, once for tall_backlog,
-    # once for recently_closed, because these are the two tables
-    # derived from task_history, and we don't want to change
-    # task_history because it's raw data. getting a litle bit spaghetti here because
-    # data processing is a now a mix of sql and python. If this goes
-    # any further, should split make_report_csvs into one data
-    # processing file, and one file dumping to csv, so python can go
-    # neatly in the middle
+    # once for recently_closed and recently_closed_task, because these
+    # are the two tables derived from task_history, and we don't want
+    # to change task_history because it's raw data. getting a litle
+    # bit spaghetti here because data processing is a now a mix of sql
+    # and python. If this goes any further, should split
+    # make_report_csvs into one data processing file, and one file
+    # dumping to csv, so python can go neatly in the middle.
 
-    forecast_window_start = "2016-01-01"
-    forecast_window_end = "2016-06-30"
-    subprocess.call('psql -d phab -f make_recently_closed.sql -v prefix={0} -v fore_start={1} -v fore_end={2}'.
-                    format(source_prefix, forecast_window_start, forecast_window_end), shell=True)
+    subprocess.call('psql -d phab -f make_recently_closed.sql -v prefix={0}'.format(
+        source_prefix), shell=True)
     if os.path.isfile(recat_data):
         unsafe_recat_update = recat_update.format(
             'recently_closed', recat_cases, recat_else, source_prefix)
+        cur.execute(unsafe_recat_update)
+        unsafe_recat_update = recat_update.format(
+            'recently_closed_task', recat_cases, recat_else, source_prefix)
         cur.execute(unsafe_recat_update)
 
     ######################################################################
@@ -838,14 +839,14 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
              format(script_dir, source_prefix), 'w')
     f.write(html_string)
     f.close()
-
+    
     recently_closed_query = """SELECT id,
                                       title,
                                       date,
                                       category
-                                 FROM recently_closed_individual
+                                 FROM recently_closed_task
                                 WHERE source = %(source_prefix)s
-                             ORDER BY date, category, id"""
+                             ORDER BY category, date, id"""
 
     html_string = """<p><table border="1px solid lightgray" cellpadding="2" cellspacing="0"><tr><th>Date</th><th>Category</th><th>Task</th></tr>"""  # noqa
     cur.execute(recently_closed_query, {'source_prefix': source_prefix})

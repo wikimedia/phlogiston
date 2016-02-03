@@ -1,4 +1,4 @@
-DROP TABLE IF EXISTS zoom_list;
+DROP TABLE IF EXISTS category_list;
 
 CREATE TABLE category_list (
        source varchar(6),
@@ -30,9 +30,9 @@ CREATE TABLE recently_closed (
     count int
 );
 
-DROP TABLE IF EXISTS recently_closed_individual;
+DROP TABLE IF EXISTS recently_closed_task;
 
-CREATE TABLE recently_closed_individual (
+CREATE TABLE recently_closed_task (
     source varchar(6),
     date date,
     id int,

@@ -70,23 +70,24 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION find_recently_closed_daily(
+CREATE OR REPLACE FUNCTION find_recently_closed_task(
     source_prefix varchar(6)
     ) RETURNS void AS $$
 DECLARE
   daterow record;
 BEGIN
 
-    DELETE FROM recently_closed_individual
+    DELETE FROM recently_closed_task
      WHERE source = source_prefix;
 
     FOR daterow IN SELECT DISTINCT date
                      FROM task_history
                     WHERE source = source_prefix
+                      AND date > now() - interval '7 days'
                     ORDER BY date
     LOOP
 
-        INSERT INTO recently_closed_individual (
+        INSERT INTO recently_closed_task (
              SELECT source_prefix as source,
                     date,
 		    id,
