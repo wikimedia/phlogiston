@@ -114,13 +114,13 @@ dev.off()
 ## forecasts out of range
 
 forecast_done <- read.csv(sprintf("/tmp/%s/forecast_done.csv", args$project))
-forecast_done$last_open_date <- as.Date(forecast_done$last_open_date, "%Y-%m-%d")
+forecast_done$resolved_date <- as.Date(forecast_done$resolved_date, "%Y-%m-%d")
 forecast_done$category <- paste(sprintf("%02d",forecast_done$sort_order), forecast_done$category)
 first_cat = forecast_done$category[1]
 last_cat = tail(forecast_done$category,1)
 
-done_before_quarter <- na.omit(forecast_done[forecast_done$last_open_date <= quarter_start, ])
-done_during_quarter <- na.omit(forecast_done[forecast_done$last_open_date > quarter_start, ])
+done_before_quarter <- na.omit(forecast_done[forecast_done$resolved_date <= quarter_start, ])
+done_during_quarter <- na.omit(forecast_done[forecast_done$resolved_date > quarter_start, ])
 
 forecast <- read.csv(sprintf("/tmp/%s/forecast.csv", args$project))
 forecast <- forecast[forecast$weeks_old < 5,]
@@ -140,7 +140,7 @@ png(filename = sprintf("~/html/%s_forecast.png", args$project), width=2000, heig
 p <- ggplot(forecast_done) +
   geom_rect(aes(xmin=first_cat, xmax=last_cat, ymin=quarter_start, ymax=quarter_end), fill="white", alpha=0.05) +
   geom_hline(aes(yintercept=as.numeric(now)), color="blue") +
-  geom_point(aes(x=category, y=last_open_date), size=8, shape=18) +
+  geom_point(aes(x=category, y=resolved_date), size=8, shape=18) +
   geom_errorbar(data = forecast, aes(x=category, y=nom_points_date, ymax=pes_points_date, ymin=opt_points_date, color=weeks_old), width=.3, size=2, position="dodge", alpha=.2) +
   geom_point(data = forecast, aes(x=category, y=nom_points_date, color=weeks_old), size=10, shape=5) +
   geom_point(data = forecast_current, aes(x=category, y=nom_points_date), size=13, shape=5, color="Black") +
@@ -159,11 +159,11 @@ if(nrow(forecast_future_points) > 0) {
 }
 
 if(nrow(done_before_quarter) > 0) {
-  p = p + geom_text(data = done_before_quarter, aes(x=category, y=quarter_start, label=format(last_open_date, format="%b %d\n%Y")), size=8)
+  p = p + geom_text(data = done_before_quarter, aes(x=category, y=quarter_start, label=format(resolved_date, format="%b %d\n%Y")), size=8)
 }
 
 if(nrow(done_during_quarter) > 0) {
-  p = p + geom_text(data = done_during_quarter, aes(x=category, y=last_open_date, label=format(last_open_date, format="%b %d\n%Y")), size=8)
+  p = p + geom_text(data = done_during_quarter, aes(x=category, y=resolved_date, label=format(resolved_date, format="%b %d\n%Y")), size=8)
 }
 p
 dev.off()
@@ -173,7 +173,7 @@ png(filename = sprintf("~/html/%s_forecast_count.png", args$project), width=2000
 p <- ggplot(forecast_done) +
   geom_rect(aes(xmin=first_cat, xmax=last_cat, ymin=quarter_start, ymax=quarter_end), fill="white", alpha=0.05) +
   geom_hline(aes(yintercept=as.numeric(now)), color="blue") +
-  geom_point(aes(x=category, y=last_open_date), size=8, shape=18) +
+  geom_point(aes(x=category, y=resolved_date), size=8, shape=18) +
   geom_errorbar(data = forecast, aes(x=category, y=nom_count_date, ymax=pes_count_date, ymin=opt_count_date, color=weeks_old), width=.3, size=2, position="dodge", alpha=.2) +
   geom_point(data = forecast, aes(x=category, y=nom_count_date, color=weeks_old), size=10, shape=5) +
   geom_point(data = forecast_current, aes(x=category, y=nom_count_date), size=13, shape=5, color="Black") +
@@ -192,11 +192,11 @@ if(nrow(forecast_future_count) > 0) {
 }
 
 if(nrow(done_before_quarter) > 0) {
-  p = p + geom_text(data = done_before_quarter, aes(x=category, y=quarter_start, label=format(last_open_date, format="%b %d\n%Y")), size=8)
+  p = p + geom_text(data = done_before_quarter, aes(x=category, y=quarter_start, label=format(resolved_date, format="%b %d\n%Y")), size=8)
 }
 
 if(nrow(done_during_quarter) > 0) {
-  p = p + geom_text(data = done_during_quarter, aes(x=category, y=last_open_date, label=format(last_open_date, format="%b %d\n%Y")), size=8)
+  p = p + geom_text(data = done_during_quarter, aes(x=category, y=resolved_date, label=format(resolved_date, format="%b %d\n%Y")), size=8)
 }
 p
 dev.off()

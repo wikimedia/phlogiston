@@ -271,7 +271,7 @@ COPY (
 SELECT z.category,
        z.sort_order,
        first.first_open_date,
-       last.last_open_date
+       last.last_open_date + INTERVAL '1 week' as resolved_date
   FROM zoom_list z
   LEFT OUTER JOIN (SELECT category,
                           MIN(date) as first_open_date
