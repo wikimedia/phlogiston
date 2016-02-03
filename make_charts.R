@@ -312,3 +312,18 @@ ggplot(maint_prop, aes(x=date, y=count, fill=factor(maint_type))) +
   theme(legend.position='bottom', legend.direction='vertical', axis.title.x=element_blank()) +
   labs(title=sprintf("%s Core/Strat type by count", args$title), y="Amount of completed work by type")
 dev.off()
+
+######################################################################
+## Points Histogram
+######################################################################
+
+points_histogram <- read.csv(sprintf("/tmp/%s/points_histogram.csv", args$project))
+
+png(filename = sprintf("~/html/%s_points_histogram.png", args$project), width=2000, height=1125, units="px", pointsize=30)
+
+ggplot(points_histogram, aes(points, count)) +
+  geom_bar(stat="identity") +
+  theme_fivethirtynine() +
+  theme(axis.title.x=element_blank()) +
+  labs(title=sprintf("%s Number of resolved tasks by points", args$title), y="Count")
+dev.off()

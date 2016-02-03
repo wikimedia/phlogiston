@@ -306,6 +306,24 @@ SELECT rc.date,
 ) to '/tmp/phlog/recently_closed.csv' DELIMITER ',' CSV HEADER;
 
 /* ####################################################################
+Points Histogram */
+
+COPY (
+SELECT COUNT(points) as count,
+       points
+  FROM (
+SELECT MAX(points) as points
+  FROM task_history
+ WHERE id in (SELECT DISTINCT id
+                FROM task_history
+               WHERE source = :'prefix')
+   AND status = '"resolved"'
+ GROUP BY id) AS point_query
+ GROUP BY points
+ ORDER BY points
+) to '/tmp/phlog/points_histogram.csv' DELIMITER ',' CSV HEADER;
+
+/* ####################################################################
 Lead Time
 
 These queries are for a variety of age-of-backlog charts.  They are slow,
