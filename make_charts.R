@@ -306,7 +306,7 @@ maint_prop$date <- as.Date(maint_prop$date, "%Y-%m-%d")
 maint_prop$maint_type <- factor(maint_prop$maint_type, levels=rev(maint_prop$maint_type[order(maint_prop$maint_type)]))
 
 
-status_output <- png(filename = sprintf("~/html/%s_maint_prop.png", args$project), width=2000, height=1125, units="px", pointsize=30)
+status_output <- png(filename = sprintf("~/html/%s_maint_prop_points.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 
 ggplot(maint_prop, aes(x=date, y=points, fill=factor(maint_type))) +
   geom_bar(stat="identity") +
@@ -314,7 +314,7 @@ ggplot(maint_prop, aes(x=date, y=points, fill=factor(maint_type))) +
   scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   theme_fivethirtynine() +
   theme(legend.position='bottom', legend.direction='vertical', axis.title.x=element_blank()) +
-  labs(title=sprintf("%s Core/Strat type by points", args$title), y="Amount of completed work by type")
+  labs(title=sprintf("%s Core Fraction type by points", args$title), y="Amount of completed work by type")
 dev.off()
 
 status_output <- png(filename = sprintf("~/html/%s_maint_prop_count.png", args$project), width=2000, height=1125, units="px", pointsize=30)
@@ -325,7 +325,7 @@ ggplot(maint_prop, aes(x=date, y=count, fill=factor(maint_type))) +
   scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   theme_fivethirtynine() +
   theme(legend.position='bottom', legend.direction='vertical', axis.title.x=element_blank()) +
-  labs(title=sprintf("%s Core/Strat type by count", args$title), y="Amount of completed work by type")
+  labs(title=sprintf("%s Core Fraction type by count", args$title), y="Amount of completed work by type")
 dev.off()
 
 ######################################################################
