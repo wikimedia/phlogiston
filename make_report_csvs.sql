@@ -326,7 +326,8 @@ Points Histogram */
 
 COPY (
 SELECT COUNT(points) as count,
-       points
+       points,
+       priority
   FROM (
 SELECT points,
        priority
@@ -338,8 +339,8 @@ SELECT points,
                  FROM task_history
                 WHERE source = :'prefix')
    AND status = '"resolved"') AS point_query
- GROUP BY points
- ORDER BY points
+ GROUP BY points, priority
+ ORDER BY priority, points
 ) to '/tmp/phlog/points_histogram.csv' DELIMITER ',' CSV HEADER;
 
 /* ####################################################################

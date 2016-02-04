@@ -342,7 +342,7 @@ png(filename = sprintf("~/html/%s_points_histogram.png", args$project), width=20
 
 ggplot(points_histogram, aes(points, count)) +
   geom_bar(stat="identity") +
-  theme_fivethirtynine() +
   theme(axis.title.x=element_blank()) +
-  labs(title=sprintf("%s Number of resolved tasks by points", args$title), y="Count")
+  facet_grid(priority ~ ., scales="free_y", space="free", margins=TRUE) +
+  labs(title=sprintf("%s Number of resolved tasks by points and priority", args$title), y="Count")
 dev.off()
