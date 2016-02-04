@@ -20,6 +20,25 @@ CREATE TABLE tall_backlog (
        maint_type text
 );
 
+DROP TABLE IF EXISTS task_history_recat;
+
+CREATE TABLE task_history_recat (
+       source varchar(6),
+       date timestamp,
+       id int,
+       title text,
+       category text,
+       status text,
+       points int,
+       maint_type text,
+       priority text
+       );
+
+CREATE INDEX ON task_history_recat (source);
+CREATE INDEX ON task_history_recat (status);
+CREATE INDEX ON task_history_recat (date);
+CREATE INDEX ON task_history_recat (id);
+
 DROP TABLE IF EXISTS recently_closed;
 
 CREATE TABLE recently_closed (

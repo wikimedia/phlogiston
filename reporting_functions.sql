@@ -2,6 +2,9 @@ CREATE OR REPLACE FUNCTION wipe_reporting(
        source_param varchar(6)
 ) RETURNS void AS $$
 BEGIN
+    DELETE FROM task_history_recat
+     WHERE source = source_param;
+
     DELETE FROM tall_backlog
      WHERE source = source_param;
 
@@ -40,7 +43,7 @@ BEGIN
      WHERE source = source_prefix;
 
     FOR weekrow IN SELECT DISTINCT date
-                     FROM task_history
+                     FROM task_history_recat
                     WHERE EXTRACT(epoch FROM age(date - INTERVAL '1 day'))/604800 = ROUND(
                           EXTRACT(epoch FROM age(date - INTERVAL '1 day'))/604800)
                       AND source = source_prefix
@@ -50,12 +53,10 @@ BEGIN
         INSERT INTO recently_closed (
             SELECT source_prefix as source,
                    date,
-                   COALESCE(project,'') || ' ' ||
-                   COALESCE(projectcolumn,'') || ' ' ||
-                   COALESCE(milestone_title,'') as category,
+                   category,
                    sum(points) AS points,
                    count(title) as count
-              FROM task_history
+              FROM task_history_recat
              WHERE status = '"resolved"'
                AND date = weekrow.date
                AND source = source_prefix
@@ -64,7 +65,7 @@ BEGIN
                                WHERE status = '"resolved"'
                                  AND source = source_prefix
                                  AND date = weekrow.date - interval '1 week' )
-             GROUP BY date, project, projectcolumn, milestone_title
+             GROUP BY date, category
              );
     END LOOP;
 
@@ -83,7 +84,7 @@ BEGIN
      WHERE source = source_prefix;
 
     FOR daterow IN SELECT DISTINCT date
-                     FROM task_history
+                     FROM task_history_recat
                     WHERE source = source_prefix
                       AND date > now() - interval '7 days'
                     ORDER BY date
@@ -94,10 +95,8 @@ BEGIN
                     date,
 		    id,
 		    title,
-                    COALESCE(project,'') || ' ' ||
-                    COALESCE(projectcolumn,'') || ' ' ||
-                    COALESCE(milestone_title,'') as category
-              FROM task_history
+                    category
+              FROM task_history_recat
              WHERE status = '"resolved"'
                AND date = daterow.date
                AND source = source_prefix

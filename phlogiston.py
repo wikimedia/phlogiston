@@ -668,15 +668,15 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
                     recat_cases += ' WHEN category LIKE \'{0}\' THEN \'{1}\''.format(  # noqa
                         matchstring, line['title'])
 
-        recat_update = """UPDATE {0}
-                             SET category = CASE {1}
-                                            ELSE '{2}'
+        recat_update = """UPDATE task_history_recat
+                             SET category = CASE {0}
+                                            ELSE '{1}'
                                             END
-                           WHERE source = '{3}' """
+                           WHERE source =  '{2}'"""
 
-        unsafe_recat_update = recat_update.format(
-            'tall_backlog', recat_cases, recat_else, source_prefix)
+        unsafe_recat_update = recat_update.format(recat_cases, recat_else, source_prefix)
         cur.execute(unsafe_recat_update)
+
     else:
         # Build a category list from the data
         category_insert = """INSERT INTO category_list (
@@ -691,41 +691,21 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
                                   ORDER BY category) as foo)"""
         cur.execute(category_insert, {'source_prefix': source_prefix})
 
-    cat_query = """SELECT category
-                      FROM (SELECT z.category,
-                                   max(z.sort_order) as sort_order,
-                                   sum(t.count) as xcount
-                              FROM category_list z, tall_backlog t
-                             WHERE z.source = %(source_prefix)s
-                               AND z.source = t.source
-                               AND z.category = t.category
-                             GROUP BY z.category) as foo
-                     WHERE xcount > 0
-                    ORDER BY sort_order"""
+    tall_backlog_insert = """INSERT INTO tall_backlog(
+                             SELECT source,
+                                    date,
+                                    category,
+                                    status,
+                                    SUM(points) as points,
+                                    COUNT(title) as count,
+                                    maint_type
+                               FROM task_history_recat
+                              WHERE source = %(source_prefix)s
+                              GROUP BY status, category, maint_type, date, source)"""
 
-    cur.execute(cat_query, {'source_prefix': source_prefix})
-    cat_list_of_tuples = cur.fetchall()
-    cat_list = [item[0] for item in cat_list_of_tuples]
-
-    # Have to load the recently closed table so that it can be
-    # recategorized. this recat is done twice, once for tall_backlog,
-    # once for recently_closed and recently_closed_task, because these
-    # are the two tables derived from task_history, and we don't want
-    # to change task_history because it's raw data. getting a litle
-    # bit spaghetti here because data processing is a now a mix of sql
-    # and python. If this goes any further, should split
-    # make_report_csvs into one data processing file, and one file
-    # dumping to csv, so python can go neatly in the middle.
-
-    subprocess.call('psql -d phab -f make_recently_closed.sql -v prefix={0}'.format(
-        source_prefix), shell=True)
-    if os.path.isfile(recat_data):
-        unsafe_recat_update = recat_update.format(
-            'recently_closed', recat_cases, recat_else, source_prefix)
-        cur.execute(unsafe_recat_update)
-        unsafe_recat_update = recat_update.format(
-            'recently_closed_task', recat_cases, recat_else, source_prefix)
-        cur.execute(unsafe_recat_update)
+    cur.execute(tall_backlog_insert, {'source_prefix': source_prefix})
+    cur.execute('SELECT find_recently_closed(%(source_prefix)s)', {'source_prefix': source_prefix})
+    cur.execute('SELECT find_recently_closed_task(%(source_prefix)s)', {'source_prefix': source_prefix})
 
     ######################################################################
     # Prepare all the csv files and working directories
@@ -768,6 +748,21 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
     ######################################################################
     # for each category, generate burnup charts
     ######################################################################
+    cat_query = """SELECT category
+                     FROM (SELECT z.category,
+                                  max(z.sort_order) as sort_order,
+                                  sum(t.count) as xcount
+                             FROM category_list z, tall_backlog t
+                            WHERE z.source = %(source_prefix)s
+                              AND z.source = t.source
+                              AND z.category = t.category
+                            GROUP BY z.category) as foo
+                    WHERE xcount > 0
+                   ORDER BY sort_order"""
+
+    cur.execute(cat_query, {'source_prefix': source_prefix})
+    cat_list_of_tuples = cur.fetchall()
+    cat_list = [item[0] for item in cat_list_of_tuples]
     colors = []
     proc = subprocess.check_output("Rscript get_palette.R {0}".
                                    format(len(cat_list)), shell=True)
@@ -778,6 +773,7 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
     i = 0
     tab_string = '<table><tr>'
     html_string = '<div class="tabs">'
+
     for category in reversed(cat_list):
         try:
             color = colors[i]
