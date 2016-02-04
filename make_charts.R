@@ -72,7 +72,7 @@ ggplot(backlog) +
   theme_fivethirtynine() +
   scale_fill_brewer(palette="Set3") +
   scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
-  theme(legend.position='bottom', legend.direction='vertical', axis.title.x=element_blank()) +
+  theme(legend.direction='vertical', axis.title.x=element_blank()) +
   guides(col = guide_legend(reverse=TRUE)) +
   labs(title=sprintf("%s backlog by points%s", args$title, zoom_title), y="Story Point Total") +
   geom_vline(aes(xintercept=as.numeric(as.Date(c('2016-01-01'))), color="gray"))
@@ -86,7 +86,7 @@ ggplot(backlog) +
   theme_fivethirtynine() +
   scale_fill_brewer(palette="Set3") + 
   scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
-  theme(legend.position='bottom', legend.direction='vertical', axis.title.x=element_blank()) +
+  theme(legend.direction='vertical', axis.title.x=element_blank()) +
   guides(col = guide_legend(reverse=TRUE)) +
   labs(title=sprintf("%s backlog by count%s", args$title, zoom_title), y="Task Count") +
   geom_vline(aes(xintercept=as.numeric(as.Date(c('2016-01-01'))), color="gray"))
@@ -250,26 +250,30 @@ dev.off()
 
 done <- read.csv(sprintf("/tmp/%s/recently_closed.csv", args$project))
 done$date <- as.Date(done$date, "%Y-%m-%d")
+done$category <- paste(sprintf("%02d",done$sort_order), strtrim(done$category, 35))
 done$category <- factor(done$category, levels=rev(done$category[order(done$priority)]))
+
+colorCount = length(unique(done$category))
+getPalette = colorRampPalette(brewer.pal(12, "YlGn"))
 
 png(filename = sprintf("~/html/%s_done_points.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 ggplot(done, aes(x=date, y=points, fill=factor(category))) +
   geom_bar(stat="identity")+ 
-  scale_fill_brewer(name="(Priority) Milestone", palette="PuBuGn") +
+  scale_fill_manual(values=getPalette(colorCount), name="(priority) Milestone") +
   theme_fivethirtynine() +
   theme(axis.title.x=element_blank()) +
   scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
-  theme(legend.position='bottom', legend.direction='vertical', axis.title.x=element_blank()) +
+  theme(legend.direction='vertical', axis.title.x=element_blank()) +
   labs(title=sprintf("%s Completed work by points", args$title), y="Points", x="Month", aesthetic="Milestone")
 dev.off()
 
 png(filename = sprintf("~/html/%s_done_count.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 ggplot(done, aes(x=date, y=count, fill=factor(category))) +
   geom_bar(stat="identity") +
-  scale_fill_brewer(name="(Priority) Milestone:", palette="PuBuGn") +
+  scale_fill_manual(values=getPalette(colorCount), name="(priority) Milestone") +
   theme_fivethirtynine() +
   scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
-  theme(legend.position='bottom', legend.direction='vertical', axis.title.x=element_blank()) +
+  theme(legend.direction='vertical', axis.title.x=element_blank()) +
   labs(title=sprintf("%s Completed work by count", args$title), y="Count", x="Month", aesthetic="Milestone")
 dev.off()
 
@@ -313,7 +317,7 @@ ggplot(maint_prop, aes(x=date, y=points, fill=factor(maint_type))) +
   scale_fill_brewer(name="Type of work", palette="YlOrBr") +
   scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   theme_fivethirtynine() +
-  theme(legend.position='bottom', legend.direction='vertical', axis.title.x=element_blank()) +
+  theme(legend.direction='vertical', axis.title.x=element_blank()) +
   labs(title=sprintf("%s Core Fraction type by points", args$title), y="Amount of completed work by type")
 dev.off()
 
@@ -324,7 +328,7 @@ ggplot(maint_prop, aes(x=date, y=count, fill=factor(maint_type))) +
   scale_fill_brewer(name="Type of work", palette="YlOrBr") +
   scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   theme_fivethirtynine() +
-  theme(legend.position='bottom', legend.direction='vertical', axis.title.x=element_blank()) +
+  theme(legend.direction='vertical', axis.title.x=element_blank()) +
   labs(title=sprintf("%s Core Fraction type by count", args$title), y="Amount of completed work by type")
 dev.off()
 

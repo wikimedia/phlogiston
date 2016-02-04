@@ -312,7 +312,7 @@ Recently Closed */
 COPY (
 SELECT rc.date,
        z.sort_order as priority,
-       '(' || z.sort_order || ') ' || rc.category as category,
+       rc.category as category,
        rc.points,
        rc.count
   FROM recently_closed rc LEFT OUTER JOIN category_list z USING (source, category)
@@ -328,13 +328,16 @@ COPY (
 SELECT COUNT(points) as count,
        points
   FROM (
-SELECT MAX(points) as points
+SELECT points,
+       priority
   FROM task_history
  WHERE id in (SELECT DISTINCT id
                 FROM task_history
                WHERE source = :'prefix')
-   AND status = '"resolved"'
- GROUP BY id) AS point_query
+   AND date = (SELECT MAX(date)
+                 FROM task_history
+                WHERE source = :'prefix')
+   AND status = '"resolved"') AS point_query
  GROUP BY points
  ORDER BY points
 ) to '/tmp/phlog/points_histogram.csv' DELIMITER ',' CSV HEADER;
