@@ -666,7 +666,7 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
                     recat_else = line['title']
                 else:
                     recat_cases += ' WHEN category LIKE \'{0}\' THEN \'{1}\''.format(  # noqa
-                        line['matchstring'], line['title'])
+                        matchstring, line['title'])
 
         recat_update = """UPDATE {0}
                              SET category = CASE {1}
