@@ -1,14 +1,14 @@
 sort_order,zoom_list,title,matchstring
-1,True,App 5.0 is Released to Production,%iOS-app-v5-production%
-2,True,Core Data,%Data Layer Improvements%
-3,True,Analytics,%like to know how users are using the main features of the app%
-4,True,WP0,%Restore Wikipedia Zero alert handling for 5.0%
-5,True,RTL,%As a user, I can interact with the app in a way that matches the writing direction of my language.%
-6,True,Explore Refactor,%fix explore tableview issues due to current reloading strategy"
-7,True,Navigation,%Enable a/b testing of navigation options%
-8,True,Performance,%Investigate 5.0 app performance%
-9,True,Most Read,%like to see the top read articles in my Explore feed%
-10,True,Visual Polish,%Visual design improvements to the Explore feed%
-11,True,Delete All,%Saved pages legacy functionality%
-12,True,Settings,%As a user I want to manage my language, log-in, and privacy settings in an organized and convenient screen%
+1,True,App 5.0 is Released to Production,iOS-app-v5-production
+2,True,Core Data,Data Layer Improvements
+3,True,Analytics,like to know how users are using the main features of the app
+4,True,WP0,Restore Wikipedia Zero alert handling for 5.0
+5,True,RTL,"As a user, I can interact with the app in a way that matches the writing direction of my language."
+6,True,Explore Refactor,fix explore tableview issues due to current reloading strategy
+7,True,Navigation,Enable a/b testing of navigation options
+8,True,Performance,Investigate 5.0 app performance
+9,True,Most Read,like to see the top read articles in my Explore feed
+10,True,Visual Polish,Visual design improvements to the Explore feed
+11,True,Delete All,Saved pages legacy functionality
+12,True,Settings,"As a user I want to manage my language, log-in, and privacy settings in an organized and convenient screen"
 13,True,Other,PhlogOther
