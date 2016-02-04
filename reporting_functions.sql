@@ -50,7 +50,9 @@ BEGIN
         INSERT INTO recently_closed (
             SELECT source_prefix as source,
                    date,
-                   project || ' ' || projectcolumn as category,
+                   COALESCE(project,'') || ' ' ||
+                   COALESCE(projectcolumn,'') || ' ' ||
+                   COALESCE(milestone_title,'') as category,
                    sum(points) AS points,
                    count(title) as count
               FROM task_history
@@ -62,7 +64,7 @@ BEGIN
                                WHERE status = '"resolved"'
                                  AND source = source_prefix
                                  AND date = weekrow.date - interval '1 week' )
-             GROUP BY date, project, projectcolumn
+             GROUP BY date, project, projectcolumn, milestone_title
              );
     END LOOP;
 
@@ -92,7 +94,9 @@ BEGIN
                     date,
 		    id,
 		    title,
-                    project || ' ' || projectcolumn as category
+                    COALESCE(project,'') || ' ' ||
+                    COALESCE(projectcolumn,'') || ' ' ||
+                    COALESCE(milestone_title,'') as category
               FROM task_history
              WHERE status = '"resolved"'
                AND date = daterow.date
