@@ -159,6 +159,8 @@ p <- ggplot(forecast_done) +
   geom_point(data = forecast, aes(x=category, y=nom_points_date, color=weeks_old), size=10, shape=5) +
   geom_point(data = forecast_current, aes(x=category, y=nom_points_date), size=13, shape=5, color="Black") +
   geom_text(data = forecast_current, aes(x=category, y=nom_points_date, label=format(nom_points_date, format="%b %d\n%Y")), size=8, shape=5, color="DarkSlateGray") +
+  geom_point(data = forecast_done, aes(x=category, y=forecast_start, label=points_total, size=points_total)) +
+  scale_size_continuous(range = c(3,15)) +
   scale_x_discrete(limits = rev(forecast_done$category)) +
   scale_y_date(limits=c(forecast_start, forecast_end_plus), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   coord_flip() +
@@ -193,6 +195,8 @@ p <- ggplot(forecast_done) +
   geom_point(data = forecast, aes(x=category, y=nom_count_date, color=weeks_old), size=10, shape=5) +
   geom_point(data = forecast_current, aes(x=category, y=nom_count_date), size=13, shape=5, color="Black") +
   geom_text(data = forecast_current, aes(x=category, y=nom_count_date, label=format(nom_count_date, format="%b %d\n%Y")), size=8, shape=5, color="DarkSlateGray") +
+  geom_text(data = forecast_done, aes(x=category, y=forecast_start, label=count_total, size=log(count_total))) +
+  scale_size_continuous(range = c(2,8)) +
   scale_x_discrete(limits = rev(forecast_done$category)) +
   scale_y_date(limits=c(forecast_start, forecast_end_plus), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   coord_flip() +

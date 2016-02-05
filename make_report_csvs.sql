@@ -285,6 +285,16 @@ SELECT date,
 COPY (
 SELECT z.category,
        z.zoom,
+       (SELECT SUM(points)
+          FROM tall_backlog
+         WHERE source = :'prefix'
+           AND category = z.category
+           AND date = (SELECT MAX(date) FROM tall_backlog WHERE source = :'prefix')) AS points_total,
+       (SELECT SUM(count)
+          FROM tall_backlog
+         WHERE source = :'prefix'
+           AND category = z.category
+           AND date = (SELECT MAX(date) FROM tall_backlog WHERE source = :'prefix')) AS count_total,
        z.sort_order,
        first.first_open_date,
        last.last_open_date + INTERVAL '1 week' as resolved_date
