@@ -62,7 +62,6 @@ SELECT source,
             ELSE 'Core' END
   FROM task_history
  WHERE project = 'VisualEditor'
-   AND projectcolumn SIMILAR TO 'TR%'
    AND source = :'prefix'
    AND date >= '2015-06-18');
 
