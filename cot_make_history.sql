@@ -6,32 +6,34 @@ Projects that don't work this way (because they don't use projectcolumn to track
 
 /* Filter out statuses that are probably ignorable. */
 
-UPDATE task_history
+INSERT INTO task_history_recat(
+SELECT source,
+       date,
+       id,
+       title,
+       COALESCE(project,'') || ' ' ||
+       COALESCE(projectcolumn,'') || ' ' ||
+       COALESCE(milestone_title,'') as category,
+       status,
+       points,
+       maint_type
+  FROM task_history
+ WHERE source = :'prefix');
+
+/* Filter out statuses that are probably ignorable. */
+
+UPDATE task_history_recat
    SET status = '"open"'
  WHERE status = '"stalled"'
    AND source = :'prefix';
 
-DELETE FROM task_history
+DELETE FROM task_history_recat
  WHERE (status = '"duplicate"'
     OR status = '"invalid"'
     OR status = '"declined"')
    AND source = :'prefix';
 
-INSERT INTO tall_backlog(
-SELECT source,
-       date,
-       COALESCE(project,'') || ' ' ||
-       COALESCE(projectcolumn,'') || ' ' ||
-       COALESCE(milestone_title,'') as category,
-       status,
-       SUM(points) as points,
-       COUNT(title) as count,
-       maint_type
-  FROM task_history
- WHERE source = :'prefix'
- GROUP BY status, category, maint_type, date, source);
-
-UPDATE tall_backlog
-   SET maint_type = 'New Functionality'
+UPDATE task_history_recat
+   SET maint_type = 'Strategic'
  WHERE source = :'prefix'
    AND maint_type = '';
