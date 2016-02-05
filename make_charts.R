@@ -27,7 +27,7 @@ if (args$zoom == 'True') {
 now <- Sys.Date()
 forecast_start <- as.Date(c("2016-01-01"))
 forecast_end   <- as.Date(c("2016-07-01"))
-forecast_end_plus <- forecast_end + 10
+forecast_end_plus <- forecast_end + 7
 quarter_start  <- as.Date(c("2016-01-01"))
 quarter_end    <- as.Date(c("2016-04-01"))
 three_months_ago <- now - 91
@@ -254,7 +254,7 @@ done$category <- paste(sprintf("%02d",done$sort_order), strtrim(done$category, 3
 done$category <- factor(done$category, levels=rev(done$category[order(done$priority)]))
 
 colorCount = length(unique(done$category))
-getPalette = colorRampPalette(brewer.pal(12, "YlGn"))
+getPalette = colorRampPalette(brewer.pal(9, "YlGn"))
 
 png(filename = sprintf("~/html/%s_done_points.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 ggplot(done, aes(x=date, y=points, fill=factor(category))) +
