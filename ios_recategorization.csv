@@ -11,5 +11,7 @@ sort_order,zoom_list,title,matchstring
 10,True,Core Data,Data Layer Improvements
 11,True,Visual Polish,Visual design improvements to the Explore feed
 12,False,App 5.0 is Released to Production,iOS-app-v5-production
-13,False,Product Backlog Cruft,Wikipedia-iOS-App-Product-Backlog
-14,False,Other,PhlogOther
+13,False,Product Backlog Tracking Tasks,Wikipedia-iOS-App-Product-Backlog%Tracking
+14,False,Product Backlog Template Tasks,Wikipedia-iOS-App-Product-Backlog%Templates
+15,False,Product Backlog Non-Milestone,Wikipedia-iOS-App-Product-Backlog
+16,False,Other,PhlogOther
