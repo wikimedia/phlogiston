@@ -45,7 +45,7 @@ if mode == 'incremental':
     for project in args.projects:
         run_command('./phlogiston.py --reconstruct --incremental --report --verbose --project {0}_source.py'.format(project), phlogdir, f)
         
-if mode == 'complete' or mode == 'incremental' or mode == 'report':
+if mode == 'complete' or mode == 'incremental' or mode == 'reports':
     for project in args.projects:
         run_command('./phlogiston.py --report --verbose --project {0}_source.py'.format(project), phlogdir, f)
 
