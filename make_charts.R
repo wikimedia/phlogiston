@@ -68,7 +68,6 @@ png(filename = sprintf("~/html/%s_backlog_burnup_points%s.png", args$project, zo
 
 ggplot(backlog) +
   geom_area(position='stack', aes(x = date, y = points, group=category, fill=category, order=-category)) +
-  geom_line(data=burnup, aes(x=date, y=points), size=2) +
   theme_fivethirtynine() +
   scale_fill_brewer(palette="Set3") +
   scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
@@ -83,7 +82,6 @@ png(filename = sprintf("~/html/%s_backlog_burnup_count%s.png", args$project, zoo
 
 ggplot(backlog) +
   geom_area(position='stack', aes(x = date, y = count, group=category, fill=category, order=-category)) +
-  geom_line(data=burnup, aes(x=date, y=count), size=2) +
   theme_fivethirtynine() +
   scale_fill_brewer(palette="Set3") + 
   scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
