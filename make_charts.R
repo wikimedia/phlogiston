@@ -75,7 +75,8 @@ ggplot(backlog) +
   theme(legend.direction='vertical', axis.title.x=element_blank()) +
   guides(col = guide_legend(reverse=TRUE)) +
   labs(title=sprintf("%s backlog by points%s", args$title, zoom_title), y="Story Point Total") +
-  geom_vline(aes(xintercept=as.numeric(as.Date(c('2016-01-01'))), color="gray"))
+  geom_vline(aes(xintercept=as.numeric(as.Date(c('2016-01-01'))), color="gray")) +
+  labs(fill="Milestones")
 dev.off()
 
 png(filename = sprintf("~/html/%s_backlog_burnup_count%s.png", args$project, zoom_suffix), width=2000, height=1125, units="px", pointsize=30)
@@ -89,7 +90,8 @@ ggplot(backlog) +
   theme(legend.direction='vertical', axis.title.x=element_blank()) +
   guides(col = guide_legend(reverse=TRUE)) +
   labs(title=sprintf("%s backlog by count%s", args$title, zoom_title), y="Task Count") +
-  geom_vline(aes(xintercept=as.numeric(as.Date(c('2016-01-01'))), color="gray"))
+  geom_vline(aes(xintercept=as.numeric(as.Date(c('2016-01-01'))), color="gray")) +
+  labs(fill="Milestones")
 dev.off()
 
 ######################################################################
@@ -145,7 +147,7 @@ forecast$opt_points_date <- as.Date(forecast$opt_points_date, "%Y-%m-%d")
 forecast$pes_count_date <- as.Date(forecast$pes_count_date, "%Y-%m-%d")
 forecast$nom_count_date <- as.Date(forecast$nom_count_date, "%Y-%m-%d")
 forecast$opt_count_date <- as.Date(forecast$opt_count_date, "%Y-%m-%d")
-forecast_current <- na.omit(forecast[forecast$weeks_old == 1,])
+forecast_current <- na.omit(forecast[forecast$weeks_old == 0,])
 forecast_future_points <- na.omit(forecast[forecast$nom_points_date > forecast_end & forecast$weeks_old == 1, ])
 forecast_future_count <- na.omit(forecast[forecast$nom_count_date > forecast_end & forecast$weeks_old == 1, ])
 
@@ -263,7 +265,7 @@ getPalette = colorRampPalette(brewer.pal(9, "YlGn"))
 png(filename = sprintf("~/html/%s_done_points.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 ggplot(done, aes(x=date, y=points, fill=factor(category))) +
   geom_bar(stat="identity")+ 
-  scale_fill_manual(values=getPalette(colorCount), name="(priority) Milestone") +
+  scale_fill_manual(values=getPalette(colorCount), name="Milestone") +
   theme_fivethirtynine() +
   theme(axis.title.x=element_blank()) +
   scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
@@ -274,7 +276,7 @@ dev.off()
 png(filename = sprintf("~/html/%s_done_count.png", args$project), width=2000, height=1125, units="px", pointsize=30)
 ggplot(done, aes(x=date, y=count, fill=factor(category))) +
   geom_bar(stat="identity") +
-  scale_fill_manual(values=getPalette(colorCount), name="(priority) Milestone") +
+  scale_fill_manual(values=getPalette(colorCount), name="Milestone") +
   theme_fivethirtynine() +
   scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   theme(legend.direction='vertical', axis.title.x=element_blank()) +
