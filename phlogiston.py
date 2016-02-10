@@ -686,7 +686,7 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
                                 NULL,
                                 TRUE
                            FROM (SELECT DISTINCT category
-                                   FROM tall_backlog
+                                   FROM task_history_recat
                                   WHERE source = %(source_prefix)s
                                   ORDER BY category) as foo)"""
         cur.execute(category_insert, {'source_prefix': source_prefix})
