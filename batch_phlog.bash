@@ -37,44 +37,36 @@ echo "$(date): Git Pull"
 cd ${PHLOGDIR}
 git pull
 
-if [[ "$mode" == "complete" || "$mode" == "incremental" ]]
-then
-    cd ${HOMEDIR}
+function load_dump {
     echo "$(date): Downloading new Phabricator dump"
+    cd ${HOMEDIR}
     rm phabricator_public.dump
     wget -nv http://dumps.wikimedia.org/other/misc/phabricator_public.dump
-    cd ${PHLOGDIR}
     echo "$(date): Loading loading new Phabricator dump"
+    cd ${PHLOGDIR}
     time python3 phlogiston.py --load --verbose 2>&1
-fi
+}
 
-cd ${PHLOGDIR}
 case "$mode" in
     complete)
-        for project in ${project_list[@]}; do
-            echo "$(date): Starting complete reconstruction and report of ${project}"
-            time python3 phlogiston.py --reconstruct --report --verbose --project ${project}_source.py 2>&1
-            echo "$(date): Done with complete reconstruction and report of ${project}"
-        done
+        load_dump
+        reconstruct_flag="--reconstruct"
         ;;
     incremental)
-        for project in ${project_list[@]}; do
-            echo "$(date): Starting incremental reconstruction and report of ${project}"
-            time python3 phlogiston.py --reconstruct --incremental --report --verbose --project ${project}_source.py  2>&1
-            echo "$(date): Done with incremental reconstruction and report of ${project}"
-        done
+        load_dump
+        reconstruct_flag="--reconstruct --incremental"
         ;;
     rerecon)
-        for project in ${project_list[@]}; do
-            echo "$(date): Starting incremental reconstruction and report of ${project}"
-            time python3 phlogiston.py --reconstruct --incremental --report --verbose --project ${project}_source.py  2>&1
-            echo "$(date): Done with incremental reconstruction and report of ${project}"
-        done
+        reconstruct_flag="--reconstruct"
         ;;
     reports)
-        for project in ${project_list[@]}; do
-            echo "$(date): Starting report of ${project}"
-            time python3 phlogiston.py --report --verbose --project ${project}_source.py  2>&1
-            echo "$(date): Done with report of ${project}"
-        done
+        reconstruct_flag=""
+        ;;
 esac
+
+cd ${PHLOGDIR}
+for project in ${project_list[@]}; do
+    echo "$(date): Starting complete reconstruction and report of ${project}"
+    time python3 phlogiston.py ${reconstruct_flag} --report --verbose --project ${project}_source.py 2>&1
+    echo "$(date): Done with complete reconstruction and report of ${project}"
+done
