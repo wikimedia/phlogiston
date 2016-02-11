@@ -899,6 +899,13 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
 
     f.close
 
+    html_string = '<td>{0}</td><td>{1}</td>'.format(max_date_pt, now_pt)
+    f = open('{0}../html/{1}_date_row.html'.
+             format(script_dir, source_prefix), 'w')
+    f.write(html_string)
+
+    f.close
+
     cur.close()
 
 if __name__ == "__main__":
