@@ -14,7 +14,7 @@ BEGIN
     DELETE FROM recently_closed
      WHERE source = source_param;
 
-    DELETE FROM recently_closed_individual
+    DELETE FROM recently_closed_task
      WHERE source = source_param;
 
     DELETE FROM maintenance_week
