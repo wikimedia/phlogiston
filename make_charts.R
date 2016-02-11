@@ -75,7 +75,7 @@ ggplot(backlog) +
   guides(col = guide_legend(reverse=TRUE)) +
   labs(title=sprintf("%s backlog by points%s", args$title, zoom_title), y="Story Point Total") +
   geom_vline(aes(xintercept=as.numeric(as.Date(c('2016-01-01'))), color="gray")) +
-  labs(fill="Milestones")
+  labs(fill="Milestone")
 dev.off()
 
 png(filename = sprintf("~/html/%s_backlog_burnup_count%s.png", args$project, zoom_suffix), width=2000, height=1125, units="px", pointsize=30)
@@ -89,7 +89,7 @@ ggplot(backlog) +
   guides(col = guide_legend(reverse=TRUE)) +
   labs(title=sprintf("%s backlog by count%s", args$title, zoom_title), y="Task Count") +
   geom_vline(aes(xintercept=as.numeric(as.Date(c('2016-01-01'))), color="gray")) +
-  labs(fill="Milestones")
+  labs(fill="Milestone")
 dev.off()
 
 ######################################################################
@@ -165,7 +165,7 @@ p <- ggplot(forecast_done) +
   scale_y_date(limits=c(forecast_start, forecast_end_plus), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   coord_flip() +
   theme_fivethirtynine() +
-  labs(title=sprintf("%s forecast completion dates based on points velocity%s", args$title, zoom_title), x="Milestones") +
+  labs(title=sprintf("%s forecast completion dates based on points velocity%s", args$title, zoom_title), x="Milestone") +
   theme(legend.position = "none",
         axis.text.y = element_text(hjust=1),
         axis.title.x = element_blank())
@@ -201,7 +201,7 @@ p <- ggplot(forecast_done) +
   scale_y_date(limits=c(forecast_start, forecast_end_plus), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   coord_flip() +
   theme_fivethirtynine() +
-  labs(title=sprintf("%s forecast completion dates based on count velocity%s", args$title, zoom_title), x="Milestones") +
+  labs(title=sprintf("%s forecast completion dates based on count velocity%s", args$title, zoom_title), x="Milestone") +
   theme(legend.position = "none",
         axis.text.y = element_text(hjust=1),
         axis.title.x = element_blank())
