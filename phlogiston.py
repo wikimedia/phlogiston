@@ -868,7 +868,7 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
     # Update dates
     ######################################################################
 
-    html_string = """<p><table border="1px solid lightgray" cellpadding="6" cellspacing="0">
+    html_string = """<p><table class="bord">
     <tr><th></th><th>UTC</th><th>PT</th></tr>"""
 
     max_date_query = """

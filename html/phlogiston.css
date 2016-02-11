@@ -5,8 +5,8 @@ img {
 div.tabs p {display: none}
 div.tabs p:target {display: block}
 
-table, th, td {
-    border: 1px solid;
+table.bord, table.bord th, table.bord td {
+    border: 1px solid gray;
     border-collapse: collapse;
     padding: 0.5em;
     text-align: center;
