@@ -19,10 +19,14 @@ while getopts "h?m:p:" opt; do
     esac
 done
 
+if [[ "$mode" == report ]]
+then
+    mode="reports"
+fi
 
 if ! [[ "$mode" == "complete" || "$mode" == "incremental" || "$mode" == "reports" || "$mode" == "rerecon" ]]
 then
-   echo "Mode must be complete, incremental, or reports"
+   echo "Mode must be complete, incremental, or report[s]"
    exit -1
 fi
    
@@ -36,11 +40,12 @@ git pull
 if [[ "$mode" == "complete" || "$mode" == "incremental" ]]
 then
     cd ${HOMEDIR}
-    echo "$(date): Downloading and loading new Phabricator dump"
+    echo "$(date): Downloading new Phabricator dump"
     rm phabricator_public.dump
     wget -nv http://dumps.wikimedia.org/other/misc/phabricator_public.dump
     cd ${PHLOGDIR}
-    ./phlogiston.py --load --verbose
+    echo "$(date): Loading loading new Phabricator dump"
+    time python3 phlogiston.py --load --verbose 2>&1
 fi
 
 cd ${PHLOGDIR}
