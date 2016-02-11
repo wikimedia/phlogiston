@@ -51,22 +51,26 @@ case "$mode" in
     complete)
         load_dump
         reconstruct_flag="--reconstruct"
+        action="Complete Reconstruction and Report"
         ;;
     incremental)
         load_dump
         reconstruct_flag="--reconstruct --incremental"
+        action="Incremental Reconstruction and Report"
         ;;
     rerecon)
         reconstruct_flag="--reconstruct"
+        action="Complete Reconstruction and Report"
         ;;
     reports)
         reconstruct_flag=""
+        action="Report"
         ;;
 esac
 
 cd ${PHLOGDIR}
 for project in ${project_list[@]}; do
-    echo "$(date): Starting complete reconstruction and report of ${project}"
+    echo "$(date): Starting ${action} for ${project}"
     time python3 phlogiston.py ${reconstruct_flag} --report --verbose --project ${project}_source.py 2>&1
-    echo "$(date): Done with complete reconstruction and report of ${project}"
+    echo "$(date): Done with ${action} for ${project}"
 done
