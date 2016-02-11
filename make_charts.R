@@ -48,49 +48,112 @@ theme_fivethirtynine <- function(base_size = 12, base_family = "sans"){
            strip.background = element_rect()))
 }
 
+## ######################################################################
+## ## Backlog
+## ######################################################################
+
+## backlog <- read.csv(sprintf("/tmp/%s/backlog.csv", args$project))
+## if (args$zoom == 'True') {
+##   backlog <- backlog[backlog$zoom == 't',]
+##   burnup <- read.csv(sprintf("/tmp/%s/burnup_zoom.csv", args$project))
+## } else {
+##   burnup <- read.csv(sprintf("/tmp/%s/burnup.csv", args$project))
+## }
+
+## backlog$category <- factor(backlog$category, levels=rev(unique(backlog$category)))
+## backlog$date <- as.Date(backlog$date, "%Y-%m-%d")
+## burnup$date <- as.Date(burnup$date, "%Y-%m-%d")
+
+## png(filename = sprintf("~/html/%s_backlog_burnup_points%s.png", args$project, zoom_suffix), width=2000, height=1125, units="px", pointsize=30)
+
+## ggplot(backlog) +
+##   geom_area(position='stack', aes(x = date, y = points, group=category, fill=category, order=-category)) +
+##   theme_fivethirtynine() +
+##   scale_fill_brewer(palette="Set3") +
+##   scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
+##   theme(legend.direction='vertical', axis.title.x=element_blank()) +
+##   guides(col = guide_legend(reverse=TRUE)) +
+##   labs(title=sprintf("%s backlog by points%s", args$title, zoom_title), y="Story Point Total") +
+##   geom_vline(aes(xintercept=as.numeric(as.Date(c('2016-01-01'))), color="gray")) +
+##   labs(fill="Milestone")
+## dev.off()
+
+## png(filename = sprintf("~/html/%s_backlog_burnup_count%s.png", args$project, zoom_suffix), width=2000, height=1125, units="px", pointsize=30)
+
+## ggplot(backlog) +
+##   geom_area(position='stack', aes(x = date, y = count, group=category, fill=category, order=-category)) +
+##   theme_fivethirtynine() +
+##   scale_fill_brewer(palette="Set3") + 
+##   scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
+##   theme(legend.direction='vertical', axis.title.x=element_blank()) +
+##   guides(col = guide_legend(reverse=TRUE)) +
+##   labs(title=sprintf("%s backlog by count%s", args$title, zoom_title), y="Task Count") +
+##   geom_vline(aes(xintercept=as.numeric(as.Date(c('2016-01-01'))), color="gray")) +
+##   labs(fill="Milestone")
+## dev.off()
+
 ######################################################################
-## Backlog
+## Backlog - EXPERIMENTAL
 ######################################################################
 
-backlog <- read.csv(sprintf("/tmp/%s/backlog.csv", args$project))
+burn_done <- read.csv(sprintf("/tmp/%s/burn_done.csv", args$project))
+burn_open <- read.csv(sprintf("/tmp/%s/burn_open.csv", args$project))
+
 if (args$zoom == 'True') {
-  backlog <- backlog[backlog$zoom == 't',]
-  burnup <- read.csv(sprintf("/tmp/%s/burnup_zoom.csv", args$project))
-} else {
-  burnup <- read.csv(sprintf("/tmp/%s/burnup.csv", args$project))
+  burn_done <- burn_done[burn_done$zoom == 't',]
+  burn_open <- burn_done[burn_done$zoom == 't',]
 }
 
-backlog$category <- factor(backlog$category, levels=rev(unique(backlog$category)))
-backlog$date <- as.Date(backlog$date, "%Y-%m-%d")
-burnup$date <- as.Date(burnup$date, "%Y-%m-%d")
+burn_done$category <- factor(burn_done$category, levels=rev(unique(burn_done$category)))
+burn_done$date <- as.Date(burn_done$date, "%Y-%m-%d")
+burn_open$date <- as.Date(burn_open$date, "%Y-%m-%d")
 
+max_date = max(burn_done$date, na.rm=TRUE)
+final_burndone <- subset(burn_done, date == max_date)
+final_burndone = final_burndone[with(final_burndone, order(category, levels(final_burndone$category))),]
+final_burndone$cumcount = cumsum(final_burndone$count)
+final_burndone$cumpoints = cumsum(final_burndone$points)
+  
 png(filename = sprintf("~/html/%s_backlog_burnup_points%s.png", args$project, zoom_suffix), width=2000, height=1125, units="px", pointsize=30)
 
-ggplot(backlog) +
+ggplot(burn_done) +
   geom_area(position='stack', aes(x = date, y = points, group=category, fill=category, order=-category)) +
+  geom_area(data=burn_open, position='stack', aes(x = date, y = points, group=category, fill=category, order=-category)) +
   theme_fivethirtynine() +
   scale_fill_brewer(palette="Set3") +
   scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   theme(legend.direction='vertical', axis.title.x=element_blank()) +
   guides(col = guide_legend(reverse=TRUE)) +
-  labs(title=sprintf("%s backlog by points%s", args$title, zoom_title), y="Story Point Total") +
-  geom_vline(aes(xintercept=as.numeric(as.Date(c('2016-01-01'))), color="gray")) +
-  labs(fill="Milestone")
+  labs(title=sprintf("%s Backlog by points%s", args$title, zoom_title), y="Story Point Total") +
+  annotate("text", x=quarter_start, y=20, label="Done") +
+  annotate("text", x=quarter_start, y=-20, label="Open") +
+  geom_vline(aes(xintercept=as.numeric(as.Date(quarter_start)), color="gray")) +
+  geom_hline(aes(yintercept=c(0), color="gray")) +
+  labs(fill="Milestone") +
+#  geom_text(data=final_burndone, aes(x=max_date, y=cumpoints, label=category)) +
+  theme(axis.text.x=element_text(angle=-25, hjust=0.5, size = 8))
 dev.off()
 
 png(filename = sprintf("~/html/%s_backlog_burnup_count%s.png", args$project, zoom_suffix), width=2000, height=1125, units="px", pointsize=30)
 
-ggplot(backlog) +
+ggplot(burn_done) +
   geom_area(position='stack', aes(x = date, y = count, group=category, fill=category, order=-category)) +
+  geom_area(data=burn_open, position='stack', aes(x = date, y = count, group=category, fill=category, order=-category)) +
   theme_fivethirtynine() +
-  scale_fill_brewer(palette="Set3") + 
+  scale_fill_brewer(palette="Set3") +
   scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   theme(legend.direction='vertical', axis.title.x=element_blank()) +
   guides(col = guide_legend(reverse=TRUE)) +
-  labs(title=sprintf("%s backlog by count%s", args$title, zoom_title), y="Task Count") +
-  geom_vline(aes(xintercept=as.numeric(as.Date(c('2016-01-01'))), color="gray")) +
-  labs(fill="Milestone")
+  labs(title=sprintf("%s Backlog by count%s", args$title, zoom_title), y="Task Count Total (Done above 0, Open below 0") +
+  annotate("text", x=quarter_start, y=100, label="Done") +
+  annotate("text", x=quarter_start, y=-100, label="Open") +
+  geom_vline(aes(xintercept=as.numeric(as.Date(quarter_start)), color="gray")) +
+  geom_hline(aes(yintercept=c(0), color="gray")) +
+  labs(fill="Milestone") +
+#  geom_text(data=final_burndone, aes(x=max_date, y=cumcount, label=category)) +
+  theme(axis.text.x=element_text(angle=-25, hjust=0.5, size = 8))
 dev.off()
+
 
 ######################################################################
 ## Velocity
