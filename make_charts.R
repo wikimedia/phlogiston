@@ -97,29 +97,37 @@ theme_fivethirtynine <- function(base_size = 12, base_family = "sans"){
 ## Backlog - EXPERIMENTAL
 ######################################################################
 
-burn_done <- read.csv(sprintf("/tmp/%s/burn_done.csv", args$project))
-burn_open <- read.csv(sprintf("/tmp/%s/burn_open.csv", args$project))
-
 if (args$zoom == 'True') {
-  burn_done <- burn_done[burn_done$zoom == 't',]
-  burn_open <- burn_open[burn_open$zoom == 't',]
+  burn_done <- read.csv(sprintf("/tmp/%s/burn_done_zoom.csv", args$project))
+  burn_open <- read.csv(sprintf("/tmp/%s/burn_open_zoom.csv", args$project))
+} else {
+  burn_done <- read.csv(sprintf("/tmp/%s/burn_done.csv", args$project))
+  burn_open <- read.csv(sprintf("/tmp/%s/burn_open.csv", args$project))
 }
+
 
 burn_done$category <- factor(burn_done$category, levels=rev(unique(burn_done$category)))
 burn_done$date <- as.Date(burn_done$date, "%Y-%m-%d")
+
+burn_open$category <- factor(burn_open$category, levels=rev(unique(burn_open$category)))
 burn_open$date <- as.Date(burn_open$date, "%Y-%m-%d")
 burn_open$points <- burn_open$points * -1
 burn_open$count <- burn_open$count * -1
 
 max_date = max(burn_done$date, na.rm=TRUE)
+
 bd_labels <- subset(burn_done, date == max_date)
 bd_labels = bd_labels[with(bd_labels, order(category, levels(bd_labels$category))),]
 bd_labels_count <- subset(bd_labels, count != 0)
-bd_labels_count$label_count <- bd_labels_count$label_count * -1
+bd_labels_count$label_count <- bd_labels_count$label_count
 bd_labels_points <- subset(bd_labels, points != 0)
-bd_labels_points$label_points <- bd_labels_points$label_points * -1
-print(burn_open)
-print(bd_labels_count)
+bd_labels_points$label_points <- bd_labels_points$label_points - (bd_labels_points$points / 2)
+bd_ylabel_count <- max(bd_labels_count$label_count)
+bd_ylabel_points <- max(bd_labels_points$label_points)
+
+bo_ylabel_count <- min(burn_open$count)
+bo_ylabel_points <- min(burn_open$points)
+
 png(filename = sprintf("~/html/%s_backlog_burnup_points%s.png", args$project, zoom_suffix), width=2000, height=1125, units="px", pointsize=30)
 
 ggplot(burn_done) +
@@ -128,17 +136,15 @@ ggplot(burn_done) +
   theme_fivethirtynine() +
   scale_fill_brewer(palette="Set3") +
   scale_x_date(limits=c(last_quarter_start, next_quarter_start), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
-  theme(legend.direction='vertical', axis.title.x=element_blank()) +
+  theme(legend.position = "none", axis.title.x=element_blank()) +
   guides(col = guide_legend(reverse=TRUE)) +
   labs(title=sprintf("%s Backlog by points%s", args$title, zoom_title), y="Story Point Total") +
-  annotate("text", x=quarter_start, y=20, label="Done") +
-  annotate("text", x=quarter_start, y=-20, label="Open") +
-  geom_vline(aes(xintercept=as.numeric(as.Date(quarter_start)), color="gray")) +
+  annotate("text", x=quarter_start - 14, y=bo_ylabel_points, label="Open Tasks") +
+  annotate("text", x=quarter_start - 14, y=bd_ylabel_points, label="Complete Tasks") +
   geom_hline(aes(yintercept=c(0)), color="black", size=2) +
   labs(fill="Milestone") +
-  geom_text(data=bd_labels_points, aes(x=max_date, y=label_points, label=category)) +
-  theme(axis.text.x=element_text(angle=-25, hjust=0.5, size = 8))
-dev.off()
+  geom_text(data=bd_labels_points, aes(x=max_date, y=label_points, label=category), hjust=0)
+      dev.off()
 
 png(filename = sprintf("~/html/%s_backlog_burnup_count%s.png", args$project, zoom_suffix), width=2000, height=1125, units="px", pointsize=30)
 
@@ -148,16 +154,14 @@ ggplot(burn_done) +
   theme_fivethirtynine() +
   scale_fill_brewer(palette="Set3") +
   scale_x_date(limits=c(last_quarter_start, next_quarter_start), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
-  theme(legend.direction='vertical', axis.title.x=element_blank()) +
+  theme(legend.position = "none", axis.title.x=element_blank()) +
   guides(col = guide_legend(reverse=TRUE)) +
   labs(title=sprintf("%s Backlog by count%s", args$title, zoom_title), y="Task Count Total (Done above 0, Open below 0") +
-  annotate("text", x=quarter_start, y=100, label="Done") +
-  annotate("text", x=quarter_start, y=-100, label="Open") +
-  geom_vline(aes(xintercept=as.numeric(as.Date(quarter_start)), color="gray")) +
-  geom_hline(aes(yintercept=c(0)), color="black", size=3) +
+  annotate("text", x=quarter_start - 14, y=bo_ylabel_count, label="Open Tasks") +
+  annotate("text", x=quarter_start - 14, y=bd_ylabel_count, label="Complete Tasks") +
+  geom_hline(aes(yintercept=c(0)), color="black", size=2) +
   labs(fill="Milestone") +
-  geom_text(data=bd_labels_count, aes(x=max_date, y=label_count, label=category)) +
-  theme(axis.text.x=element_text(angle=-25, hjust=0.5, size = 8))
+  geom_text(data=bd_labels_count, aes(x=max_date, y=label_count, label=category))
 dev.off()
 
 

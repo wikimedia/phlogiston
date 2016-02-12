@@ -20,23 +20,31 @@ SELECT date,
        sort_order,
        points,
        count,
-       zoom,
-       (SUM(points) OVER (PARTITION BY date, category ORDER BY sort_order))/2 AS label_points,
-       (SUM(count) OVER (PARTITION BY date, category ORDER BY sort_order))/2 AS label_count
-  FROM (SELECT date,
-               t.category,
-               MAX(z.sort_order) as sort_order,
-               SUM(points) as points,
-               SUM(count) as count,
-               BOOL_OR(z.zoom) as zoom
-          FROM tall_backlog t, category_list z
-         WHERE t.source = :'prefix'
-           AND z.source = :'prefix'
-           AND t.source = z.source
-           AND t.category = z.category
-           AND t.status = '"open"'
-         GROUP BY date, t.category
-         ORDER BY sort_order, date) AS subq
+       SUM(points) OVER (PARTITION BY date ORDER BY sort_order, category) AS label_points,
+       SUM(count) OVER (PARTITION BY date ORDER BY sort_order, category) AS label_count
+  FROM backlog_query(:'prefix', '"open"', True)
+) TO '/tmp/phlog/burn_open_zoom.csv' DELIMITER ',' CSV HEADER;
+
+COPY (
+SELECT date,
+       category,
+       sort_order,
+       points,
+       count,
+       SUM(points) OVER (PARTITION BY date ORDER BY sort_order, category) AS label_points,
+       SUM(count) OVER (PARTITION BY date ORDER BY sort_order, category) AS label_count
+  FROM backlog_query(:'prefix', '"resolved"', True)
+) TO '/tmp/phlog/burn_done_zoom.csv' DELIMITER ',' CSV HEADER;
+
+COPY (
+SELECT date,
+       category,
+       sort_order,
+       points,
+       count,
+       SUM(points) OVER (PARTITION BY date ORDER BY sort_order, category) AS label_points,
+       SUM(count) OVER (PARTITION BY date ORDER BY sort_order, category) AS label_count
+  FROM backlog_query(:'prefix', '"open"', False)
 ) TO '/tmp/phlog/burn_open.csv' DELIMITER ',' CSV HEADER;
 
 COPY (
@@ -45,25 +53,10 @@ SELECT date,
        sort_order,
        points,
        count,
-       zoom,
-       (SUM(points) OVER (PARTITION BY date, category ORDER BY sort_order))/2 AS label_points,
-       (SUM(count) OVER (PARTITION BY date, category ORDER BY sort_order))/2 AS label_count
-  FROM (SELECT date,
-               t.category,
-               MAX(z.sort_order) as sort_order,
-               SUM(points) as points,
-               SUM(count) as count,
-               BOOL_OR(z.zoom) as zoom
-          FROM tall_backlog t, category_list z
-         WHERE t.source = :'prefix'
-           AND z.source = :'prefix'
-           AND t.source = z.source
-           AND t.category = z.category
-           AND t.status = '"resolved"'
-         GROUP BY date, t.category
-         ORDER BY sort_order, date) AS subq
+       SUM(points) OVER (PARTITION BY date ORDER BY sort_order, category) AS label_points,
+       SUM(count) OVER (PARTITION BY date ORDER BY sort_order, category) AS label_count
+  FROM backlog_query(:'prefix', '"resolved"', False)
 ) TO '/tmp/phlog/burn_done.csv' DELIMITER ',' CSV HEADER;
-
 
 COPY (
 SELECT date,
