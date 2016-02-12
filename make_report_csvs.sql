@@ -16,36 +16,52 @@ SELECT date,
 
 COPY (
 SELECT date,
-       t.category,
-       MAX(z.sort_order) as sort_order,
-       SUM(points) * (-1) as points,
-       SUM(count) * (-1) as count,
-       BOOL_OR(z.zoom) as zoom
-  FROM tall_backlog t, category_list z
- WHERE t.source = :'prefix'
-   AND z.source = :'prefix'
-   AND t.source = z.source
-   AND t.category = z.category
-   AND t.status = '"open"'
- GROUP BY date, t.category
- ORDER BY sort_order, date
+       category,
+       sort_order,
+       points,
+       count,
+       zoom,
+       (SUM(points) OVER (PARTITION BY date, category ORDER BY sort_order))/2 AS label_points,
+       (SUM(count) OVER (PARTITION BY date, category ORDER BY sort_order))/2 AS label_count
+  FROM (SELECT date,
+               t.category,
+               MAX(z.sort_order) as sort_order,
+               SUM(points) as points,
+               SUM(count) as count,
+               BOOL_OR(z.zoom) as zoom
+          FROM tall_backlog t, category_list z
+         WHERE t.source = :'prefix'
+           AND z.source = :'prefix'
+           AND t.source = z.source
+           AND t.category = z.category
+           AND t.status = '"open"'
+         GROUP BY date, t.category
+         ORDER BY sort_order, date) AS subq
 ) TO '/tmp/phlog/burn_open.csv' DELIMITER ',' CSV HEADER;
 
 COPY (
 SELECT date,
-       t.category,
-       MAX(z.sort_order) as sort_order,
-       SUM(points) as points,
-       SUM(count) as count,
-       BOOL_OR(z.zoom) as zoom
-  FROM tall_backlog t, category_list z
- WHERE t.source = :'prefix'
-   AND z.source = :'prefix'
-   AND t.source = z.source
-   AND t.category = z.category
-   AND t.status = '"resolved"'
- GROUP BY date, t.category
- ORDER BY sort_order, date
+       category,
+       sort_order,
+       points,
+       count,
+       zoom,
+       (SUM(points) OVER (PARTITION BY date, category ORDER BY sort_order))/2 AS label_points,
+       (SUM(count) OVER (PARTITION BY date, category ORDER BY sort_order))/2 AS label_count
+  FROM (SELECT date,
+               t.category,
+               MAX(z.sort_order) as sort_order,
+               SUM(points) as points,
+               SUM(count) as count,
+               BOOL_OR(z.zoom) as zoom
+          FROM tall_backlog t, category_list z
+         WHERE t.source = :'prefix'
+           AND z.source = :'prefix'
+           AND t.source = z.source
+           AND t.category = z.category
+           AND t.status = '"resolved"'
+         GROUP BY date, t.category
+         ORDER BY sort_order, date) AS subq
 ) TO '/tmp/phlog/burn_done.csv' DELIMITER ',' CSV HEADER;
 
 

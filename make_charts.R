@@ -28,8 +28,9 @@ now <- Sys.Date()
 forecast_start <- as.Date(c("2016-01-01"))
 forecast_end   <- as.Date(c("2016-07-01"))
 forecast_end_plus <- forecast_end + 7
+last_quarter_start  <- as.Date(c("2015-10-01"))
 quarter_start  <- as.Date(c("2016-01-01"))
-quarter_end    <- as.Date(c("2016-04-01"))
+next_quarter_start    <- as.Date(c("2016-04-01"))
 three_months_ago <- now - 91
 
 # common theme from https://github.com/Ironholds/wmf/blob/master/R/dataviz.R
@@ -101,19 +102,24 @@ burn_open <- read.csv(sprintf("/tmp/%s/burn_open.csv", args$project))
 
 if (args$zoom == 'True') {
   burn_done <- burn_done[burn_done$zoom == 't',]
-  burn_open <- burn_done[burn_done$zoom == 't',]
+  burn_open <- burn_open[burn_open$zoom == 't',]
 }
 
 burn_done$category <- factor(burn_done$category, levels=rev(unique(burn_done$category)))
 burn_done$date <- as.Date(burn_done$date, "%Y-%m-%d")
 burn_open$date <- as.Date(burn_open$date, "%Y-%m-%d")
+burn_open$points <- burn_open$points * -1
+burn_open$count <- burn_open$count * -1
 
 max_date = max(burn_done$date, na.rm=TRUE)
-final_burndone <- subset(burn_done, date == max_date)
-final_burndone = final_burndone[with(final_burndone, order(category, levels(final_burndone$category))),]
-final_burndone$cumcount = cumsum(final_burndone$count)
-final_burndone$cumpoints = cumsum(final_burndone$points)
-  
+bd_labels <- subset(burn_done, date == max_date)
+bd_labels = bd_labels[with(bd_labels, order(category, levels(bd_labels$category))),]
+bd_labels_count <- subset(bd_labels, count != 0)
+bd_labels_count$label_count <- bd_labels_count$label_count * -1
+bd_labels_points <- subset(bd_labels, points != 0)
+bd_labels_points$label_points <- bd_labels_points$label_points * -1
+print(burn_open)
+print(bd_labels_count)
 png(filename = sprintf("~/html/%s_backlog_burnup_points%s.png", args$project, zoom_suffix), width=2000, height=1125, units="px", pointsize=30)
 
 ggplot(burn_done) +
@@ -121,16 +127,16 @@ ggplot(burn_done) +
   geom_area(data=burn_open, position='stack', aes(x = date, y = points, group=category, fill=category, order=-category)) +
   theme_fivethirtynine() +
   scale_fill_brewer(palette="Set3") +
-  scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
+  scale_x_date(limits=c(last_quarter_start, next_quarter_start), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   theme(legend.direction='vertical', axis.title.x=element_blank()) +
   guides(col = guide_legend(reverse=TRUE)) +
   labs(title=sprintf("%s Backlog by points%s", args$title, zoom_title), y="Story Point Total") +
   annotate("text", x=quarter_start, y=20, label="Done") +
   annotate("text", x=quarter_start, y=-20, label="Open") +
   geom_vline(aes(xintercept=as.numeric(as.Date(quarter_start)), color="gray")) +
-  geom_hline(aes(yintercept=c(0), color="gray")) +
+  geom_hline(aes(yintercept=c(0)), color="black", size=2) +
   labs(fill="Milestone") +
-#  geom_text(data=final_burndone, aes(x=max_date, y=cumpoints, label=category)) +
+  geom_text(data=bd_labels_points, aes(x=max_date, y=label_points, label=category)) +
   theme(axis.text.x=element_text(angle=-25, hjust=0.5, size = 8))
 dev.off()
 
@@ -141,16 +147,16 @@ ggplot(burn_done) +
   geom_area(data=burn_open, position='stack', aes(x = date, y = count, group=category, fill=category, order=-category)) +
   theme_fivethirtynine() +
   scale_fill_brewer(palette="Set3") +
-  scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
+  scale_x_date(limits=c(last_quarter_start, next_quarter_start), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   theme(legend.direction='vertical', axis.title.x=element_blank()) +
   guides(col = guide_legend(reverse=TRUE)) +
   labs(title=sprintf("%s Backlog by count%s", args$title, zoom_title), y="Task Count Total (Done above 0, Open below 0") +
   annotate("text", x=quarter_start, y=100, label="Done") +
   annotate("text", x=quarter_start, y=-100, label="Open") +
   geom_vline(aes(xintercept=as.numeric(as.Date(quarter_start)), color="gray")) +
-  geom_hline(aes(yintercept=c(0), color="gray")) +
+  geom_hline(aes(yintercept=c(0)), color="black", size=3) +
   labs(fill="Milestone") +
-#  geom_text(data=final_burndone, aes(x=max_date, y=cumcount, label=category)) +
+  geom_text(data=bd_labels_count, aes(x=max_date, y=label_count, label=category)) +
   theme(axis.text.x=element_text(angle=-25, hjust=0.5, size = 8))
 dev.off()
 
@@ -215,7 +221,7 @@ forecast_future_count <- na.omit(forecast[forecast$nom_count_date > forecast_end
 png(filename = sprintf("~/html/%s_forecast_points%s.png", args$project, zoom_suffix), width=2000, height=1125, units="px", pointsize=30)
 
 p <- ggplot(forecast_done) +
-  geom_rect(aes(xmin=first_cat, xmax=last_cat, ymin=quarter_start, ymax=quarter_end), fill="white", alpha=0.09) +
+  geom_rect(aes(xmin=first_cat, xmax=last_cat, ymin=quarter_start, ymax=next_quarter_start), fill="white", alpha=0.09) +
   geom_hline(aes(yintercept=as.numeric(now)), color="blue") +
   geom_point(aes(x=category, y=resolved_date), size=8, shape=18) +
   geom_errorbar(data = forecast, aes(x=category, y=nom_points_date, ymax=pes_points_date, ymin=opt_points_date, color=weeks_old), width=.3, size=2, position="dodge", alpha=.2) +
@@ -251,7 +257,7 @@ dev.off()
 png(filename = sprintf("~/html/%s_forecast_count%s.png", args$project, zoom_suffix), width=2000, height=1125, units="px", pointsize=30)
 
 p <- ggplot(forecast_done) +
-  geom_rect(aes(xmin=first_cat, xmax=last_cat, ymin=quarter_start, ymax=quarter_end), fill="white", alpha=0.09) +
+  geom_rect(aes(xmin=first_cat, xmax=last_cat, ymin=quarter_start, ymax=next_quarter_start), fill="white", alpha=0.09) +
   geom_hline(aes(yintercept=as.numeric(now)), color="blue") +
   geom_point(aes(x=category, y=resolved_date), size=8, shape=18) +
   geom_errorbar(data = forecast, aes(x=category, y=nom_count_date, ymax=pes_count_date, ymin=opt_count_date, color=weeks_old), width=.3, size=2, position="dodge", alpha=.2) +
