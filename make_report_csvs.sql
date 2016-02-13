@@ -323,6 +323,7 @@ SELECT date,
   FROM velocity v, category_list z
  WHERE z.category = v.category
    AND z.source = :'prefix'
+   AND v.source = :'prefix'
  ORDER BY date
 ) to '/tmp/phlog/forecast.csv' DELIMITER ',' CSV HEADER;
 
