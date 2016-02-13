@@ -73,34 +73,31 @@ burn_open$category <- factor(burn_open$category, levels=rev(unique(burn_open$cat
 burn_open$date <- as.Date(burn_open$date, "%Y-%m-%d")
 burn_open$points <- burn_open$points * -1
 burn_open$count <- burn_open$count * -1
+burn_open$label_points <- burn_open$label_points * -1
+burn_open$label_count <- burn_open$label_count * -1
 
 max_date = max(burn_done$date, na.rm=TRUE)
 
 bd_labels <- subset(burn_done, date == max_date)
-bd_labels = bd_labels[with(bd_labels, order(category, levels(bd_labels$category))),]
 bd_labels_count <- subset(bd_labels, count != 0)
 bd_labels_count$label_count <- bd_labels_count$label_count - (bd_labels_count$count / 2)
 bd_labels_points <- subset(bd_labels, points != 0)
 bd_labels_points$label_points <- bd_labels_points$label_points - (bd_labels_points$points / 2)
 
-## bo_labels <- subset(burn_open, date == max_date)
-## bo_labels = bo_labels[with(bo_labels, order(category, levels(bo_labels$category))),] THIS IS BROKEN
-## bo_labels_count <- subset(bo_labels, count != 0)
-## bo_labels_count$label_count <- bo_labels_count$label_count - (bo_labels_count$count / 2)
-## bo_labels_points <- subset(bo_labels, points != 0)
-## bo_labels_points$label_points <- bo_labels_points$label_points - (bo_labels_points$points / 2)
+bo_labels <- subset(burn_open, date == max_date)
+bo_labels_count <- subset(bo_labels, count != 0)
+bo_labels_count$label_count <- bo_labels_count$label_count - (bo_labels_count$count / 2)
+bo_labels_points <- subset(bo_labels, points != 0)
+bo_labels_points$label_points <- bo_labels_points$label_points - (bo_labels_points$points / 2)
 
-bd_ylegend_count <- max(bd_labels_count$label_count)
-bd_ylegend_points <- max(bd_labels_points$label_points)
-##bo_ylegend_count <- min(bd_labels_count$label_count)
-##bo_ylegend_points <- min(bd_labels_points$label_points)
-
-bo_ylegend_count <- min(bd_labels$label_count) * -1
-bo_ylegend_points <- min(bd_labels$label_points) * -1
+bd_ylegend_count <- max(bd_labels_count$label_count, 10)
+bd_ylegend_points <- max(bd_labels_points$label_points, 10)
+bo_ylegend_count <- min(bo_labels_count$label_count, 10)
+bo_ylegend_points <- min(bo_labels_points$label_points, 10)
 
 png(filename = sprintf("~/html/%s_backlog_burnup_points%s.png", args$project, zoom_suffix), width=2000, height=1125, units="px", pointsize=30)
 
-ggplot(burn_done) +
+p <- ggplot(burn_done) +
   geom_area(position='stack', aes(x = date, y = points, group=category, fill=category, order=-category)) +
   geom_area(data=burn_open, position='stack', aes(x = date, y = points, group=category, fill=category, order=-category)) +
   theme_fivethirtynine() +
@@ -112,9 +109,15 @@ ggplot(burn_done) +
   annotate("text", x=quarter_start - 14, y=bo_ylegend_points, label="Open Tasks") +
   annotate("text", x=quarter_start - 14, y=bd_ylegend_points, label="Complete Tasks") +
   geom_hline(aes(yintercept=c(0)), color="black", size=2) +
-  labs(fill="Milestone") +
-  geom_text(data=bd_labels_points, aes(x=max_date, y=label_points, label=category), hjust=0)
-##  geom_text(data=bo_labels_points, aes(x=max_date, y=label_points, label=category), hjust=0)
+  labs(fill="Milestone")
+if (nrow(bd_labels_points) > 0 ) {
+    p <- p + geom_text(data=bd_labels_points, aes(x=max_date, y=label_points, label=category), hjust=0)
+}
+
+if (nrow(bo_labels_points) > 0 ) {
+   p <- p + geom_text(data=bo_labels_points, aes(x=max_date, y=label_points, label=category), hjust=0)
+}
+p
 dev.off()
 
 png(filename = sprintf("~/html/%s_backlog_burnup_count%s.png", args$project, zoom_suffix), width=2000, height=1125, units="px", pointsize=30)
@@ -132,8 +135,8 @@ ggplot(burn_done) +
   annotate("text", x=quarter_start - 14, y=bd_ylegend_count, label="Complete Tasks") +
   geom_hline(aes(yintercept=c(0)), color="black", size=2) +
   labs(fill="Milestone") +
-  geom_text(data=bd_labels_count, aes(x=max_date, y=label_count, label=category), hjust=0)
-##  geom_text(data=bo_labels_count, aes(x=max_date, y=label_count, label=category), hjust=0)
+  geom_text(data=bd_labels_count, aes(x=max_date, y=label_count, label=category), hjust=0) +
+  geom_text(data=bo_labels_count, aes(x=max_date, y=label_count, label=category), hjust=0)
 dev.off()
 
 
