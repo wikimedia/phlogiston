@@ -106,8 +106,8 @@ p <- ggplot(burn_done) +
   theme(legend.position = "none", axis.title.x=element_blank()) +
   guides(col = guide_legend(reverse=TRUE)) +
   labs(title=sprintf("%s Backlog by points%s", args$title, zoom_title), y="Story Point Total") +
-  annotate("text", x=quarter_start - 14, y=bo_ylegend_points, label="Open Tasks") +
-  annotate("text", x=quarter_start - 14, y=bd_ylegend_points, label="Complete Tasks") +
+  annotate("text", x=last_quarter_start, y=bo_ylegend_points, label="Open Tasks", hjust=0, size=10) +
+  annotate("text", x=last_quarter_start, y=bd_ylegend_points, label="Complete Tasks", hjust=0, size=10) +
   geom_hline(aes(yintercept=c(0)), color="black", size=2) +
   labs(fill="Milestone")
 if (nrow(bd_labels_points) > 0 ) {
@@ -131,8 +131,8 @@ ggplot(burn_done) +
   theme(legend.position = "none", axis.title.x=element_blank()) +
   guides(col = guide_legend(reverse=TRUE)) +
   labs(title=sprintf("%s Backlog by count%s", args$title, zoom_title), y="Task Count Total") +
-  annotate("text", x=quarter_start - 14, y=bo_ylegend_count, label="Open Tasks") +
-  annotate("text", x=quarter_start - 14, y=bd_ylegend_count, label="Complete Tasks") +
+  annotate("text", x=last_quarter_start, y=bo_ylegend_count, label="Open Tasks", hjust=0, size=10) +
+  annotate("text", x=last_quarter_start, y=bd_ylegend_count, label="Complete Tasks", hjust=0, size=10) +
   geom_hline(aes(yintercept=c(0)), color="black", size=2) +
   labs(fill="Milestone") +
   geom_text(data=bd_labels_count, aes(x=max_date, y=label_count, label=category), hjust=0) +
