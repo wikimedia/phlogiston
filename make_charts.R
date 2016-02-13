@@ -49,52 +49,8 @@ theme_fivethirtynine <- function(base_size = 12, base_family = "sans"){
            strip.background = element_rect()))
 }
 
-## ######################################################################
-## ## Backlog
-## ######################################################################
-
-## backlog <- read.csv(sprintf("/tmp/%s/backlog.csv", args$project))
-## if (args$zoom == 'True') {
-##   backlog <- backlog[backlog$zoom == 't',]
-##   burnup <- read.csv(sprintf("/tmp/%s/burnup_zoom.csv", args$project))
-## } else {
-##   burnup <- read.csv(sprintf("/tmp/%s/burnup.csv", args$project))
-## }
-
-## backlog$category <- factor(backlog$category, levels=rev(unique(backlog$category)))
-## backlog$date <- as.Date(backlog$date, "%Y-%m-%d")
-## burnup$date <- as.Date(burnup$date, "%Y-%m-%d")
-
-## png(filename = sprintf("~/html/%s_backlog_burnup_points%s.png", args$project, zoom_suffix), width=2000, height=1125, units="px", pointsize=30)
-
-## ggplot(backlog) +
-##   geom_area(position='stack', aes(x = date, y = points, group=category, fill=category, order=-category)) +
-##   theme_fivethirtynine() +
-##   scale_fill_brewer(palette="Set3") +
-##   scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
-##   theme(legend.direction='vertical', axis.title.x=element_blank()) +
-##   guides(col = guide_legend(reverse=TRUE)) +
-##   labs(title=sprintf("%s backlog by points%s", args$title, zoom_title), y="Story Point Total") +
-##   geom_vline(aes(xintercept=as.numeric(as.Date(c('2016-01-01'))), color="gray")) +
-##   labs(fill="Milestone")
-## dev.off()
-
-## png(filename = sprintf("~/html/%s_backlog_burnup_count%s.png", args$project, zoom_suffix), width=2000, height=1125, units="px", pointsize=30)
-
-## ggplot(backlog) +
-##   geom_area(position='stack', aes(x = date, y = count, group=category, fill=category, order=-category)) +
-##   theme_fivethirtynine() +
-##   scale_fill_brewer(palette="Set3") + 
-##   scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
-##   theme(legend.direction='vertical', axis.title.x=element_blank()) +
-##   guides(col = guide_legend(reverse=TRUE)) +
-##   labs(title=sprintf("%s backlog by count%s", args$title, zoom_title), y="Task Count") +
-##   geom_vline(aes(xintercept=as.numeric(as.Date(c('2016-01-01'))), color="gray")) +
-##   labs(fill="Milestone")
-## dev.off()
-
 ######################################################################
-## Backlog - EXPERIMENTAL
+## Backlog
 ######################################################################
 
 if (args$zoom == 'True') {
@@ -139,9 +95,8 @@ bd_ylegend_points <- max(bd_labels_points$label_points)
 ##bo_ylegend_count <- min(bd_labels_count$label_count)
 ##bo_ylegend_points <- min(bd_labels_points$label_points)
 
-bo_ylegend_count <- min(bd_labels$label_count)
-bo_ylegend_points <- min(bd_labels$label_points)
-
+bo_ylegend_count <- min(bd_labels$label_count) * -1
+bo_ylegend_points <- min(bd_labels$label_points) * -1
 
 png(filename = sprintf("~/html/%s_backlog_burnup_points%s.png", args$project, zoom_suffix), width=2000, height=1125, units="px", pointsize=30)
 
