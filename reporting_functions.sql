@@ -86,7 +86,7 @@ BEGIN
     FOR daterow IN SELECT DISTINCT date
                      FROM task_history_recat
                     WHERE source = source_prefix
-                      AND date > now() - interval '7 days'
+                      AND date > now() - interval '14 days'
                     ORDER BY date
     LOOP
 
