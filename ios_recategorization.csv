@@ -1,8 +1,8 @@
 sort_order,zoom_list,title,matchstring
 1,True,Navigation,Enable a/b testing of navigation options
 2,True,Performance,Investigate 5.0 app performance
-3,True,Most Read,like to see the top read articles in my Explore feed
-4,True,Explore Refactor,fix explore tableview issues due to current reloading strategy
+3,True,Most Read,Add Most Read articles to the app
+4,True,Explore Refactor,Explore feed fixes
 5,True,Analytics,like to know how users are using the main features of the app
 6,True,Accessibility,iOS app accessibility problems
 7,True,Settings,"As a user I want to manage my language, log-in, and privacy settings in an organized and convenient screen"
@@ -11,6 +11,7 @@ sort_order,zoom_list,title,matchstring
 10,True,WP0,Restore Wikipedia Zero alert handling for 5.0
 11,True,Core Data,Data Layer Improvements
 12,True,Visual Polish,Visual design improvements to the Explore feed
-13,True,App 5.0 Unparented,iOS-app-v5-production
-14,False,Other,PhlogOther
+13,True,TOC UX,Improve Table of Content UX
+14,True,App 5.0 Unparented,iOS-app-v5-production
+15,False,Other,PhlogOther
 
