@@ -83,7 +83,7 @@ png(filename = sprintf("~/html/%s_tranche%s_velocity_points.png", args$project, 
 ggplot(velocity_cat_points) +
   geom_line(aes(x=date, y=pes_points_vel), size=3, color="darkorange2") +
   geom_line(aes(x=date, y=opt_points_vel), size=3, color="chartreuse3") +
-  geom_line(aes(x=date, y=nom_points_vel), size=3, color="gray") +
+  geom_line(aes(x=date, y=nom_points_vel), size=2, color="gray") +
   geom_bar(data=velocity_cat_t, aes(x=date, y=points), fill="black", size=2, stat="identity") +
   labs(title=sprintf("%s velocity forecasts", args$tranche_name), y="Story Point Total") +
   scale_x_date(limits=c(cutoff_date, now), minor_breaks="1 week", label=date_format("%b %d\n%Y"))+
@@ -100,7 +100,7 @@ png(filename = sprintf("~/html/%s_tranche%s_velocity_count.png", args$project, a
 ggplot(velocity_cat_count) +
   geom_line(aes(x=date, y=pes_count_vel), size=3, color="darkorange2") +
   geom_line(aes(x=date, y=opt_count_vel), size=3, color="chartreuse3") +
-  geom_line(aes(x=date, y=nom_count_vel), size=3, color="gray") +
+  geom_line(aes(x=date, y=nom_count_vel), size=2, color="gray") +
   geom_bar(data=velocity_cat_t, aes(x=date, y=count), fill="black", size=2, stat="identity") +
   labs(title=sprintf("%s velocity forecasts", args$tranche_name), y="Story Count") +
   scale_x_date(limits=c(cutoff_date, now), minor_breaks="1 week", label=date_format("%b %d\n%Y"))+
@@ -120,7 +120,7 @@ png(filename = sprintf("~/html/%s_tranche%s_forecast_points.png", args$project, 
 ggplot(forecast) +
   geom_line(aes(x=date, y=pes_points_fore), color="darkorange2", size=3) +
   geom_line(aes(x=date, y=opt_points_fore), color="chartreuse3", size=3) +
-  geom_line(aes(x=date, y=nom_points_fore), color="gray", size=3) +
+  geom_line(aes(x=date, y=nom_points_fore), color="gray", size=2) +
   labs(title=sprintf("%s completion forecast by points", args$tranche_name), y="weeks remaining") +
   scale_x_date(limits=c(cutoff_date, now), minor_breaks="1 week", label=date_format("%b %d\n%Y")) +
   scale_y_continuous(limits=c(0,14), breaks=pretty_breaks(n=7), oob=squish) +
@@ -133,7 +133,7 @@ png(filename = sprintf("~/html/%s_tranche%s_forecast_count.png", args$project, a
 ggplot(forecast) +
   geom_line(aes(x=date, y=pes_count_fore), color="darkorange2", size=3) +
   geom_line(aes(x=date, y=opt_count_fore), color="chartreuse3", size=3) +
-  geom_line(aes(x=date, y=nom_count_fore), color="gray", size=3) +
+  geom_line(aes(x=date, y=nom_count_fore), color="gray", size=2) +
   labs(title=sprintf("%s completion forecast by count", args$tranche_name), y="weeks remaining") +
   scale_x_date(limits=c(cutoff_date, now), minor_breaks="1 week", label=date_format("%b %d\n%Y"))+
   scale_y_continuous(limits=c(0,14), breaks=pretty_breaks(n=7), oob=squish ) +
