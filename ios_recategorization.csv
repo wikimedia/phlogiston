@@ -9,9 +9,9 @@ sort_order,zoom_list,title,matchstring
 8,True,Delete All,Saved pages legacy functionality
 9,True,RTL,"As a user, I can interact with the app in a way that matches the writing direction of my language."
 10,True,WP0,Restore Wikipedia Zero alert handling for 5.0
-11,True,Core Data,Data Layer Improvements
+11,True,TOC UX,Improve Table of Content UX
 12,True,Visual Polish,Visual design improvements to the Explore feed
-13,True,TOC UX,Improve Table of Content UX
+13,True,Core Data,Data Layer Improvements
 14,True,App 5.0 Unparented,iOS-app-v5-production
 15,False,Other,PhlogOther
 
