@@ -101,9 +101,9 @@ forecast <- forecast[forecast$category == args$tranche_name,]
 png(filename = sprintf("~/html/%s_tranche%s_forecast_points.png", args$project, args$tranche_num), width=1000, height=300, units="px", pointsize=10)
 
 ggplot(forecast) +
-  geom_line(aes(x=date, y=pes_points_fore), size=1, color="red") +
+  geom_ribbon(aes(x=date, ymax=pes_points_fore, ymin=nom_points_fore), fill="darkorange2") +
+  geom_ribbon(aes(x=date, ymax=nom_points_fore, ymin=opt_points_fore), fill="chartreuse3") +
   geom_line(aes(x=date, y=nom_points_fore), size=3, color="gray") +
-  geom_line(aes(x=date, y=opt_points_fore), size=1, color="green") +
   labs(title=sprintf("%s completion forecast by points", args$tranche_name), y="weeks remaining") +
   scale_x_date(limits=c(cutoff_date, now), minor_breaks="1 week", label=date_format("%b %d\n%Y")) +
   scale_y_continuous(limits=c(0,14), breaks=pretty_breaks(n=7), oob=squish) +
@@ -114,9 +114,9 @@ dev.off()
 png(filename = sprintf("~/html/%s_tranche%s_forecast_count.png", args$project, args$tranche_num), width=1000, height=300, units="px", pointsize=10)
 
 ggplot(forecast) +
-  geom_line(aes(x=date, y=pes_count_fore), size=1, color="red") +
-  geom_line(aes(x=date, y=nom_count_fore), size=3, color="gray") +
-  geom_line(aes(x=date, y=opt_count_fore), size=1, color="green") +
+  geom_ribbon(aes(x=date, ymax=pes_points_fore, ymin=nom_points_fore), fill="darkorange2") +
+  geom_ribbon(aes(x=date, ymax=nom_points_fore, ymin=opt_points_fore), fill="chartreuse3") +
+  geom_line(aes(x=date, y=nom_points_fore), size=3, color="gray") +
   labs(title=sprintf("%s completion forecast by count", args$tranche_name), y="weeks remaining") +
   scale_x_date(limits=c(cutoff_date, now), minor_breaks="1 week", label=date_format("%b %d\n%Y"))+
   scale_y_continuous(limits=c(0,14), breaks=pretty_breaks(n=7), oob=squish ) +
