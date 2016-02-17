@@ -1,11 +1,11 @@
 sort_order,zoom_list,title,matchstring
-1,True,Wayback Machine,Migrate dead external links
-2,True,Improve diffs,Improve diff compare screen
-3,True,Global repository,"Central Global Repository for Templates, Lua modules, and Gadgets"
+1,True,Archive External Links,Migrate dead external links
+2,True,Pageview Stats,Pageview Stats tool
+3,True,Numerical sorting,Natural number sorting in category listings
 4,True,Cross-wiki watchlists,Cross-wiki watchlists
-5,True,Numerical sorting,Natural number sorting in category listings
-6,True,Commons translated categories,Allow categories in Commons in all languages
-7,True,Pageview Stats,Pageview Stats tool
+5,True,Improve diffs,Improve diff compare screen
+6,True,Global repository,"Central Global Repository for Templates, Lua modules, and Gadgets"
+7,True,Commons translated categories,Allow categories in Commons in all languages
 8,True,Global user talk,Provide global user talk page (header)
 9,True,Copy and paste detection,copy and paste detection
 10,True,User watchlist,that lists all recent contributions of a set of users
