@@ -11,7 +11,13 @@ sort_order,zoom_list,title,matchstring
 10,True,WP0,Restore Wikipedia Zero alert handling for 5.0
 11,True,TOC UX,Improve Table of Content UX
 12,True,Visual Polish,Visual design improvements to the Explore feed
-13,True,Core Data,Data Layer Improvements
-14,True,App 5.0 Unparented,iOS-app-v5-production
-15,False,Other,PhlogOther
+13,True,5.0 Bugs,"EPIC: 5.0 bugfixes"
+14,True,Namespace,Handling of non-article Namespaces
+15,True,Offline and Error Handling,"EPIC: Offline and Error Handling"
+16,True,Language Search Cleanup,"EPIC: Language Search Cleanup"
+17,True,5.0 Text Changes,"EPIC: Text Changes"
+18,True,Core Data,Data Layer Improvements
+19,True,App 5.0 Unparented,iOS-app-v5-production
+20,True,Dev Board Other,wikipedia-ios-app-development
+21,False,Other,PhlogOther
 
