@@ -44,7 +44,7 @@ function load_dump {
     wget -nv http://dumps.wikimedia.org/other/misc/phabricator_public.dump
     echo "$(date): Loading loading new Phabricator dump"
     cd ${PHLOGDIR}
-    time python3 phlogiston.py --load --verbose 2>&1
+    python3 -u phlogiston.py --load --verbose 2>&1
 }
 
 case "$mode" in
@@ -71,6 +71,6 @@ esac
 cd ${PHLOGDIR}
 for project in ${project_list[@]}; do
     echo "$(date): Starting ${action} for ${project}"
-    time python3 phlogiston.py ${reconstruct_flag} --report --verbose --project ${project}_source.py 2>&1
+    python3 -u phlogiston.py ${reconstruct_flag} --report --verbose --project ${project}_source.py 2>&1
     echo "$(date): Done with ${action} for ${project}"
 done
