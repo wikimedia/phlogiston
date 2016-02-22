@@ -215,8 +215,8 @@ def load(conn, end_date, VERBOSE, DEBUG):
         task = data['task'][task_id]
         if task['info']:
             task_phid = task['info'][1]
-            status_at_load = task['info'][5]
-            title = task['info'][7]
+            status_at_load = task['info'][4]
+            title = task['info'][6]
         else:
             task_phid = ''
             status_at_load = ''
@@ -410,10 +410,10 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
             task_id = row[0]
 
             # ----------------------------------------------------------------------
-            # Title and Points currently points are a separate field
-            # not in transaction data this means historical points
-            # charts are actually retroactive Title could be tracked
-            # retroactively but this code doesn't make that effort
+            # Title and Points.  Currently points are a separate field
+            # not in transaction data.  This means historical points
+            # charts are actually retroactive.  Title could be tracked
+            # retroactively but this code doesn't make that effort.
             # ----------------------------------------------------------------------
             task_query = """SELECT title, story_points
                               FROM maniphest_task
@@ -428,6 +428,7 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
                 pretty_points = int(task_info[1])
             except:
                 pretty_points = default_points
+
             # for each relevant variable of the task, use the most
             # recent value that is no later than that day.  (So, if
             # that variable didn't change that day, use the last time
@@ -779,6 +780,7 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
             color = colors[i]
         except:
             color = '#DDDDDD'
+
         subprocess.call(
             "Rscript make_tranche_chart.R {0} {1} \"{2}\" \"{3}\"".
             format(source_prefix, i, color, category), shell=True)
