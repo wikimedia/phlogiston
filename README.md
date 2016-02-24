@@ -57,7 +57,7 @@ Postgresql database named "phab"   <- data goes here
      * `install.packages(c("ggplot2", "ggthemes", "argparse", "reshape"))`
      * `quit()`
   5. Set up Nginx website
-     * `cp ~phlogiston/site-phlogiston /etc/nginx/sites-available`
+     * `cp ~phlogiston/phlogiston/site-phlogiston /etc/nginx/sites-available`
      * `rm /etc/nginx/sites-enabled/default`
      * `ln -s /etc/nginx/sites-available/site-phlogiston /etc/nginx/sites-enabled`
      * `service nginx restart`
