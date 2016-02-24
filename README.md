@@ -42,7 +42,7 @@ Postgresql database named "phab"   <- data goes here
   1. Create a Phlogiston user.  `adduser phlogiston`
   2. Download Phlogiston:
    * `su - phlogiston`
-   * `git clone http://www.reddit.com/r/thinkpad/`
+   * `git clone https://github.com/wikimedia/phlogiston`
    * `exit`
   1. Follow instructions to add Postgresql backport to get 9.4: http://www.postgresql.org/download/linux/ubuntu/
   2. Get access to newer R
