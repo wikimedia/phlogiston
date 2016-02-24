@@ -64,18 +64,18 @@ Postgresql database named "phab"   <- data goes here
   6. Change permissions so that the postgres user can share files with phlogiston
      * `usermod -a -G phlogiston postgres`
      * restart postgres so that this takes effect
-3. Set up database.
-   1. As user postgres,
-     * `createuser -s phlogiston`
-     * `createdb -O phlogiston phab`
-4. Install virtualenv and packages.  As phlogiston, 
+  7. Add Python packages
+     * `pip3 install pyscopg2 pytz`
+3. Set up database. As user postgres,
+   * `createuser -s phlogiston`
+   * `createdb -O phlogiston phab`
+4. Set up the website and cron job.  As phlogiston, 
      * `mkdir ~/html`
-     * `cp ~/phlogiston/html/index.html ~/html`
-     * `cp ~/phlogiston/html/caution.html ~/html`
-     * `pip3 install virtualenv pyscopg2 pytz`
-5. Set up the script to run via cron
-   * `crontab -e`
-   * put `0   4    *   *   *   bash ~/phlogiston/batch_report.bash` at the end of the crontab and save and exit
-   * wait until tomorrow
-
-
+     * `cp ~/phlogiston/html/*.html ~/html`
+     * `cp ~/phlogiston/html/*css ~/html`
+     * Set up the script to run via cron
+       * `crontab -e`
+       * put `15 4    *   *   *    bash ~/phlogiston/batch_phlog.bash -m incremental -p phl -p tpg -p ve -p and -p ios -p col -p cot -p discir -p dismap -p dis -p diswik -p fr -p ja -p red -p rel -p ana >>~/phlog.log 2>&1` at the end of the crontab and save and exit
+5. Do the initial run of Phlogiston.  As phlogiston:
+  * `~/phlogiston/phlogiston.py --initialize`
+  * `bash ~/phlogiston/batch_phlog.bash -m complete -p phl -p tpg -p ve -p and -p ios -p col -p cot -p discir -p dismap -p dis -p diswik -p fr -p ja -p red -p rel -p ana >>~/phlog.log 2>&1`
