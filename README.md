@@ -44,7 +44,7 @@ Postgresql database named "phab"   <- data goes here
    * `su - phlogiston`
    * `git clone https://github.com/wikimedia/phlogiston`
    * `exit`
-  1. Follow instructions to add Postgresql backport to get 9.4: http://www.postgresql.org/download/linux/ubuntu/
+  1. (Probably obsolete: As of 2016-02-24, Labs 14.04 image seems to include Postgresql 9.5, which is better.  Follow instructions to add Postgresql backport to get 9.4: http://www.postgresql.org/download/linux/ubuntu/)
   2. Get access to newer R
      * `echo deb http://cran.es.r-project.org/bin/linux/ubuntu trusty/ > /etc/apt/sources.list.d/r.list`
      * `gpg --keyserver keyserver.ubuntu.com --recv-key E084DAB9`
@@ -77,5 +77,6 @@ Postgresql database named "phab"   <- data goes here
        * `crontab -e`
        * put `15 4    *   *   *    bash ~/phlogiston/batch_phlog.bash -m incremental -p phl -p tpg -p ve -p and -p ios -p col -p cot -p discir -p dismap -p dis -p diswik -p fr -p ja -p red -p rel -p ana >>~/phlog.log 2>&1` at the end of the crontab and save and exit
 5. Do the initial run of Phlogiston.  As phlogiston:
+  * `cd ~/phlogiston`
   * `~/phlogiston/phlogiston.py --initialize`
   * `bash ~/phlogiston/batch_phlog.bash -m complete -p phl -p tpg -p ve -p and -p ios -p col -p cot -p discir -p dismap -p dis -p diswik -p fr -p ja -p red -p rel -p ana >>~/phlog.log 2>&1`
