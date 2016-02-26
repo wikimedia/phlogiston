@@ -37,14 +37,14 @@ Postgresql database named "phab"   <- data goes here
 
 ## Installation Notes:
 
-1. Get an account and shell access on WMF Labs with Ubuntu 14.04 host
+1. Procure an Linux server.  Instructions are tested on a WMF labs virtual Ubuntu 14.04 host, and should work verbatim for any standard Ubuntu 14.04 host; they may need modificaton otherwise.
 2. Install prerequisites on the system.  As root:
   1. Create a Phlogiston user.  `adduser phlogiston`
   2. Download Phlogiston:
    * `su - phlogiston`
    * `git clone https://github.com/wikimedia/phlogiston`
    * `exit`
-  1. (Probably obsolete: As of 2016-02-24, Labs 14.04 image seems to include Postgresql 9.5, which is better.  Follow instructions to add Postgresql backport to get 9.4: http://www.postgresql.org/download/linux/ubuntu/)
+  1. (Probably obsolete: As of 2016-02-24, Labs 14.04 image seems to include Postgresql 9.5, which is better.  If using stock 14.04, follow instructions to add Postgresql backport to get 9.4.  9.3 and earlier are missing features that Phlogiston uses): http://www.postgresql.org/download/linux/ubuntu/)
   2. Get access to newer R
      * `echo deb http://cran.es.r-project.org/bin/linux/ubuntu trusty/ > /etc/apt/sources.list.d/r.list`
      * `gpg --keyserver keyserver.ubuntu.com --recv-key E084DAB9`
@@ -56,6 +56,7 @@ Postgresql database named "phab"   <- data goes here
      * `R`
      * `install.packages(c("ggplot2", "ggthemes", "argparse", "reshape"))`
      * `quit()`
+     * Note: there seems to be a fatal bug in ggthemes 3.0.1; get 2.2.1 or 3.0.2.
   5. Set up Nginx website
      * `cp ~phlogiston/phlogiston/site-phlogiston /etc/nginx/sites-available`
      * `rm /etc/nginx/sites-enabled/default`
