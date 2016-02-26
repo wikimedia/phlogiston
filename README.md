@@ -14,11 +14,8 @@ Generate burnup, cycle time, and other charts from Phabricator.  Intended for ex
  * Uses R to graph the data as PNG files
 
 ## TODOs
- * status fields are all double-quote-delimited in the database, which makes the SQL confusing
- * softcode the rest of the file and database locations (what is best practice?)
- * refactor the .R and .SQL to obey DRY; currently copy-pasted from VE example
- * optimize so the whole thing doesn't take 2+ hours for VE
-
+ * See https://phabricator.wikimedia.org/tag/phlogiston%E2%86%9Dtechnical_debt/
+ 
 ## Typical usage:
 ```
 wget http://dumps.wikimedia.org/other/misc/phabricator_public.dump
