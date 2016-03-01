@@ -102,7 +102,7 @@ p <- ggplot(burn_done) +
   geom_area(data=burn_open, position='stack', aes(x = date, y = points, group=category, fill=category, order=-category)) +
   theme_fivethirtynine() +
   scale_fill_manual(values=getPalette(colorCount)) +
-  scale_x_date(limits=c(last_quarter_start, next_quarter_start), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
+  scale_x_date(limits=c(last_quarter_start, next_quarter_start), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   theme(legend.position = "none", axis.title.x=element_blank()) +
   guides(col = guide_legend(reverse=TRUE)) +
   labs(title=sprintf("%s Backlog by points%s", args$title, zoom_title), y="Story Point Total") +
@@ -127,7 +127,7 @@ ggplot(burn_done) +
   geom_area(data=burn_open, position='stack', aes(x = date, y = count, group=category, fill=category, order=-category)) +
   theme_fivethirtynine() +
   scale_fill_manual(values=getPalette(colorCount)) +
-  scale_x_date(limits=c(last_quarter_start, next_quarter_start), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
+  scale_x_date(limits=c(last_quarter_start, next_quarter_start), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   theme(legend.position = "none", axis.title.x=element_blank()) +
   guides(col = guide_legend(reverse=TRUE)) +
   labs(title=sprintf("%s Backlog by count%s", args$title, zoom_title), y="Task Count Total") +
@@ -153,7 +153,7 @@ ggplot(velocity, aes(date, points)) +
   geom_bar(stat="identity") +
   theme_fivethirtynine() +
   theme(axis.title.x=element_blank()) +
-  scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
+  scale_x_date(limits=c(three_months_ago, now), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   labs(title=sprintf("%s weekly velocity by points", args$title), y="Story Points")
 dev.off()
 
@@ -163,7 +163,7 @@ ggplot(velocity, aes(date, count)) +
   geom_bar(stat="identity") +
   theme_fivethirtynine() +
   theme(axis.title.x=element_blank()) +
-  scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
+  scale_x_date(limits=c(three_months_ago, now), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   labs(title=sprintf("%s weekly velocity by count", args$title), y="Tasks")
 dev.off()
 
@@ -206,11 +206,11 @@ p <- ggplot(forecast_done) +
   geom_errorbar(data = forecast, aes(x=category, y=nom_points_date, ymax=pes_points_date, ymin=opt_points_date, color=weeks_old), width=.3, size=2, position="dodge", alpha=.2) +
   geom_point(data = forecast, aes(x=category, y=nom_points_date, color=weeks_old), size=10, shape=5) +
   geom_point(data = forecast_current, aes(x=category, y=nom_points_date), size=13, shape=5, color="Black") +
-  geom_text(data = forecast_current, aes(x=category, y=nom_points_date, label=format(nom_points_date, format="%b %d\n%Y")), size=8, shape=5, color="DarkSlateGray") +
+  geom_text(data = forecast_current, aes(x=category, y=nom_points_date, label=format(nom_points_date, format="%b %d\n%Y")), size=8, color="DarkSlateGray") +
   geom_point(data = forecast_done, aes(x=category, y=forecast_start, label=points_total, size=points_total)) +
   scale_size_continuous(range = c(3,15)) +
   scale_x_discrete(limits = rev(forecast_done$category)) +
-  scale_y_date(limits=c(forecast_start, forecast_end_plus), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
+  scale_y_date(limits=c(forecast_start, forecast_end_plus), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   coord_flip() +
   theme_fivethirtynine() +
   labs(title=sprintf("%s forecast completion dates based on points velocity%s", args$title, zoom_title), x="Milestone") +
@@ -242,11 +242,11 @@ p <- ggplot(forecast_done) +
   geom_errorbar(data = forecast, aes(x=category, y=nom_count_date, ymax=pes_count_date, ymin=opt_count_date, color=weeks_old), width=.3, size=2, position="dodge", alpha=.2) +
   geom_point(data = forecast, aes(x=category, y=nom_count_date, color=weeks_old), size=10, shape=5) +
   geom_point(data = forecast_current, aes(x=category, y=nom_count_date), size=13, shape=5, color="Black") +
-  geom_text(data = forecast_current, aes(x=category, y=nom_count_date, label=format(nom_count_date, format="%b %d\n%Y")), size=8, shape=5, color="DarkSlateGray") +
+  geom_text(data = forecast_current, aes(x=category, y=nom_count_date, label=format(nom_count_date, format="%b %d\n%Y")), size=8, color="DarkSlateGray") +
   geom_text(data = forecast_done, aes(x=category, y=forecast_start, label=count_total, size=log(count_total))) +
   scale_size_continuous(range = c(2,8)) +
   scale_x_discrete(limits = rev(forecast_done$category)) +
-  scale_y_date(limits=c(forecast_start, forecast_end_plus), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
+  scale_y_date(limits=c(forecast_start, forecast_end_plus), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   coord_flip() +
   theme_fivethirtynine() +
   labs(title=sprintf("%s forecast completion dates based on count velocity%s", args$title, zoom_title), x="Milestone") +
@@ -282,7 +282,7 @@ ggplot(net_growth, aes(date, points)) +
   geom_bar(stat="identity") +
   theme_fivethirtynine() +
   theme(axis.title.x=element_blank()) +
-  scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
+  scale_x_date(limits=c(three_months_ago, now), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
 labs(title=sprintf("%s Net change in open backlog by points", args$title), y="Story Points")
 dev.off()
 
@@ -292,7 +292,7 @@ ggplot(net_growth, aes(date, count)) +
   geom_bar(stat="identity") +
   theme_fivethirtynine() +
   theme(axis.title.x=element_blank()) +
-  scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
+  scale_x_date(limits=c(three_months_ago, now), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   labs(title=sprintf("%s Net change in open backlog by count", args$title), y="Task Count")
 dev.off()
 
@@ -314,7 +314,7 @@ ggplot(done, aes(x=date, y=points, fill=factor(category))) +
   scale_fill_manual(values=getPalette(colorCount), name="Milestone") +
   theme_fivethirtynine() +
   theme(axis.title.x=element_blank()) +
-  scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
+  scale_x_date(limits=c(three_months_ago, now), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   theme(legend.direction='vertical', axis.title.x=element_blank()) +
   labs(title=sprintf("%s Completed work by points", args$title), y="Points", x="Month", aesthetic="Milestone")
 dev.off()
@@ -324,7 +324,7 @@ ggplot(done, aes(x=date, y=count, fill=factor(category))) +
   geom_bar(stat="identity") +
   scale_fill_manual(values=getPalette(colorCount), name="Milestone") +
   theme_fivethirtynine() +
-  scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
+  scale_x_date(limits=c(three_months_ago, now), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   theme(legend.direction='vertical', axis.title.x=element_blank()) +
   labs(title=sprintf("%s Completed work by count", args$title), y="Count", x="Month", aesthetic="Milestone")
 dev.off()
@@ -341,7 +341,7 @@ dev.off()
 ## ggplot(maint_frac, aes(date, maint_frac_points)) +
 ##   geom_bar(stat="identity") +
 ##   scale_y_continuous(labels=percent, limits=c(0,1)) +
-##   scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
+##   scale_x_date(limits=c(three_months_ago, now), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
 ##   theme_fivethirtynine() +
 ##   theme(axis.title.x=element_blank()) +
 ##   labs(title=sprintf("%s Maintenance Fraction by points", args$title), y="Fraction of completed work that is maintenance")
@@ -353,7 +353,7 @@ dev.off()
 ##   scale_y_continuous(labels=percent, limits=c(0,1)) + 
 ##   theme_fivethirtynine() +
 ##   theme(axis.title.x=element_blank()) +
-##   scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
+##   scale_x_date(limits=c(three_months_ago, now), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
 ##   labs(title=sprintf("%s Maintenance Fraction by count", args$title), y="Fraction of completed work that is maintenance")
 ## dev.off()
 
@@ -367,7 +367,7 @@ status_output <- png(filename = sprintf("~/html/%s_maint_prop_points.png", args$
 ggplot(maint_prop, aes(x=date, y=points, fill=factor(maint_type))) +
   geom_bar(stat="identity") +
   scale_fill_brewer(name="Type of work", palette="YlOrBr") +
-  scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
+  scale_x_date(limits=c(three_months_ago, now), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   theme_fivethirtynine() +
   theme(legend.direction='vertical', axis.title.x=element_blank()) +
   labs(title=sprintf("%s Core Fraction type by points", args$title), y="Amount of completed work by type")
@@ -378,7 +378,7 @@ status_output <- png(filename = sprintf("~/html/%s_maint_prop_count.png", args$p
 ggplot(maint_prop, aes(x=date, y=count, fill=factor(maint_type))) +
   geom_bar(stat="identity") +
   scale_fill_brewer(name="Type of work", palette="YlOrBr") +
-  scale_x_date(limits=c(three_months_ago, now), minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
+  scale_x_date(limits=c(three_months_ago, now), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   theme_fivethirtynine() +
   theme(legend.direction='vertical', axis.title.x=element_blank()) +
   labs(title=sprintf("%s Core Fraction type by count", args$title), y="Amount of completed work by type")
