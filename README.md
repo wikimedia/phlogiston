@@ -52,6 +52,7 @@ Postgresql database named "phab"   <- data goes here
   4. Install R packages.
      * `R`
      * `install.packages(c("ggplot2", "ggthemes", "argparse", "reshape"))`
+     * `update.packages()`
      * `quit()`
      * Note: there seems to be a fatal bug in ggthemes 3.0.1; get 2.2.1 or 3.0.2.
   5. Set up Nginx website
