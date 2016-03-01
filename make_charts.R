@@ -270,33 +270,6 @@ dev.off()
 
 
 ######################################################################
-## Velocity vs backlog
-######################################################################
-
-net_growth <- read.csv(sprintf("/tmp/%s/net_growth.csv", args$project))
-net_growth$date <- as.Date(net_growth$date, "%Y-%m-%d")
-
-png(filename = sprintf("~/html/%s_net_growth_points.png", args$project), width=2000, height=1125, units="px", pointsize=30)
-
-ggplot(net_growth, aes(date, points)) +
-  geom_bar(stat="identity") +
-  theme_fivethirtynine() +
-  theme(axis.title.x=element_blank()) +
-  scale_x_date(limits=c(three_months_ago, now), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
-labs(title=sprintf("%s Net change in open backlog by points", args$title), y="Story Points")
-dev.off()
-
-png(filename = sprintf("~/html/%s_net_growth_count.png", args$project), width=2000, height=1125, units="px", pointsize=30)
-
-ggplot(net_growth, aes(date, count)) +
-  geom_bar(stat="identity") +
-  theme_fivethirtynine() +
-  theme(axis.title.x=element_blank()) +
-  scale_x_date(limits=c(three_months_ago, now), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
-  labs(title=sprintf("%s Net change in open backlog by count", args$title), y="Task Count")
-dev.off()
-
-######################################################################
 ## Recently Closed
 ######################################################################
 

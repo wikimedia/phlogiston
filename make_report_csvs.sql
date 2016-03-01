@@ -244,16 +244,6 @@ UPDATE open_backlog_size
     AND open_backlog_size.date = subq.date
     AND open_backlog_size.category = subq.category;   
 
-COPY (
-SELECT date,
-       sum(delta_points) as points,
-       sum(delta_count) as count
-  FROM open_backlog_size
- WHERE source = :'prefix'
- GROUP BY date
- ORDER BY date
-) to '/tmp/phlog/net_growth.csv' DELIMITER ',' CSV HEADER;
-
 /* ####################################################################
 Burnup and Velocity and Forecasts */
 
