@@ -837,6 +837,28 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
     f = open(os.path.join(script_dir, '../html/', file), 'w')
     f.write(html_string)
     f.close()
+
+    open_task_category_query = """SELECT id,
+                                         title,
+                                         category
+                                    FROM task_history_recat
+                                   WHERE source = %(source_prefix)s
+                                     AND status = '"open"'
+                                     AND date = (SELECT MAX(date)
+                                                   FROM task_history_recat
+                                                  WHERE source = %(source_prefix)s)
+                                ORDER BY category, title"""
+
+    html_string = """<p><table border="1px solid lightgray" cellpadding="2" cellspacing="0"><tr><th>ID></th><th>Task</th><th>Category</th></tr>"""  # noqa
+    cur.execute(open_task_category_query, {'source_prefix': source_prefix})
+    for row in cur.fetchall():
+        html_string += "<tr><td><a href=\"https://phabricator.wikimedia.org/T{0}\">{0}: {1}</a></td><td>{2}</td></tr>".format(row[0],row[1],row[2])
+
+    html_string += "</table></p>"
+    file = '{0}_open_by_category.html'.format(source_prefix)
+    f = open(os.path.join(script_dir, '../html/', file), 'w')
+    f.write(html_string)
+    f.close()
     
     recently_closed_query = """SELECT id,
                                       title,

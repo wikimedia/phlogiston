@@ -149,7 +149,6 @@ SELECT source,
 );
 
 
-
 UPDATE maintenance_delta a
    SET new_points = (SELECT points
                        FROM (SELECT date,
