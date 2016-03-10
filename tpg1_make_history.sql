@@ -28,13 +28,19 @@ SELECT source,
   FROM task_history
  WHERE source = :'prefix');
 
-UPDATE task_history_recat(
-   SET category = (SELECT category
-                     FROM task_history_recat
-                    WHERE date = (SELECT MAX(date)
-                                    FROM task_history_recat
-                                   WHERE source = :'prefix')
- WHERE source = :'prefix';
+/* Make categorization retroactive - most recent categorization is
+applied to complete history of each task, as if it always had that
+category */
+
+UPDATE task_history_recat t
+   SET category = t0.category
+  FROM task_history_recat t0
+ WHERE t0.date = (SELECT MAX(date)
+                    FROM task_history_recat
+                   WHERE source = 'tpg1')
+   AND t0.source = 'tpg1'
+   AND t.source = 'tpg1'
+   AND t0.id = t.id;
 
 /* Filter out statuses that are probably ignorable. */
 
