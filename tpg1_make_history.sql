@@ -37,9 +37,9 @@ UPDATE task_history_recat t
   FROM task_history_recat t0
  WHERE t0.date = (SELECT MAX(date)
                     FROM task_history_recat
-                   WHERE source = 'tpg1')
-   AND t0.source = 'tpg1'
-   AND t.source = 'tpg1'
+                   WHERE source = :'prefix')
+   AND t0.source = :'prefix'
+   AND t.source = :'prefix'
    AND t0.id = t.id;
 
 /* Filter out statuses that are probably ignorable. */
