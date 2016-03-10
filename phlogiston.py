@@ -212,6 +212,9 @@ def load(conn, end_date, VERBOSE, DEBUG):
               format(count=len(data['task'].keys())))
 
     for task_id in data['task'].keys():
+        if DEBUG:
+            if int(task_id) not in [126555]:
+                continue
         task = data['task'][task_id]
         if task['info']:
             task_phid = task['info'][1]
@@ -255,17 +258,21 @@ def load(conn, end_date, VERBOSE, DEBUG):
                     has_edge_data = False
                     active_proj = list()
                     if trans_type == 'core:edge':
+                        if DEBUG:
+                            import ipdb; ipdb.set_trace()
+
                         jblob = json.loads(new_value)
                         if jblob:
                             for key in jblob.keys():
-                                if jblob[key]['type'] == 41:
+                                if int(jblob[key]['type']) == 41:
                                     has_edge_data = True
                                     if key in project_phid_to_id_dict:
                                         proj_id = project_phid_to_id_dict[key]
                                         active_proj.append(proj_id)
                                     else:
                                         print("Data error for transaction {0}: project {1} doesn't exist. Skipping.".format(trans[1], key))
-
+                            
+                                        
                     cur.execute(transaction_insert,
                                 {'id': trans[0],
                                  'phid': trans[1],
@@ -365,9 +372,12 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
         # day, use a date at the midnight at the end of the day to
         # make the queries line up with the date label
         working_date += datetime.timedelta(days=1)
-        cur.execute('SELECT build_edges(%(date)s, %(project_id_list)s)',
-                    {'date': working_date,
-                     'project_id_list': id_list_with_worktypes})
+        if DEBUG:
+            print("skipping")
+        else:
+            cur.execute('SELECT build_edges(%(date)s, %(project_id_list)s)',
+                        {'date': working_date,
+                         'project_id_list': id_list_with_worktypes})
 
     ######################################################################
     # Reconstruct historical state of tasks
@@ -396,6 +406,7 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
         # make the queries line up with the date label
         if VERBOSE:
             print("Reconstructing data for {0}".format(working_date))
+            
         working_date += datetime.timedelta(days=1)
 
         task_on_day_query = """SELECT DISTINCT task
@@ -403,11 +414,18 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
                                 WHERE project = ANY(%(project_ids)s)
                                   AND edge_date = %(working_date)s"""
 
+
         cur.execute(task_on_day_query,
                     {'working_date': working_date,
                      'project_ids': project_id_list})
         for row in cur.fetchall():
             task_id = row[0]
+            
+            if DEBUG:
+                if task_id not in [127391, 124816, 119010, 119007, 126555]:
+                    continue
+                else:
+                    print(task_id)
 
             # ----------------------------------------------------------------------
             # Title and Points.  Currently points are a separate field

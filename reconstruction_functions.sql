@@ -30,12 +30,17 @@ BEGIN
                           AND task_id = taskrow.id
                           AND has_edge_data IS TRUE
                      ORDER BY date_modified DESC
-                        LIMIT 1
         LOOP
             FOREACH project_id IN ARRAY projrow.active_projects & project_id_list
             LOOP
-                INSERT INTO maniphest_edge
-                     VALUES (taskrow.id, project_id, run_date);
+                IF NOT EXISTS (SELECT *
+                                 FROM maniphest_edge
+                                WHERE task = taskrow.id
+                                  AND project = project_id
+                                  AND edge_date = run_date) THEN
+                    INSERT INTO maniphest_edge
+                    VALUES (taskrow.id, project_id, run_date);
+                END IF;
             END LOOP;
         END LOOP;
     END LOOP;     
