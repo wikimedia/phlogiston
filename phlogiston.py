@@ -154,7 +154,7 @@ def load(conn, end_date, VERBOSE, DEBUG):
     cur.execute(open("loading_tables.sql", "r").read())
 
     if VERBOSE:
-        print("Loading dump file")
+        print('{0} Loading dump file'.format(datetime.datetime.now()))
     with open('../phabricator_public.dump') as dump_file:
         data = json.load(dump_file)
 
@@ -163,7 +163,7 @@ def load(conn, end_date, VERBOSE, DEBUG):
     ######################################################################
     if VERBOSE:
         count = len(data['project']['projects'])
-        print("Load {0} projects".format(count))
+        print("{0} Load {1} projects".format(datetime.datetime.now(), count))
 
     project_insert = ("""INSERT INTO phabricator_project
                 VALUES (%(id)s, %(name)s, %(phid)s)""")
@@ -178,7 +178,7 @@ def load(conn, end_date, VERBOSE, DEBUG):
                 VALUES (%(id)s, %(phid)s, %(name)s, %(project_phid)s)""")
     if VERBOSE:
         count = len(data['project']['columns'])
-        print("Load {0} projectcolumns".format(count))
+        print("{0} Load {1} projectcolumns".format(datetime.datetime.now(), count))
     for row in data['project']['columns']:
         phid = row[1]
         project_phid = row[5]
@@ -208,8 +208,8 @@ def load(conn, end_date, VERBOSE, DEBUG):
       VALUES (%(date)s, %(phid)s, %(blocked_phid)s) """
 
     if VERBOSE:
-        print("Load tasks, transactions, and edges for {count} tasks".
-              format(count=len(data['task'].keys())))
+        print("{0} Load tasks, transactions, and edges for {1} tasks".
+              format(datetime.datetime.now(),len(data['task'].keys())))
 
     for task_id in data['task'].keys():
         task = data['task'][task_id]
@@ -358,18 +358,15 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
     working_date = start_date
     while working_date <= end_date:
         if VERBOSE:
-            print('{0}: Making maniphest_edge for {1}'.
-                  format(datetime.datetime.now(), working_date))
+            print('{0} {1}: Making maniphest_edge for {2}'.
+                  format(source_prefix, datetime.datetime.now(), working_date))
         # because working_date is midnight at the beginning of the
         # day, use a date at the midnight at the end of the day to
         # make the queries line up with the date label
         working_date += datetime.timedelta(days=1)
-        if DEBUG:
-            print("skipping")
-        else:
-            cur.execute('SELECT build_edges(%(date)s, %(project_id_list)s)',
-                        {'date': working_date,
-                         'project_id_list': id_list_with_worktypes})
+        cur.execute('SELECT build_edges(%(date)s, %(project_id_list)s)',
+                    {'date': working_date,
+                     'project_id_list': id_list_with_worktypes})
 
     ######################################################################
     # Reconstruct historical state of tasks
@@ -397,16 +394,14 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
         # day, use a date at the midnight at the end of the day to
         # make the queries line up with the date label
         if VERBOSE:
-            print("Reconstructing data for {0}".format(working_date))
+            print('{0} {1}: Reconstructing data for {2}'.
+                  format(source_prefix, datetime.datetime.now(), working_date))
 
         working_date += datetime.timedelta(days=1)
-
         task_on_day_query = """SELECT DISTINCT task
                                  FROM maniphest_edge
                                 WHERE project = ANY(%(project_ids)s)
                                   AND edge_date = %(working_date)s"""
-
-
         cur.execute(task_on_day_query,
                     {'working_date': working_date,
                      'project_ids': project_id_list})
@@ -586,7 +581,8 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
            AND date >= %(start_date)s"""
 
     if VERBOSE:
-        print("Updating Milestone Titles")
+        print('{0} {1} Updating Milestone Titles'.
+              format(source_prefix, datetime.datetime.now()))
     cur.execute(milestones_sql,{'source': source_prefix, 'start_date': start_date})
 
     correct_status_sql = """
@@ -609,7 +605,8 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
            AND th.id = os.task_id"""
 
     if VERBOSE:
-        print("Correcting corrupted task status info")
+        print('{0} {1}: Correcting corrupted task status info'.
+                  format(source_prefix, datetime.datetime.now()))
     cur.execute(correct_status_sql,{'source': source_prefix})
     cur.close()
     
