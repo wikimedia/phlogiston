@@ -2,5 +2,5 @@ sort_order,zoom_list,title,matchstring
 1,True,Sync Saved Pages,"Synchronize user saved pages across devices."
 2,True,Gather Collections,"Implement basic Gather collections, visible only to the current user."
 3,True,Analytics for Preloads and WP0,"Better analytics for preloads and Wikipedia Zero support."
-4True,Feeds Implementation,"Implement Feeds in the Android app."
+4,True,Feeds Implementation,"Implement Feeds in the Android app."
 5,False,Other,PhlogOther
