@@ -215,44 +215,14 @@ SELECT ROUND(100 * maint_count::decimal / nullif((maint_count + new_count),0),0)
 ) TO '/tmp/phlog/maintenance_fraction_total_by_count.csv' DELIMITER ',' CSV;
 
 /* ####################################################################
-Backlog growth calculations */
-
-INSERT INTO open_backlog_size (
-SELECT source,
-       category,
-       date,
-       SUM(points) AS points,
-       SUM(count) AS count
-  FROM tall_backlog
- WHERE status != '"resolved"'
-   AND EXTRACT(epoch FROM age(date - INTERVAL '1 day'))/604800 = ROUND(
-       EXTRACT(epoch FROM age(date - INTERVAL '1 day'))/604800)
-   AND source = :'prefix'
- GROUP BY date, source, category);
-
-UPDATE open_backlog_size
-   SET delta_points = COALESCE(subq.delta_points,0),
-       delta_count = COALESCE(subq.delta_count,0)
-  FROM (SELECT source,
-               date,
-               category,
-               count - lag(count) OVER (PARTITION BY source, category ORDER BY date) as delta_count,
-               points - lag(points) OVER (PARTITION BY source, category ORDER BY date) as delta_points
-	  FROM open_backlog_size
-	 WHERE source = :'prefix') as subq
-  WHERE open_backlog_size.source = subq.source
-    AND open_backlog_size.date = subq.date
-    AND open_backlog_size.category = subq.category;   
-
-/* ####################################################################
 Burnup and Velocity and Forecasts */
 
 SELECT calculate_velocities(:'prefix');
 			      
 COPY (
 SELECT date,
-       sum(delta_points) as points,
-       sum(delta_count) as count
+       sum(delta_resolved_points) as points,
+       sum(delta_resolved_count) as count
   FROM velocity
  WHERE source = :'prefix'
  GROUP BY date
@@ -262,8 +232,8 @@ SELECT date,
 COPY (
 SELECT date,
        category,
-       delta_points as points,
-       delta_count as count
+       delta_resolved_points as points,
+       delta_resolved_count as count
   FROM velocity
  WHERE source = :'prefix'
  ORDER BY category, date

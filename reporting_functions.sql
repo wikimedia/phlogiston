@@ -187,13 +187,17 @@ BEGIN
        AND v.source = source_prefix;
 
     UPDATE velocity
-       SET delta_points = COALESCE(subq.delta_points,0),
-           delta_count = COALESCE(subq.delta_count,0)
+       SET delta_resolved_points = COALESCE(subq.delta_resolved_points,0),
+           delta_resolved_count = COALESCE(subq.delta_resolved_count,0),
+           delta_total_points = COALESCE(subq.delta_total_points,0),
+           delta_total_count = COALESCE(subq.delta_total_count,0)
       FROM (SELECT source,
                    date,
                    category,
-                   count_resolved - lag(count_resolved) OVER (PARTITION BY source, category ORDER BY date) as delta_count,
-                   points_resolved - lag(points_resolved) OVER (PARTITION BY source, category ORDER BY date) as delta_points
+                   count_resolved - lag(count_resolved) OVER (PARTITION BY source, category ORDER BY date) as delta_resolved_count,
+                   points_resolved - lag(points_resolved) OVER (PARTITION BY source, category ORDER BY date) as delta_resolved_points,
+                   (count_resolved + count_open) - lag(count_resolved + count_open) OVER (PARTITION BY source, category ORDER BY date) as delta_total_count,
+                   (points_resolved + points_open) - lag(points_resolved + points_open) OVER (PARTITION BY source, category ORDER BY date) as delta_total_points
       FROM velocity
      WHERE source = source_prefix) as subq
      WHERE velocity.source = subq.source
@@ -212,31 +216,31 @@ FOR weekrow IN SELECT DISTINCT date
 			  AND source = source_prefix
 			ORDER BY category
 	LOOP
-	    SELECT SUM(delta_points)/3 AS min_points_vel
+	    SELECT SUM(delta_resolved_points)/3 AS min_points_vel
               INTO min_points_vel
-              FROM (SELECT CASE WHEN delta_points < 0 THEN 0
-	                   ELSE delta_points
+              FROM (SELECT CASE WHEN delta_resolved_points < 0 THEN 0
+	                   ELSE delta_resolved_points
 			   END
                       FROM velocity subqv
                      WHERE subqv.date >= weekrow.date - interval '3 months'
                        AND subqv.date < weekrow.date
                        AND subqv.source = source_prefix
                        AND subqv.category = tranche.category
-                     ORDER BY subqv.delta_points 
+                     ORDER BY subqv.delta_resolved_points 
                      LIMIT 3) as x;
 
-	    SELECT SUM(delta_points)/3 AS max_points_vel
+	    SELECT SUM(delta_resolved_points)/3 AS max_points_vel
               INTO max_points_vel
-              FROM (SELECT delta_points
+              FROM (SELECT delta_resolved_points
                       FROM velocity subqv
                      WHERE subqv.date >= weekrow.date - interval '3 months'
                        AND subqv.date < weekrow.date
                        AND subqv.source = source_prefix
                        AND subqv.category = tranche.category
-                     ORDER BY subqv.delta_points DESC
+                     ORDER BY subqv.delta_resolved_points DESC
                      LIMIT 3) as x;
 
-            SELECT AVG(delta_points)
+            SELECT AVG(delta_resolved_points)
               INTO avg_points_vel
               FROM velocity subqv
              WHERE subqv.date >= weekrow.date - interval '3 months'
@@ -244,31 +248,31 @@ FOR weekrow IN SELECT DISTINCT date
                AND subqv.source = source_prefix
                AND subqv.category = tranche.category;
 
-	    SELECT SUM(delta_count)/3 AS min_count_vel
+	    SELECT SUM(delta_resolved_count)/3 AS min_count_vel
               INTO min_count_vel
-              FROM (SELECT CASE WHEN delta_count < 0 THEN 0
-	                   ELSE delta_count
+              FROM (SELECT CASE WHEN delta_resolved_count < 0 THEN 0
+	                   ELSE delta_resolved_count
 			   END
                       FROM velocity subqv
                      WHERE subqv.date >= weekrow.date - interval '3 months'
                        AND subqv.date < weekrow.date
                        AND subqv.source = source_prefix
                        AND subqv.category = tranche.category
-                     ORDER BY subqv.delta_count 
+                     ORDER BY subqv.delta_resolved_count 
                      LIMIT 3) as x;
 
-	    SELECT SUM(delta_count)/3 AS max_count_vel
+	    SELECT SUM(delta_resolved_count)/3 AS max_count_vel
               INTO max_count_vel
-              FROM (SELECT delta_count
+              FROM (SELECT delta_resolved_count
                       FROM velocity subqv
                      WHERE subqv.date >= weekrow.date - interval '3 months'
                        AND subqv.date < weekrow.date
                        AND subqv.source = source_prefix
                        AND subqv.category = tranche.category
-                     ORDER BY subqv.delta_count DESC
+                     ORDER BY subqv.delta_resolved_count DESC
                      LIMIT 3) as x;
 
-            SELECT AVG(delta_count)
+            SELECT AVG(delta_resolved_count)
               INTO avg_count_vel
               FROM velocity subqv
              WHERE subqv.date >= weekrow.date - interval '3 months'
