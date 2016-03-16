@@ -65,16 +65,6 @@ SELECT source,
    AND source = :'prefix'
    AND date >= '2015-06-18');
 
-UPDATE task_history_recat t
-   SET category = t0.category
-  FROM task_history_recat t0
- WHERE t0.date = (SELECT MAX(date)
-                    FROM task_history_recat
-                   WHERE source = :'prefix')
-   AND t0.source = :'prefix'
-   AND t.source = :'prefix'
-   AND t0.id = t.id;
-
 /* Simplify status fields */
 
 UPDATE task_history_recat

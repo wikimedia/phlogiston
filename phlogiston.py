@@ -31,8 +31,6 @@ def main(argv):
     incremental = False
     DEBUG = False
     VERBOSE = False
-    default_points = 5
-    project_source = ''
     start_date = ''
     dbname = 'phab'
 
@@ -84,13 +82,33 @@ def main(argv):
     if project_source:
         config = configparser.ConfigParser()
         config.read(project_source)
-        source_prefix = config['vars']['source_prefix']
-        source_title = config['vars']['source_title']
-        default_points = config['vars']['default_points']
-        project_name_list = list(config['vars']['project_list'].split(','))
+
+        try:
+            source_prefix = config['vars']['source_prefix']
+            source_title = config['vars']['source_title']
+            project_name_list = config['vars']['project_list']
+        except KeyError as e:
+            print('Config file {0} is missing required parameter(s): {1}'.
+                  format(project_source, e))
+            sys.exit(1)
+
+        if config.has_option('vars', 'default_points'):
+            default_points = config['vars']['default_points']
+        else:
+            default_points = ''
+
+        if config.has_option('vars', 'retroactive_categories'):
+            retroactive_categories = config['vars']['retroactive_categories']
+        else:
+            retroactive_categories = False
+
         if not start_date:
-            start_date = datetime.datetime.strptime(
-                config.get("vars", "start_date"), "%Y-%m-%d").date()
+            try:
+                start_date = datetime.datetime.strptime(
+                    config['vars']['start_date'], "%Y-%m-%d").date()
+            except KeyError:
+                print('start_date must be in the config file or command line options')
+                sys.exit(1)
 
     if reconstruct_data:
         if project_source:
@@ -102,7 +120,8 @@ def main(argv):
     if run_report:
         if project_source:
             report(conn, VERBOSE, DEBUG, source_prefix,
-                   source_title, default_points, project_name_list)
+                   source_title, default_points, project_name_list,
+                   retroactive_categories)
         else:
             print("Report specified without a project.\nPlease specify a project with --project.")  # noqa
     conn.close()
@@ -612,7 +631,7 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
     
 
 def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
-           default_points, project_name_list):
+           default_points, project_name_list, retroactive_categories):
     # note that all the COPY commands in the psql scripts run
     # server-side as user postgres
   
@@ -639,6 +658,10 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
         report_tables_script = 'generic_make_history.sql'
     subprocess.call("psql -d phab -f {0} -v prefix={1}".
                     format(report_tables_script, source_prefix), shell=True)
+
+    if retroactive_categories:
+        cur.execute('SELECT set_category_retroactive(%(source_prefix)s)',
+                {'source_prefix': source_prefix})
 
     # Reload the Recategorization mapping
     recat_data = '{0}_recategorization.csv'.format(source_prefix)
