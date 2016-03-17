@@ -150,6 +150,12 @@ DECLARE
   min_count_vel float;
   avg_count_vel float;
   max_count_vel float;
+  min_points_grow float;
+  avg_points_grow float;
+  max_points_grow float;
+  min_count_grow float;
+  avg_count_grow float;
+  max_count_grow float;
 BEGIN
 
     DELETE FROM velocity where source = source_prefix;
@@ -216,7 +222,7 @@ FOR weekrow IN SELECT DISTINCT date
 			  AND source = source_prefix
 			ORDER BY category
 	LOOP
-	    SELECT SUM(delta_resolved_points)/3 AS min_points_vel
+	    SELECT SUM(delta_resolved_points)/3
               INTO min_points_vel
               FROM (SELECT CASE WHEN delta_resolved_points < 0 THEN 0
 	                   ELSE delta_resolved_points
@@ -229,7 +235,7 @@ FOR weekrow IN SELECT DISTINCT date
                      ORDER BY subqv.delta_resolved_points 
                      LIMIT 3) as x;
 
-	    SELECT SUM(delta_resolved_points)/3 AS max_points_vel
+	    SELECT SUM(delta_resolved_points)/3
               INTO max_points_vel
               FROM (SELECT delta_resolved_points
                       FROM velocity subqv
@@ -248,7 +254,21 @@ FOR weekrow IN SELECT DISTINCT date
                AND subqv.source = source_prefix
                AND subqv.category = tranche.category;
 
-	    SELECT SUM(delta_resolved_count)/3 AS min_count_vel
+	    SELECT SUM(delta_total_points)/3
+              INTO min_points_grow
+              FROM (SELECT CASE WHEN delta_resolved_points < 0 THEN 0
+	                   ELSE delta_resolved_points
+			   END
+                      FROM velocity subqv
+                     WHERE subqv.date >= weekrow.date - interval '3 months'
+                       AND subqv.date < weekrow.date
+                       AND subqv.source = source_prefix
+                       AND subqv.category = tranche.category
+                     ORDER BY subqv.delta_resolved_points 
+                     LIMIT 3) as x;
+
+
+            SELECT SUM(delta_resolved_count)/3 AS min_count_vel
               INTO min_count_vel
               FROM (SELECT CASE WHEN delta_resolved_count < 0 THEN 0
 	                   ELSE delta_resolved_count
