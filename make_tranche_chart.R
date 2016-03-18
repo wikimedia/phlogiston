@@ -38,35 +38,6 @@ theme_fivethirtynine <- function(base_size = 12, base_family = "sans"){
 }
 
 ######################################################################
-## Backlog
-######################################################################
-
-backlog <- read.csv(sprintf("/tmp/%s/backlog.csv", args$project))
-backlog$date <- as.Date(backlog$date, "%Y-%m-%d")
-
-burnup_cat <- read.csv(sprintf("/tmp/%s/burnup_categories.csv", args$project))
-burnup_cat$date <- as.Date(burnup_cat$date, "%Y-%m-%d")
-
-png(filename = sprintf("~/html/%s_tranche%s_burnup_points.png", args$project, args$tranche_num), width=1000, height=700, units="px", pointsize=10)
-ggplot(backlog[backlog$category==args$tranche_name,]) + 
-   labs(title=sprintf("%s burnup by points", args$tranche_name), y="Story Point Total") +
-   theme(legend.title=element_blank(), axis.title.x=element_blank()) +
-   geom_area(position='stack', aes(x = date, y = points, ymin=0), fill=args$color) +
-   scale_x_date(limits=c(cutoff_date, now), date_minor_breaks="1 week", label=date_format("%b %d\n%Y"))+
-geom_line(data=burnup_cat[burnup_cat$category==args$tranche_name,], aes(x=date, y=points), size=2)
-dev.off()
-
-png(filename = sprintf("~/html/%s_tranche%s_burnup_count.png", args$project, args$tranche_num), width=1000, height=700, units="px", pointsize=10)
-
-ggplot(backlog[backlog$category==args$tranche_name,]) + 
-  labs(title=sprintf("%s burnup by count", args$tranche_name), y="Story Count") +
-  theme(legend.title=element_blank(), axis.title.x=element_blank()) +
-  geom_area(position='stack', aes(x = date, y = count, ymin=0), fill=args$color) +
-  scale_x_date(limits=c(cutoff_date, now), date_minor_breaks="1 week", label=date_format("%b %d\n%Y"))+
-geom_line(data=burnup_cat[burnup_cat$category==args$tranche_name,], aes(x=date, y=count), size=2)
-dev.off()
-
-######################################################################
 ## Velocity
 ######################################################################
 
@@ -141,3 +112,41 @@ ggplot(forecast) +
   theme(legend.title=element_blank())
 dev.off()
 
+######################################################################
+## Burnup
+######################################################################
+
+backlog <- read.csv(sprintf("/tmp/%s/backlog.csv", args$project))
+backlog <- backlog[backlog$category==args$tranche_name,]
+backlog$date <- as.Date(backlog$date, "%Y-%m-%d")
+
+forecast$xend <- as.Date(forecast$xend, "%Y-%m-%d")
+
+burnup_cat <- read.csv(sprintf("/tmp/%s/burnup_categories.csv", args$project))
+burnup_cat <- burnup_cat[burnup_cat$category==args$tranche_name,]
+burnup_cat$date <- as.Date(burnup_cat$date, "%Y-%m-%d")
+
+png(filename = sprintf("~/html/%s_tranche%s_burnup_points.png", args$project, args$tranche_num), width=1000, height=700, units="px", pointsize=10)
+ggplot(backlog) +
+  labs(title=sprintf("%s burnup by points", args$tranche_name), y="Story Point Total") +
+  theme(legend.title=element_blank(), axis.title.x=element_blank()) +
+  geom_area(position='stack', aes(x = date, y = points, ymin=0), fill=args$color) +
+  scale_x_date(limits=c(cutoff_date, now), date_minor_breaks="1 week", label=date_format("%b %d\n%Y")) +
+  geom_line(data=burnup_cat, aes(x=date, y=points), size=2) +
+  geom_line(data=forecast, aes(x=xend, y=pes_points_yend), color="red", alpha=0.5) +
+  geom_line(data=forecast, aes(x=xend, y=nom_points_yend), color="gray", alpha=0.5) +
+  geom_line(data=forecast, aes(x=xend, y=opt_points_yend), color="green4", alpha=0.5)
+#  geom_segment(aes(x=date, y=points_y, xend=xend, yend=opt_points_yend), data=forecast, color="green4", linetype=1, alpha=0.5)
+dev.off()
+
+png(filename = sprintf("~/html/%s_tranche%s_burnup_count.png", args$project, args$tranche_num), width=1000, height=700, units="px", pointsize=10)
+
+ggplot(backlog) +
+  labs(title=sprintf("%s burnup by count", args$tranche_name), y="Story Count") +
+  theme(legend.title=element_blank(), axis.title.x=element_blank()) +
+  geom_area(position='stack', aes(x = date, y = count, ymin=0), fill=args$color) +
+  scale_x_date(limits=c(cutoff_date, now), date_minor_breaks="1 week", label=date_format("%b %d\n%Y")) +
+  geom_line(data=burnup_cat, aes(x=date, y=count), size=2)
+  geom_segment(aes(x=date, y=count_y, xend=xend, yend=pes_count_yend), data=forecast, color="red", linetype=3) +
+  geom_segment(aes(x=date, y=count_y, xend=xend, yend=opt_count_yend), data=forecast, color="green", linetype=3)
+dev.off()

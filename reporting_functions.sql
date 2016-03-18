@@ -153,9 +153,13 @@ DECLARE
   min_points_grow float;
   avg_points_grow float;
   max_points_grow float;
+  threew_points_grow float;
+  threem_points_grow float;
   min_count_grow float;
   avg_count_grow float;
   max_count_grow float;
+  threew_count_grow float;
+  threem_count_grow float;
 BEGIN
 
     DELETE FROM velocity where source = source_prefix;
@@ -228,8 +232,8 @@ FOR weekrow IN SELECT DISTINCT date
 	                   ELSE delta_resolved_points
 			   END
                       FROM velocity subqv
-                     WHERE subqv.date >= weekrow.date - interval '3 months'
-                       AND subqv.date < weekrow.date
+                     WHERE subqv.date > weekrow.date - interval '3 months'
+                       AND subqv.date <= weekrow.date
                        AND subqv.source = source_prefix
                        AND subqv.category = tranche.category
                      ORDER BY subqv.delta_resolved_points 
@@ -239,8 +243,8 @@ FOR weekrow IN SELECT DISTINCT date
               INTO max_points_vel
               FROM (SELECT delta_resolved_points
                       FROM velocity subqv
-                     WHERE subqv.date >= weekrow.date - interval '3 months'
-                       AND subqv.date < weekrow.date
+                     WHERE subqv.date > weekrow.date - interval '3 months'
+                       AND subqv.date <= weekrow.date
                        AND subqv.source = source_prefix
                        AND subqv.category = tranche.category
                      ORDER BY subqv.delta_resolved_points DESC
@@ -249,24 +253,36 @@ FOR weekrow IN SELECT DISTINCT date
             SELECT AVG(delta_resolved_points)
               INTO avg_points_vel
               FROM velocity subqv
-             WHERE subqv.date >= weekrow.date - interval '3 months'
-               AND subqv.date < weekrow.date
+             WHERE subqv.date > weekrow.date - interval '3 months'
+               AND subqv.date <= weekrow.date
                AND subqv.source = source_prefix
                AND subqv.category = tranche.category;
 
 	    SELECT SUM(delta_total_points)/3
-              INTO min_points_grow
-              FROM (SELECT CASE WHEN delta_resolved_points < 0 THEN 0
-	                   ELSE delta_resolved_points
+              INTO threew_points_grow
+              FROM (SELECT CASE WHEN delta_total_points < 0 THEN 0
+	                   ELSE delta_total_points
 			   END
                       FROM velocity subqv
-                     WHERE subqv.date >= weekrow.date - interval '3 months'
-                       AND subqv.date < weekrow.date
+                     WHERE subqv.date > weekrow.date - interval '3 weeks'
+                       AND subqv.date <= weekrow.date
                        AND subqv.source = source_prefix
                        AND subqv.category = tranche.category
-                     ORDER BY subqv.delta_resolved_points 
+                     ORDER BY subqv.delta_total_points DESC
                      LIMIT 3) as x;
 
+	    SELECT SUM(delta_total_points)/3
+              INTO threem_points_grow
+              FROM (SELECT CASE WHEN delta_total_points < 0 THEN 0
+	                   ELSE delta_total_points
+			   END
+                      FROM velocity subqv
+                     WHERE subqv.date > weekrow.date - interval '3 months'
+                       AND subqv.date <= weekrow.date
+                       AND subqv.source = source_prefix
+                       AND subqv.category = tranche.category
+                     ORDER BY subqv.delta_total_points DESC
+                     LIMIT 3) as x;
 
             SELECT SUM(delta_resolved_count)/3 AS min_count_vel
               INTO min_count_vel
@@ -274,8 +290,8 @@ FOR weekrow IN SELECT DISTINCT date
 	                   ELSE delta_resolved_count
 			   END
                       FROM velocity subqv
-                     WHERE subqv.date >= weekrow.date - interval '3 months'
-                       AND subqv.date < weekrow.date
+                     WHERE subqv.date > weekrow.date - interval '3 months'
+                       AND subqv.date <= weekrow.date
                        AND subqv.source = source_prefix
                        AND subqv.category = tranche.category
                      ORDER BY subqv.delta_resolved_count 
@@ -285,8 +301,8 @@ FOR weekrow IN SELECT DISTINCT date
               INTO max_count_vel
               FROM (SELECT delta_resolved_count
                       FROM velocity subqv
-                     WHERE subqv.date >= weekrow.date - interval '3 months'
-                       AND subqv.date < weekrow.date
+                     WHERE subqv.date > weekrow.date - interval '3 months'
+                       AND subqv.date <= weekrow.date
                        AND subqv.source = source_prefix
                        AND subqv.category = tranche.category
                      ORDER BY subqv.delta_resolved_count DESC
@@ -295,18 +311,62 @@ FOR weekrow IN SELECT DISTINCT date
             SELECT AVG(delta_resolved_count)
               INTO avg_count_vel
               FROM velocity subqv
-             WHERE subqv.date >= weekrow.date - interval '3 months'
-               AND subqv.date < weekrow.date
+             WHERE subqv.date > weekrow.date - interval '3 months'
+               AND subqv.date <= weekrow.date
                AND subqv.source = source_prefix
                AND subqv.category = tranche.category;
 
+	    SELECT SUM(delta_total_count)/3
+              INTO threew_count_grow
+              FROM (SELECT CASE WHEN delta_total_count < 0 THEN 0
+	                   ELSE delta_total_count
+			   END
+                      FROM velocity subqv
+                     WHERE subqv.date > weekrow.date - interval '3 weeks'
+                       AND subqv.date <= weekrow.date
+                       AND subqv.source = source_prefix
+                       AND subqv.category = tranche.category
+                     ORDER BY subqv.delta_total_count DESC
+                     LIMIT 3) as x;
+
+	    SELECT SUM(delta_total_count)/3
+              INTO threem_count_grow
+              FROM (SELECT CASE WHEN delta_total_count < 0 THEN 0
+	                   ELSE delta_total_count
+			   END
+                      FROM velocity subqv
+                     WHERE subqv.date > weekrow.date - interval '3 months'
+                       AND subqv.date <= weekrow.date
+                       AND subqv.source = source_prefix
+                       AND subqv.category = tranche.category
+                     ORDER BY subqv.delta_total_count DESC
+                     LIMIT 3) as x;
+
+	    SELECT LEAST(GREATEST(threew_points_grow, 0), threem_points_grow)
+              INTO avg_points_grow;
+
+            SELECT GREATEST(threew_points_grow, threem_points_grow)
+              INTO max_points_grow;
+
+	    SELECT LEAST(GREATEST(threew_count_grow, 0), threem_count_grow)
+              INTO avg_count_grow;
+
+            SELECT GREATEST(threew_count_grow, threem_count_grow)
+              INTO max_count_grow;
+
             UPDATE velocity
-               SET pes_points_vel = round(min_points_vel),
-                   nom_points_vel = round(avg_points_vel),
+               SET pes_points_vel = round(min_points_vel - max_points_grow),
+                   nom_points_vel = round(avg_points_vel - avg_points_grow),
                    opt_points_vel = round(max_points_vel),
-                   pes_count_vel = round(min_count_vel),
-                   nom_count_vel = round(avg_count_vel),
-                   opt_count_vel = round(max_count_vel)
+                   pes_count_vel = round(min_count_vel - max_count_grow),
+                   nom_count_vel = round(avg_count_vel- avg_points_grow),
+                   opt_count_vel = round(max_count_vel),
+		   opt_points_total_growrate = 0,
+		   nom_points_total_growrate = round(avg_points_grow),
+                   pes_points_total_growrate = round(max_points_grow * 1.5),
+		   opt_count_total_growrate = 0,
+		   nom_count_total_growrate = round(avg_count_grow),
+                   pes_count_total_growrate = round(max_count_grow * 1.5)
              WHERE source = source_prefix
                AND category = tranche.category
                AND date = weekrow.date;
