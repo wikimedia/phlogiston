@@ -86,7 +86,7 @@ def main(argv):
         try:
             source_prefix = config['vars']['source_prefix']
             source_title = config['vars']['source_title']
-            project_name_list = config['vars']['project_list']
+            project_name_list =  [x.strip() for x in config['vars']['project_list'].split(',')]
         except KeyError as e:
             print('Config file {0} is missing required parameter(s): {1}'.
                   format(project_source, e))
