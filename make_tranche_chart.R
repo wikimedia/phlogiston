@@ -133,10 +133,9 @@ ggplot(backlog) +
   geom_area(position='stack', aes(x = date, y = points, ymin=0), fill=args$color) +
   scale_x_date(limits=c(cutoff_date, now), date_minor_breaks="1 week", label=date_format("%b %d\n%Y")) +
   geom_line(data=burnup_cat, aes(x=date, y=points), size=2) +
-  geom_line(data=forecast, aes(x=xend, y=pes_points_yend), color="red", alpha=0.5) +
-  geom_line(data=forecast, aes(x=xend, y=nom_points_yend), color="gray", alpha=0.5) +
-  geom_line(data=forecast, aes(x=xend, y=opt_points_yend), color="green4", alpha=0.5)
-#  geom_segment(aes(x=date, y=points_y, xend=xend, yend=opt_points_yend), data=forecast, color="green4", linetype=1, alpha=0.5)
+  geom_line(data=forecast, aes(x=xend, y=pes_points_yend), color="red", alpha=0.5, size=3) +
+  geom_line(data=forecast, aes(x=xend, y=nom_points_yend), color="gray", alpha=0.5, size=3) +
+  geom_line(data=forecast, aes(x=xend, y=opt_points_yend), color="green4", alpha=0.5, size=3)
 dev.off()
 
 png(filename = sprintf("~/html/%s_tranche%s_burnup_count.png", args$project, args$tranche_num), width=1000, height=700, units="px", pointsize=10)
@@ -146,7 +145,8 @@ ggplot(backlog) +
   theme(legend.title=element_blank(), axis.title.x=element_blank()) +
   geom_area(position='stack', aes(x = date, y = count, ymin=0), fill=args$color) +
   scale_x_date(limits=c(cutoff_date, now), date_minor_breaks="1 week", label=date_format("%b %d\n%Y")) +
-  geom_line(data=burnup_cat, aes(x=date, y=count), size=2)
-  geom_segment(aes(x=date, y=count_y, xend=xend, yend=pes_count_yend), data=forecast, color="red", linetype=3) +
-  geom_segment(aes(x=date, y=count_y, xend=xend, yend=opt_count_yend), data=forecast, color="green", linetype=3)
+  geom_line(data=burnup_cat, aes(x=date, y=count), size=2) +
+  geom_line(data=forecast, aes(x=xend, y=pes_count_yend), color="red", alpha=0.5, size=3) +
+  geom_line(data=forecast, aes(x=xend, y=nom_count_yend), color="gray", alpha=0.5, size=3) +
+  geom_line(data=forecast, aes(x=xend, y=opt_count_yend), color="green4", alpha=0.5, size=3)
 dev.off()
