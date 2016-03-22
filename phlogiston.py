@@ -805,7 +805,7 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
             color = '#DDDDDD'
 
         subprocess.call(
-            "Rscript make_tranche_chart.R {0} {1} \"{2}\" \"{3}\"".
+            'Rscript make_tranche_chart.R {0} {1} \"{2}\" \"{3}\"'.
             format(source_prefix, i, color, category), shell=True)
         tab_string += '<td><a href="#tab{0}">{1}</a></td>'.format(i,category)
         html_string += '<p id="tab{0}"><table>'.format(i)

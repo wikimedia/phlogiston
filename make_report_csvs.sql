@@ -221,8 +221,8 @@ SELECT calculate_velocities(:'prefix');
 			      
 COPY (
 SELECT date,
-       sum(delta_resolved_points) as points,
-       sum(delta_resolved_count) as count
+       sum(delta_points_resolved) as points,
+       sum(delta_count_resolved) as count
   FROM velocity
  WHERE source = :'prefix'
  GROUP BY date
@@ -232,8 +232,8 @@ SELECT date,
 COPY (
 SELECT date,
        category,
-       delta_resolved_points as points,
-       delta_resolved_count as count
+       delta_points_resolved as points,
+       delta_count_resolved as count
   FROM velocity
  WHERE source = :'prefix'
  ORDER BY category, date
@@ -281,18 +281,18 @@ SELECT date,
        pes_count_date,
        nom_count_date,
        opt_count_date,
-       points_resolved + points_open as points_y,
-       points_resolved + points_open + (3 * pes_points_total_growrate) as pes_points_yend,
-       points_resolved + points_open + (3 * nom_points_total_growrate) as nom_points_yend,
-       points_resolved + points_open + (3 * opt_points_total_growrate) as opt_points_yend,
-       count_resolved + count_open as count_y,
-       count_resolved + count_open + (3 * pes_count_total_growrate) as pes_count_yend,
-       count_resolved + count_open + (3 * nom_count_total_growrate) as nom_count_yend,
-       count_resolved + count_open + (3 * opt_count_total_growrate) as opt_count_yend,
-       date + INTERVAL '3 weeks' as xend,
-       opt_points_total_growrate,
-       nom_points_total_growrate,
-       pes_points_total_growrate
+       pes_points_growviz,
+       nom_points_growviz,
+       opt_points_growviz,
+       pes_count_growviz,
+       nom_count_growviz,
+       opt_count_growviz,
+       pes_points_velviz,
+       nom_points_velviz,
+       opt_points_velviz,
+       pes_count_velviz,
+       nom_count_velviz,
+       opt_count_velviz
   FROM velocity v, category_list z
  WHERE z.category = v.category
    AND z.source = :'prefix'
