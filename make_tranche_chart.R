@@ -21,6 +21,9 @@ args <- parser$parse_args()
 now <- Sys.Date()
 start_date <- now - 91
 end_date <- now + 91
+last_quarter_start  <- as.Date(c("2015-10-01"))
+quarter_start  <- as.Date(c("2016-01-01"))
+next_quarter_start    <- as.Date(c("2016-04-01"))
 
 # common theme from https://github.com/Ironholds/wmf/blob/master/R/dataviz.R
 theme_fivethirtynine <- function(base_size = 12, base_family = "sans"){
@@ -28,13 +31,14 @@ theme_fivethirtynine <- function(base_size = 12, base_family = "sans"){
      theme(line = element_line(), rect = element_rect(fill = ggthemes::ggthemes_data$fivethirtyeight["ltgray"],
                                                       linetype = 0, colour = NA),
            text = element_text(size=10, colour = ggthemes::ggthemes_data$fivethirtyeight["dkgray"]),
-           axis.title.y = element_text(size = rel(1.5), angle = 90, vjust = 1.5), axis.text = element_text(),
-           axis.title.x = element_text(size = rel(1.5)),
+           axis.title.y = element_text(size = rel(2), angle = 90, vjust = 1.5), 
+           axis.title.x = element_text(size = rel(2)),
+           axis.text = element_text(size=rel(1.8)),
            axis.ticks = element_blank(), axis.line = element_blank(),
            panel.grid = element_line(colour = NULL),
            panel.grid.major = element_line(colour = ggthemes_data$fivethirtyeight["medgray"]),
            panel.grid.minor = element_blank(),
-           plot.title = element_text(hjust = 0, size = rel(1.5), face = "bold"),
+           plot.title = element_text(hjust = 0, size = rel(2), face = "bold"),
            strip.background = element_rect()))
 }
 
@@ -120,6 +124,8 @@ dev.off()
 backlog <- read.csv(sprintf("/tmp/%s/backlog.csv", args$project))
 backlog <- backlog[backlog$category==args$tranche_name,]
 backlog$date <- as.Date(backlog$date, "%Y-%m-%d")
+ymin = 0
+ymax = Inf
 
 burnup_cat <- read.csv(sprintf("/tmp/%s/burnup_categories.csv", args$project))
 burnup_cat <- burnup_cat[burnup_cat$category==args$tranche_name,]
@@ -130,9 +136,11 @@ forecast <- forecast[forecast$date >= now,]
 png(filename = sprintf("~/html/%s_tranche%s_burnup_points.png", args$project, args$tranche_num), width=1000, height=700, units="px", pointsize=10)
 ggplot(backlog) +
   labs(title=sprintf("%s burnup by points", args$tranche_name), y="Story Point Total") +
+  theme_fivethirtynine() +
   theme(legend.title=element_blank(), axis.title.x=element_blank()) +
-  geom_area(position='stack', aes(x = date, y = points, ymin=0), fill=args$color) +
   scale_x_date(limits=c(start_date, end_date), date_minor_breaks="1 week", label=date_format("%b %d\n%Y")) +
+  annotate("rect", xmin=quarter_start, xmax=next_quarter_start, ymin=0, ymax=Inf, fill="white", alpha=0.5) +
+  geom_area(position='stack', aes(x = date, y = points, ymin=0), fill=args$color) +
   geom_line(data=burnup_cat, aes(x=date, y=points), size=2) +
   geom_line(data=forecast, aes(x=date, y=pes_points_velviz), color="black", linetype=2, size=1) +
   geom_line(data=forecast, aes(x=date, y=opt_points_velviz), color="black", linetype=2, size=1) +
@@ -144,9 +152,11 @@ png(filename = sprintf("~/html/%s_tranche%s_burnup_count.png", args$project, arg
 
 ggplot(backlog) +
   labs(title=sprintf("%s burnup by count", args$tranche_name), y="Story Count") +
+  theme_fivethirtynine() +
   theme(legend.title=element_blank(), axis.title.x=element_blank()) +
+  scale_x_date(limits=c(start_date, end_date), label=date_format("%b %d\n%Y")) +
+  annotate("rect", xmin=quarter_start, xmax=next_quarter_start, ymin=0, ymax=Inf, fill="white", alpha=0.5) +
   geom_area(position='stack', aes(x = date, y = count, ymin=0), fill=args$color) +
-  scale_x_date(limits=c(start_date, end_date), date_minor_breaks="1 week", label=date_format("%b %d\n%Y")) +
   geom_line(data=burnup_cat, aes(x=date, y=count), size=2) +
   geom_line(data=forecast, aes(x=date, y=pes_count_velviz), color="black", linetype=2, size=1) +
   geom_line(data=forecast, aes(x=date, y=opt_count_velviz), color="black", linetype=2, size=1) +
