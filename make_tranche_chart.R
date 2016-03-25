@@ -19,7 +19,11 @@ parser$add_argument("tranche_name", nargs=1, help="Tranche Name")
 args <- parser$parse_args()
 
 now <- Sys.Date()
-cutoff_date <- now - 91
+start_date <- now - 91
+end_date <- now + 91
+last_quarter_start  <- as.Date(c("2015-10-01"))
+quarter_start  <- as.Date(c("2016-01-01"))
+next_quarter_start    <- as.Date(c("2016-04-01"))
 
 # common theme from https://github.com/Ironholds/wmf/blob/master/R/dataviz.R
 theme_fivethirtynine <- function(base_size = 12, base_family = "sans"){
@@ -27,44 +31,16 @@ theme_fivethirtynine <- function(base_size = 12, base_family = "sans"){
      theme(line = element_line(), rect = element_rect(fill = ggthemes::ggthemes_data$fivethirtyeight["ltgray"],
                                                       linetype = 0, colour = NA),
            text = element_text(size=10, colour = ggthemes::ggthemes_data$fivethirtyeight["dkgray"]),
-           axis.title.y = element_text(size = rel(1.5), angle = 90, vjust = 1.5), axis.text = element_text(),
-           axis.title.x = element_text(size = rel(1.5)),
+           axis.title.y = element_text(size = rel(2), angle = 90, vjust = 1.5), 
+           axis.title.x = element_text(size = rel(2)),
+           axis.text = element_text(size=rel(1.8)),
            axis.ticks = element_blank(), axis.line = element_blank(),
            panel.grid = element_line(colour = NULL),
            panel.grid.major = element_line(colour = ggthemes_data$fivethirtyeight["medgray"]),
            panel.grid.minor = element_blank(),
-           plot.title = element_text(hjust = 0, size = rel(1.5), face = "bold"),
+           plot.title = element_text(hjust = 0, size = rel(2), face = "bold"),
            strip.background = element_rect()))
 }
-
-######################################################################
-## Backlog
-######################################################################
-
-backlog <- read.csv(sprintf("/tmp/%s/backlog.csv", args$project))
-backlog$date <- as.Date(backlog$date, "%Y-%m-%d")
-
-burnup_cat <- read.csv(sprintf("/tmp/%s/burnup_categories.csv", args$project))
-burnup_cat$date <- as.Date(burnup_cat$date, "%Y-%m-%d")
-
-png(filename = sprintf("~/html/%s_tranche%s_burnup_points.png", args$project, args$tranche_num), width=1000, height=700, units="px", pointsize=10)
-ggplot(backlog[backlog$category==args$tranche_name,]) + 
-   labs(title=sprintf("%s burnup by points", args$tranche_name), y="Story Point Total") +
-   theme(legend.title=element_blank(), axis.title.x=element_blank()) +
-   geom_area(position='stack', aes(x = date, y = points, ymin=0), fill=args$color) +
-   scale_x_date(limits=c(cutoff_date, now), date_minor_breaks="1 week", label=date_format("%b %d\n%Y"))+
-geom_line(data=burnup_cat[burnup_cat$category==args$tranche_name,], aes(x=date, y=points), size=2)
-dev.off()
-
-png(filename = sprintf("~/html/%s_tranche%s_burnup_count.png", args$project, args$tranche_num), width=1000, height=700, units="px", pointsize=10)
-
-ggplot(backlog[backlog$category==args$tranche_name,]) + 
-  labs(title=sprintf("%s burnup by count", args$tranche_name), y="Story Count") +
-  theme(legend.title=element_blank(), axis.title.x=element_blank()) +
-  geom_area(position='stack', aes(x = date, y = count, ymin=0), fill=args$color) +
-  scale_x_date(limits=c(cutoff_date, now), date_minor_breaks="1 week", label=date_format("%b %d\n%Y"))+
-geom_line(data=burnup_cat[burnup_cat$category==args$tranche_name,], aes(x=date, y=count), size=2)
-dev.off()
 
 ######################################################################
 ## Velocity
@@ -86,7 +62,7 @@ ggplot(velocity_cat_points) +
   geom_line(aes(x=date, y=nom_points_vel), size=2, color="gray") +
   geom_bar(data=velocity_cat_t, aes(x=date, y=points), fill="black", size=2, stat="identity") +
   labs(title=sprintf("%s velocity forecasts", args$tranche_name), y="Story Point Total") +
-  scale_x_date(limits=c(cutoff_date, now), date_minor_breaks="1 week", label=date_format("%b %d\n%Y"))+
+  scale_x_date(limits=c(start_date, end_date), date_minor_breaks="1 week", label=date_format("%b %d\n%Y"))+
   theme_fivethirtynine() +
   theme(axis.title.x=element_blank())
 dev.off()
@@ -103,7 +79,7 @@ ggplot(velocity_cat_count) +
   geom_line(aes(x=date, y=nom_count_vel), size=2, color="gray") +
   geom_bar(data=velocity_cat_t, aes(x=date, y=count), fill="black", size=2, stat="identity") +
   labs(title=sprintf("%s velocity forecasts", args$tranche_name), y="Story Count") +
-  scale_x_date(limits=c(cutoff_date, now), date_minor_breaks="1 week", label=date_format("%b %d\n%Y"))+
+  scale_x_date(limits=c(start_date, end_date), date_minor_breaks="1 week", label=date_format("%b %d\n%Y"))+
   theme_fivethirtynine() +
   theme(axis.title.x=element_blank())
 dev.off()
@@ -122,7 +98,7 @@ ggplot(forecast) +
   geom_line(aes(x=date, y=opt_points_fore), color="chartreuse3", size=3) +
   geom_line(aes(x=date, y=nom_points_fore), color="gray", size=2) +
   labs(title=sprintf("%s completion forecast by points", args$tranche_name), y="weeks remaining") +
-  scale_x_date(limits=c(cutoff_date, now), date_minor_breaks="1 week", label=date_format("%b %d\n%Y")) +
+  scale_x_date(limits=c(start_date, end_date), date_minor_breaks="1 week", label=date_format("%b %d\n%Y")) +
   scale_y_continuous(limits=c(0,14), breaks=pretty_breaks(n=7), oob=squish) +
   theme_fivethirtynine() +
   theme(legend.title=element_blank())
@@ -135,9 +111,59 @@ ggplot(forecast) +
   geom_line(aes(x=date, y=opt_count_fore), color="chartreuse3", size=3) +
   geom_line(aes(x=date, y=nom_count_fore), color="gray", size=2) +
   labs(title=sprintf("%s completion forecast by count", args$tranche_name), y="weeks remaining") +
-  scale_x_date(limits=c(cutoff_date, now), date_minor_breaks="1 week", label=date_format("%b %d\n%Y"))+
+  scale_x_date(limits=c(start_date, end_date), date_minor_breaks="1 week", label=date_format("%b %d\n%Y"))+
   scale_y_continuous(limits=c(0,14), breaks=pretty_breaks(n=7), oob=squish ) +
   theme_fivethirtynine() +
   theme(legend.title=element_blank())
 dev.off()
 
+######################################################################
+## Burnup
+######################################################################
+
+backlog <- read.csv(sprintf("/tmp/%s/backlog.csv", args$project))
+backlog <- backlog[backlog$category==args$tranche_name,]
+backlog$date <- as.Date(backlog$date, "%Y-%m-%d")
+ymin = 0
+ymax = Inf
+
+burnup_cat <- read.csv(sprintf("/tmp/%s/burnup_categories.csv", args$project))
+burnup_cat <- burnup_cat[burnup_cat$category==args$tranche_name,]
+burnup_cat$date <- as.Date(burnup_cat$date, "%Y-%m-%d")
+
+forecast <- forecast[forecast$date >= now,]
+
+png(filename = sprintf("~/html/%s_tranche%s_burnup_points.png", args$project, args$tranche_num), width=1000, height=700, units="px", pointsize=10)
+ggplot(backlog) +
+  labs(title=sprintf("%s burnup by points", args$tranche_name), y="Story Point Total") +
+  theme_fivethirtynine() +
+  theme(legend.title=element_blank(), axis.title.x=element_blank()) +
+  scale_x_date(limits=c(start_date, end_date), date_minor_breaks="1 week", label=date_format("%b %d\n%Y")) +
+  annotate("rect", xmin=quarter_start, xmax=next_quarter_start, ymin=0, ymax=Inf, fill="white", alpha=0.5) +
+  geom_area(position='stack', aes(x = date, y = points, ymin=0), fill=args$color) +
+  geom_line(data=burnup_cat, aes(x=date, y=points), size=2) +
+  geom_line(data=forecast, aes(x=date, y=pes_points_velviz), color="black", linetype=3, size=1) +
+  geom_line(data=forecast, aes(x=date, y=nom_points_velviz), color="black", linetype=2, size=2) +
+  geom_line(data=forecast, aes(x=date, y=opt_points_velviz), color="black", linetype=3, size=1) +
+  geom_line(data=forecast, aes(x=date, y=pes_points_growviz), color="gray", linetype=3, alpha=0.8, size=1) +
+  geom_line(data=forecast, aes(x=date, y=nom_points_growviz), color="gray", linetype=2, alpha=0.8, size=3) +
+  geom_line(data=forecast, aes(x=date, y=opt_points_growviz), color="gray", linetype=3, alpha=0.8, size=1)
+dev.off()
+
+png(filename = sprintf("~/html/%s_tranche%s_burnup_count.png", args$project, args$tranche_num), width=1000, height=700, units="px", pointsize=10)
+
+ggplot(backlog) +
+  labs(title=sprintf("%s burnup by count", args$tranche_name), y="Story Count") +
+  theme_fivethirtynine() +
+  theme(legend.title=element_blank(), axis.title.x=element_blank()) +
+  scale_x_date(limits=c(start_date, end_date), label=date_format("%b %d\n%Y")) +
+  annotate("rect", xmin=quarter_start, xmax=next_quarter_start, ymin=0, ymax=Inf, fill="white", alpha=0.5) +
+  geom_area(position='stack', aes(x = date, y = count, ymin=0), fill=args$color) +
+  geom_line(data=burnup_cat, aes(x=date, y=count), size=2) +
+  geom_line(data=forecast, aes(x=date, y=pes_count_velviz), color="black", linetype=3, size=1) +
+  geom_line(data=forecast, aes(x=date, y=nom_count_velviz), color="black", linetype=2, size=2) +
+  geom_line(data=forecast, aes(x=date, y=opt_count_velviz), color="black", linetype=3, size=1) +
+  geom_line(data=forecast, aes(x=date, y=pes_count_growviz), color="gray", linetype=3, alpha=0.8, size=1) +
+  geom_line(data=forecast, aes(x=date, y=nom_count_growviz), color="gray", linetype=2, alpha=0.8, size=3) +
+  geom_line(data=forecast, aes(x=date, y=opt_count_growviz), color="gray", linetype=3, alpha=0.8, size=1)
+dev.off()
