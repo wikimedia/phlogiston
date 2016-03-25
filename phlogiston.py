@@ -798,8 +798,8 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
     tab_string = '<table><tr>'
     html_string = '<div class="tabs">'
 
-    for category in reversed(cat_list):
-        try:
+    for category in reversed(cat_list):   
+        try:          
             color = colors[i]
         except:
             color = '#DDDDDD'

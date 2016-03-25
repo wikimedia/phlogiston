@@ -112,28 +112,28 @@ CREATE TABLE velocity (
     opt_count_fore int,
     nom_count_fore int,
     pes_count_fore int,
-    threem_points_growrate float,
-    threew_points_growrate float,
-    threem_count_growrate float,
-    threew_count_growrate float,
+    threem_max_points_growrate float, -- DEBUG
+    threew_max_points_growrate float, -- DEBUG
+    threem_max_count_growrate float, -- DEBUG
+    threew_max_count_growrate float, -- DEBUG
     opt_points_date timestamp,
     nom_points_date timestamp,
     pes_points_date timestamp,
     opt_count_date timestamp,
     nom_count_date timestamp,
     pes_count_date timestamp,
-    pes_points_growviz int,
-    nom_points_growviz int,
-    opt_points_growviz int,
-    pes_count_growviz int,
-    nom_count_growviz int,
-    opt_count_growviz int,
-    pes_points_velviz int,
-    nom_points_velviz int,
-    opt_points_velviz int,
-    pes_count_velviz int,
-    nom_count_velviz int,
-    opt_count_velviz int
+    pes_points_growviz float,
+    nom_points_growviz float,
+    opt_points_growviz float,
+    pes_count_growviz float,
+    nom_count_growviz float,
+    opt_count_growviz float,
+    pes_points_velviz float,
+    nom_points_velviz float,
+    opt_points_velviz float,
+    pes_count_velviz float,
+    nom_count_velviz float,
+    opt_count_velviz float
 );
 
 DROP TABLE IF EXISTS open_backlog_size;
