@@ -468,16 +468,22 @@ BEGIN
            nom_points_fore = round((points_total - points_resolved)::float /
                                     GREATEST((nom_points_vel - nom_points_total_growrate),1)),
            opt_points_fore = round((points_total - points_resolved)::float /
-                                    GREATEST((opt_points_vel - opt_points_total_growrate),1)),
-           pes_count_fore = round((count_total - count_resolved)::float /
+                                    GREATEST((opt_points_vel - opt_points_total_growrate),1))
+     WHERE source = source_prefix
+       AND points_resolved < points_total;
+
+    UPDATE velocity
+       SET pes_count_fore = round((count_total - count_resolved)::float /
                                     GREATEST((pes_count_vel - pes_count_total_growrate),1)),
            nom_count_fore = round((count_total - count_resolved)::float /
                                     GREATEST((nom_count_vel - nom_count_total_growrate),1)),
            opt_count_fore = round((count_total - count_resolved)::float /
                                     GREATEST((opt_count_vel - opt_count_total_growrate),1))
-     WHERE source = source_prefix;
-
+     WHERE source = source_prefix
+       AND count_resolved < count_total;
+       
     -- convert # of weeks in future to specific date
+    
     UPDATE velocity
        SET pes_points_date = date_trunc('day', date + (pes_points_fore * interval '1 week')),
            nom_points_date = date_trunc('day', date + (nom_points_fore * interval '1 week')),
