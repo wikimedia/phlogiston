@@ -142,10 +142,12 @@ ggplot(backlog) +
   annotate("rect", xmin=quarter_start, xmax=next_quarter_start, ymin=0, ymax=Inf, fill="white", alpha=0.5) +
   geom_area(position='stack', aes(x = date, y = points, ymin=0), fill=args$color) +
   geom_line(data=burnup_cat, aes(x=date, y=points), size=2) +
-  geom_line(data=forecast, aes(x=date, y=pes_points_velviz), color="black", linetype=2, size=1) +
-  geom_line(data=forecast, aes(x=date, y=opt_points_velviz), color="black", linetype=2, size=1) +
-  geom_line(data=forecast, aes(x=date, y=pes_points_growviz), color="gray", linetype=2, alpha=0.9, size=2) +
-  geom_line(data=forecast, aes(x=date, y=opt_points_growviz), color="gray", linetype=2, alpha=0.9, size=2)
+  geom_line(data=forecast, aes(x=date, y=pes_count_velviz), color="black", linetype=3, size=1) +
+  geom_line(data=forecast, aes(x=date, y=nom_points_velviz), color="black", linetype=2, size=2) +
+  geom_line(data=forecast, aes(x=date, y=opt_points_velviz), color="black", linetype=3, size=1) +
+  geom_line(data=forecast, aes(x=date, y=pes_points_growviz), color="gray", linetype=3, alpha=0.8, size=1) +
+  geom_line(data=forecast, aes(x=date, y=nom_points_growviz), color="gray", linetype=2, alpha=0.8, size=3) +
+  geom_line(data=forecast, aes(x=date, y=opt_points_growviz), color="gray", linetype=3, alpha=0.8, size=1)
 dev.off()
 
 png(filename = sprintf("~/html/%s_tranche%s_burnup_count.png", args$project, args$tranche_num), width=1000, height=700, units="px", pointsize=10)
@@ -158,9 +160,10 @@ ggplot(backlog) +
   annotate("rect", xmin=quarter_start, xmax=next_quarter_start, ymin=0, ymax=Inf, fill="white", alpha=0.5) +
   geom_area(position='stack', aes(x = date, y = count, ymin=0), fill=args$color) +
   geom_line(data=burnup_cat, aes(x=date, y=count), size=2) +
-#  geom_line(data=forecast, aes(x=date, y=pes_count_velviz), color="black", linetype=2, size=1) +
-#  geom_line(data=forecast, aes(x=date, y=opt_count_velviz), color="black", linetype=2, size=1) +
-  geom_line(data=forecast, aes(x=date, y=pes_count_growviz), color="gray", linetype=2, alpha=0.8, size=2) +
-  geom_line(data=forecast, aes(x=date, y=nom_count_growviz), color="gray", linetype=3, alpha=0.8, size=2) +
-  geom_line(data=forecast, aes(x=date, y=opt_count_growviz), color="gray", linetype=4, alpha=0.8, size=2)
+  geom_line(data=forecast, aes(x=date, y=pes_count_velviz), color="black", linetype=3, size=1) +
+  geom_line(data=forecast, aes(x=date, y=nom_count_velviz), color="black", linetype=2, size=2) +
+  geom_line(data=forecast, aes(x=date, y=opt_count_velviz), color="black", linetype=3, size=1) +
+  geom_line(data=forecast, aes(x=date, y=pes_count_growviz), color="gray", linetype=3, alpha=0.8, size=1) +
+  geom_line(data=forecast, aes(x=date, y=nom_count_growviz), color="gray", linetype=2, alpha=0.8, size=3) +
+  geom_line(data=forecast, aes(x=date, y=opt_count_growviz), color="gray", linetype=3, alpha=0.8, size=1)
 dev.off()

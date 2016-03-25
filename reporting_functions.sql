@@ -433,12 +433,12 @@ BEGIN
               INTO max_count_grow;
 
             UPDATE velocity
-               SET pes_points_vel = round(min_points_vel),
-                   nom_points_vel = round(avg_points_vel),
-                   opt_points_vel = round(max_points_vel),
-                   pes_count_vel = round(min_count_vel),
-                   nom_count_vel = round(avg_count_vel),
-                   opt_count_vel = round(max_count_vel),
+               SET pes_points_vel = min_points_vel,
+                   nom_points_vel = avg_points_vel,
+                   opt_points_vel = max_points_vel,
+                   pes_count_vel = min_count_vel,
+                   nom_count_vel = avg_count_vel,
+                   opt_count_vel = max_count_vel,
                    opt_points_total_growrate = 0,
                    nom_points_total_growrate = avg_points_grow,
                    pes_points_total_growrate = max_points_grow,
