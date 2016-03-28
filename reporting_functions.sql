@@ -185,7 +185,7 @@ BEGIN
       INTO past_dates
       FROM GENERATE_SERIES
            (now() - interval '26 weeks',
-            now() - interval '1 week',
+            now(),
             '1 week'::interval) dd
     );
 

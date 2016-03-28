@@ -173,7 +173,9 @@ dev.off()
 
 forecast_done <- read.csv(sprintf("/tmp/%s/forecast_done.csv", args$project))
 forecast <- read.csv(sprintf("/tmp/%s/forecast.csv", args$project))
+forecast$date <- as.Date(forecast$date, "%Y-%m-%d")
 forecast <- forecast[forecast$weeks_old < 5,]
+
 
 if (args$zoom == 'True') {
   forecast_done <- forecast_done[forecast_done$zoom == 't',]
@@ -193,19 +195,20 @@ forecast$opt_points_date <- as.Date(forecast$opt_points_date, "%Y-%m-%d")
 forecast$pes_count_date <- as.Date(forecast$pes_count_date, "%Y-%m-%d")
 forecast$nom_count_date <- as.Date(forecast$nom_count_date, "%Y-%m-%d")
 forecast$opt_count_date <- as.Date(forecast$opt_count_date, "%Y-%m-%d")
-forecast_current <- na.omit(forecast[forecast$weeks_old == 0,])
+
+forecast_current <- forecast[ forecast$weeks_old < 1 & forecast$weeks_old >= 0,]
 forecast_future_points <- na.omit(forecast[forecast$nom_points_date > forecast_end & forecast$weeks_old == 1, ])
 forecast_future_count <- na.omit(forecast[forecast$nom_count_date > forecast_end & forecast$weeks_old == 1, ])
 
 png(filename = sprintf("~/html/%s_forecast_points%s.png", args$project, zoom_suffix), width=2000, height=1125, units="px", pointsize=30)
 
 p <- ggplot(forecast_done) +
-  geom_rect(aes(xmin=first_cat, xmax=last_cat, ymin=quarter_start, ymax=next_quarter_start), fill="white", alpha=0.09) +
+  annotate("rect", xmin=first_cat, xmax=last_cat, ymin=quarter_start, ymax=next_quarter_start, fill="white", alpha=0.5) +
+  annotate("text", x=forecast_current$category, y=forecast_current$date, label=forecast_current$points_pct_complete, size=10, family="mono") +
   geom_hline(aes(yintercept=as.numeric(now)), color="blue") +
   geom_point(aes(x=category, y=resolved_date), size=8, shape=18) +
-  geom_errorbar(data = forecast, aes(x=category, y=nom_points_date, ymax=pes_points_date, ymin=opt_points_date, color=weeks_old), width=.3, size=2, position="dodge", alpha=.2) +
-  geom_point(data = forecast, aes(x=category, y=nom_points_date, color=weeks_old), size=10, shape=5) +
-  geom_point(data = forecast_current, aes(x=category, y=nom_points_date), size=13, shape=5, color="Black") +
+  geom_errorbar(data = forecast_current, aes(x=category, y=nom_points_date, ymax=pes_points_date, ymin=opt_points_date, color=weeks_old), width=.3, size=2, alpha=.3) +
+  geom_point(data = forecast_current, aes(x=category, y=nom_points_date), size=7, shape=5, color="Black") +
   geom_text(data = forecast_current, aes(x=category, y=nom_points_date, label=format(nom_points_date, format="%b %d\n%Y")), size=8, color="DarkSlateGray") +
   geom_point(data = forecast_done, aes(x=category, y=forecast_start, label=points_total, size=points_total)) +
   scale_size_continuous(range = c(3,15)) +
@@ -236,12 +239,12 @@ dev.off()
 png(filename = sprintf("~/html/%s_forecast_count%s.png", args$project, zoom_suffix), width=2000, height=1125, units="px", pointsize=30)
 
 p <- ggplot(forecast_done) +
-  geom_rect(aes(xmin=first_cat, xmax=last_cat, ymin=quarter_start, ymax=next_quarter_start), fill="white", alpha=0.09) +
+  annotate("rect", xmin=first_cat, xmax=last_cat, ymin=quarter_start, ymax=next_quarter_start, fill="white", alpha=0.5) +
+  annotate("text", x=forecast_current$category, y=forecast_current$date, label=forecast_current$count_pct_complete, size=10, family="mono") +
   geom_hline(aes(yintercept=as.numeric(now)), color="blue") +
   geom_point(aes(x=category, y=resolved_date), size=8, shape=18) +
-  geom_errorbar(data = forecast, aes(x=category, y=nom_count_date, ymax=pes_count_date, ymin=opt_count_date, color=weeks_old), width=.3, size=2, position="dodge", alpha=.2) +
-  geom_point(data = forecast, aes(x=category, y=nom_count_date, color=weeks_old), size=10, shape=5) +
-  geom_point(data = forecast_current, aes(x=category, y=nom_count_date), size=13, shape=5, color="Black") +
+  geom_errorbar(data = forecast_current, aes(x=category, y=nom_count_date, ymax=pes_count_date, ymin=opt_count_date, color=weeks_old), width=.3, size=2, alpha=.3) +
+  geom_point(data = forecast_current, aes(x=category, y=nom_count_date), size=7, shape=5, color="Black") +
   geom_text(data = forecast_current, aes(x=category, y=nom_count_date, label=format(nom_count_date, format="%b %d\n%Y")), size=8, color="DarkSlateGray") +
   geom_text(data = forecast_done, aes(x=category, y=forecast_start, label=count_total, size=log(count_total))) +
   scale_size_continuous(range = c(2,8)) +

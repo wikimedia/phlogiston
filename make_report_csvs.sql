@@ -263,7 +263,7 @@ SELECT date,
 
 COPY (
 SELECT date,
-       EXTRACT(epoch FROM age(date - INTERVAL '1 day'))/604800 as weeks_old,
+       EXTRACT(epoch FROM age(date - INTERVAL '1 day'))/604800 AS weeks_old,
        v.category,
        z.zoom,
        sort_order,
@@ -292,7 +292,11 @@ SELECT date,
        opt_points_velviz,
        pes_count_velviz,
        nom_count_velviz,
-       opt_count_velviz
+       opt_count_velviz,
+       CASE WHEN points_resolved < points_total THEN
+       TO_CHAR(points_resolved::float / NULLIF(points_total,0) * 100,'99') || '%' END AS points_pct_complete,
+       CASE WHEN count_resolved < count_total THEN
+       TO_CHAR(count_resolved::float / NULLIF(count_total,0) * 100,'99') || '%' END AS count_pct_complete
   FROM velocity v, category_list z
  WHERE z.category = v.category
    AND z.source = :'prefix'
