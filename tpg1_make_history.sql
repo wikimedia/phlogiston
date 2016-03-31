@@ -26,6 +26,12 @@ SELECT scope,
        points,
        maint_type
   FROM task_history
+ WHERE source = :'prefix'
+   AND (SELECT COUNT(*)
+          FROM maniphest_edge
+         WHERE project = '942'
+           AND edge_date = date
+           AND task = id) = 0);
  WHERE scope = :'scope_prefix');
 
 /* Make categorization retroactive - most recent categorization is
