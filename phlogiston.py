@@ -17,8 +17,8 @@ def main(argv):
     try:
         opts, args = getopt.getopt(
             argv, "b:cde:hilnp:rs:v",
-            ["dbname", "reconstruct", "debug", "enddate", "help", "initialize",
-             "load", "incremental", "project=", "report", "startdate=",
+            ["dbname=", "reconstruct", "debug", "enddate", "help", "initialize",
+             "load", "incremental", "scope_prefix=", "report", "startdate=",
              "verbose"])
     except getopt.GetoptError as e:
         print(e)
@@ -32,6 +32,7 @@ def main(argv):
     DEBUG = False
     VERBOSE = False
     start_date = ''
+    scope_prefix = ''
     dbname = 'phab'
 
     # Wikimedia Phabricator constants
@@ -40,7 +41,7 @@ def main(argv):
     PHAB_TAGS = dict(epic=942,
                      new=1453,
                      maint=1454,
-                     milestone=1656)
+                     category=1656)
 
     end_date = datetime.datetime.now().date()
     for opt, arg in opts:
@@ -61,8 +62,8 @@ def main(argv):
             initialize = True
         elif opt in ("-n", "--incremental"):
             incremental = True
-        elif opt in ("-p", "--project"):
-            project_source = arg
+        elif opt in ("-p", "--scope_prefix"):
+            scope_prefix = arg
         elif opt in ("-r", "--report"):
             run_report = True
         elif opt in ("-s", "--startdate"):
@@ -79,17 +80,17 @@ def main(argv):
     if load_data:
         load(conn, end_date, VERBOSE, DEBUG)
 
-    if project_source:
+    if scope_prefix:
         config = configparser.ConfigParser()
-        config.read(project_source)
+        config_filename = '{0}_scope.py'.format(scope_prefix)
+        config.read(config_filename)
 
         try:
-            source_prefix = config['vars']['source_prefix']
-            source_title = config['vars']['source_title']
+            scope_title = config['vars']['scope_title']
             project_name_list =  [x.strip() for x in config['vars']['project_list'].split(',')]
         except KeyError as e:
             print('Config file {0} is missing required parameter(s): {1}'.
-                  format(project_source, e))
+                  format(scope_prefix, e))
             sys.exit(1)
 
         if config.has_option('vars', 'default_points'):
@@ -111,19 +112,19 @@ def main(argv):
                 sys.exit(1)
 
     if reconstruct_data:
-        if project_source:
+        if scope_prefix:
             reconstruct(conn, VERBOSE, DEBUG, default_points,
                         project_name_list, start_date, end_date,
-                        source_prefix, incremental)
+                        scope_prefix, incremental)
         else:
-            print("Reconstruct specified without a project.\n Please specify a project with --project.")  # noqa
+            print("Reconstruct specified without a scope_prefix.\n Please specify a scope_prefix with --scope_prefix.")  # noqa
     if run_report:
-        if project_source:
-            report(conn, VERBOSE, DEBUG, source_prefix,
-                   source_title, default_points, project_name_list,
+        if scope_prefix:
+            report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
+                   scope_title, default_points, project_name_list,
                    retroactive_categories)
         else:
-            print("Report specified without a project.\nPlease specify a project with --project.")  # noqa
+            print("Report specified without a scope_prefix.\nPlease specify a scope_prefix with --scope_prefix.")  # noqa
     conn.close()
 
     if not (initialize or load_data or reconstruct_data or run_report):
@@ -140,7 +141,7 @@ At least one of:
                      loaded data, but not any reconstructed data.\n
   --reconstruct      Use the loaded data to reconstruct a historical
                      record day by day, in the database.  This will wipe
-                     previously reconstructed data for this project unless
+                     previously reconstructed data for this scope_prefix unless
                      --incremental is also used.\n
   --report           Process data in SQL, generate graphs in R, and
                      output html and png in the ~/html directory.\n
@@ -151,10 +152,11 @@ Optionally:
                  Defaults to now.\n
   --help         for this message.\n
   --incremental  Reconstruct only new data since the last reconstruction for
-                 this project.  Faster.\n
-  --project      Name of a Python file containing metadata specific to the
-                 project to be analyzed.  This is required for reconstruct and
-                 report.\n
+                 this scope_prefix.  Faster.\n
+  --scope_prefix Unique prefix, six letters or fewer, labeling the scope of
+                 Phabricator projects to be included in the report.  There must
+                 be a configuration file named [prefix]_scope.py.  This is 
+                 required for reconstruct and report.\n
   --startdate    The date reconstruction should start, as YYYY-MM-DD.\n
   --verbose      Show progress messages.\n""")
 
@@ -309,7 +311,7 @@ def load(conn, end_date, VERBOSE, DEBUG):
 
 
 def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
-                start_date, end_date, source_prefix, incremental):
+                start_date, end_date, scope_prefix, incremental):
     cur = conn.cursor()
 
     ######################################################################
@@ -343,7 +345,7 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
                       AND pp.id = ANY(%(project_id_list)s)""",
                 {'project_id_list': project_id_list})
     column_dict = dict(cur.fetchall())
-    # In addition to project-specific projects, include special, global tags
+    # In addition to scope_prefix-specific projects, include special, global tags
     id_list_with_worktypes = list(project_id_list)
     for i in PHAB_TAGS.keys():
         id_list_with_worktypes.extend([PHAB_TAGS[i]])
@@ -358,16 +360,16 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
     if incremental:
         max_date_query = """SELECT MAX(date)
                               FROM task_history
-                             WHERE source like %(source)s"""
-        cur.execute(max_date_query, {'source': source_prefix})
+                             WHERE scope like %(scope_prefix)s"""
+        cur.execute(max_date_query, {'scope_prefix': scope_prefix})
         try:
             start_date = cur.fetchone()[0].date()
         except AttributeError:
             print("No data available for incremental run.\nProbably this reconstruction should be run without --incremental.")
             sys.exit(1)
     else:
-        cur.execute('SELECT wipe_reconstruction(%(source_prefix)s)',
-                    {'source_prefix': source_prefix})
+        cur.execute('SELECT wipe_reconstruction(%(scope_prefix)s)',
+                    {'scope_prefix': scope_prefix})
         if not start_date:
             oldest_data_query = """
             SELECT DATE(min(date_modified)) FROM maniphest_transaction"""
@@ -378,14 +380,11 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
     while working_date <= end_date:
         if VERBOSE:
             print('{0} {1}: Making maniphest_edge for {2}'.
-                  format(source_prefix, datetime.datetime.now(), working_date))
-        # because working_date is midnight at the beginning of the
-        # day, use a date at the midnight at the end of the day to
-        # make the queries line up with the date label
-        working_date += datetime.timedelta(days=1)
+                  format(scope_prefix, datetime.datetime.now(), working_date))
         cur.execute('SELECT build_edges(%(date)s, %(project_id_list)s)',
                     {'date': working_date,
                      'project_id_list': id_list_with_worktypes})
+        working_date += datetime.timedelta(days=1)
 
     ######################################################################
     # Reconstruct historical state of tasks
@@ -414,7 +413,7 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
         # make the queries line up with the date label
         if VERBOSE:
             print('{0} {1}: Reconstructing data for {2}'.
-                  format(source_prefix, datetime.datetime.now(), working_date))
+                  format(scope_prefix, datetime.datetime.now(), working_date))
 
         working_date += datetime.timedelta(days=1)
         task_on_day_query = """SELECT DISTINCT task
@@ -531,7 +530,7 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
 
             denorm_insert = """
                 INSERT INTO task_history VALUES (
-                %(source)s,
+                %(scope_prefix)s,
                 %(working_date)s,
                 %(id)s,
                 %(title)s,
@@ -542,7 +541,7 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
                 %(maint_type)s,
                 %(priority)s)"""
 
-            cur.execute(denorm_insert, {'source': source_prefix, 'working_date': working_date, 'id': task_id, 'title': pretty_title, 'status': pretty_status, 'priority': pretty_priority, 'project': pretty_project, 'projectcolumn': pretty_column, 'points': pretty_points, 'maint_type': maint_type})  # noqa
+            cur.execute(denorm_insert, {'scope_prefix': scope_prefix, 'working_date': working_date, 'id': task_id, 'title': pretty_title, 'status': pretty_status, 'priority': pretty_priority, 'project': pretty_project, 'projectcolumn': pretty_column, 'points': pretty_points, 'maint_type': maint_type})  # noqa
 
         # This takes the as-is blocked by relationships and
         # reconstructs them historically as if they existed every day;
@@ -550,59 +549,59 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
         # full reconstruction.  see
         # https://phabricator.wikimedia.org/T115936#1847188
 
-        milestones_on_day_query = """
+        categories_on_day_query = """
           SELECT DISTINCT task
             FROM task_history t, maniphest_edge m
-           WHERE t.source = %(source)s
+           WHERE t.scope = %(scope_prefix)s
              AND m.edge_date = %(working_date)s
              AND t.id = m.task
-             AND m.project = %(milestone_tag_id)s"""
+             AND m.project = %(category_tag_id)s"""
 
-        cur.execute(milestones_on_day_query,
-                    {'source': source_prefix,
+        cur.execute(categories_on_day_query,
+                    {'scope_prefix': scope_prefix,
                      'working_date': working_date,
-                     'milestone_tag_id': PHAB_TAGS['milestone']})
+                     'category_tag_id': PHAB_TAGS['category']})
         for row in cur.fetchall():
-            milestone_id = row[0]
-            task_milestone_insert = """
-            INSERT INTO task_milestone (
-            SELECT %(source)s,
+            category_id = row[0]
+            task_category_insert = """
+            INSERT INTO task_category (
+            SELECT %(scope_prefix)s,
                    %(working_date)s,
                    id,
-                   %(milestone_id)s
+                   %(category_id)s
               FROM (SELECT *
-                      FROM find_descendents(%(milestone_id)s,
+                      FROM find_descendents(%(category_id)s,
                                             %(working_date)s)) as x)"""
-            cur.execute(task_milestone_insert,
-                        {'source': source_prefix,
-                         'milestone_id': milestone_id,
+            cur.execute(task_category_insert,
+                        {'scope_prefix': scope_prefix,
+                         'category_id': category_id,
                          'working_date': working_date})
 
-    milestones_sql = """
+    categories_sql = """
         UPDATE task_history th
-           SET milestone_title = (
+           SET category_title = (
                SELECT string_agg(title, ' ') 
                  FROM (
                        SELECT th_foo.id, mt.title
                          FROM maniphest_task mt,
-                              task_milestone tm,
+                              task_category tm,
                               task_history th_foo
                         WHERE th_foo.id = tm.task_id
-                          AND th_foo.source = tm.source
+                          AND th_foo.scope = tm.scope
                           AND th_foo.date = tm.date
-                          AND tm.milestone_id = mt.id
-                          AND tm.source = %(source)s
+                          AND tm.category_id = mt.id
+                          AND tm.scope = %(scope_prefix)s
                         GROUP BY th_foo.id, mt.title
                         ) as foo
                 WHERE id = th.id
                 )
-         WHERE source = %(source)s
+         WHERE scope = %(scope_prefix)s
            AND date >= %(start_date)s"""
 
     if VERBOSE:
-        print('{0} {1} Updating Milestone Titles'.
-              format(source_prefix, datetime.datetime.now()))
-    cur.execute(milestones_sql,{'source': source_prefix, 'start_date': start_date})
+        print('{0} {1} Updating Category Titles'.
+              format(scope_prefix, datetime.datetime.now()))
+    cur.execute(categories_sql,{'scope_prefix': scope_prefix, 'start_date': start_date})
 
     correct_status_sql = """
         UPDATE task_history th
@@ -620,17 +619,17 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
                         GROUP BY task_id) as flipflops
                 WHERE num_of_changes = 1
                           AND trans_status <> status_at_load) os
-         WHERE th.source = %(source)s
+         WHERE th.scope = %(scope_prefix)s
            AND th.id = os.task_id"""
 
     if VERBOSE:
         print('{0} {1}: Correcting corrupted task status info'.
-                  format(source_prefix, datetime.datetime.now()))
-    cur.execute(correct_status_sql,{'source': source_prefix})
+                  format(scope_prefix, datetime.datetime.now()))
+    cur.execute(correct_status_sql,{'scope_prefix': scope_prefix})
     cur.close()
     
 
-def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
+def report(conn, dbname, VERBOSE, DEBUG, scope_prefix, scope_title,
            default_points, project_name_list, retroactive_categories):
     # note that all the COPY commands in the psql scripts run
     # server-side as user postgres
@@ -642,33 +641,33 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
     cur = conn.cursor()
     size_query = """SELECT count(*)
                       FROM task_history
-                     WHERE source = %(source_prefix)s"""
-    cur.execute(size_query, {'source_prefix': source_prefix})
+                     WHERE scope = %(scope_prefix)s"""
+    cur.execute(size_query, {'scope_prefix': scope_prefix})
     data_size = cur.fetchone()[0]
     if data_size == 0:
-        print("ERROR: no data in task_history for {0}".format(source_prefix))
+        print("ERROR: no data in task_history for {0}".format(scope_prefix))
         sys.exit(-1)
 
-    cur.execute('SELECT wipe_reporting(%(source_prefix)s)',
-                {'source_prefix': source_prefix})
+    cur.execute('SELECT wipe_reporting(%(scope_prefix)s)',
+                {'scope_prefix': scope_prefix})
 
     # generate the summary reporting data from the reconstructed records
-    report_tables_script = '{0}_make_history.sql'.format(source_prefix)
+    report_tables_script = '{0}_make_history.sql'.format(scope_prefix)
     if not os.path.isfile(report_tables_script):
         report_tables_script = 'generic_make_history.sql'
-    subprocess.call("psql -d phab -f {0} -v prefix={1}".
-                    format(report_tables_script, source_prefix), shell=True)
+    subprocess.call("psql -d {0} -f {1} -v scope_prefix={2}".
+                    format(dbname, report_tables_script, scope_prefix), shell=True)
 
     if retroactive_categories:
-        cur.execute('SELECT set_category_retroactive(%(source_prefix)s)',
-                {'source_prefix': source_prefix})
+        cur.execute('SELECT set_category_retroactive(%(scope_prefix)s)',
+                {'scope_prefix': scope_prefix})
 
     # Reload the Recategorization mapping
-    recat_data = '{0}_recategorization.csv'.format(source_prefix)
+    recat_data = '{0}_recategorization.csv'.format(scope_prefix)
     if os.path.isfile(recat_data):
         category_save = """
         INSERT INTO category_list
-        VALUES (%(source_prefix)s, %(sort_order)s, %(category)s, %(matchstring)s, %(zoom)s)"""
+        VALUES (%(scope_prefix)s, %(sort_order)s, %(category)s, %(matchstring)s, %(zoom)s)"""
         recat_cases = ''
         recat_else = ''
         with open(recat_data, 'rt') as f:
@@ -680,7 +679,7 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
                 else:
                     zoom = False
                 cur.execute(category_save,
-                            {'source_prefix': source_prefix,
+                            {'scope_prefix': scope_prefix,
                              'sort_order': line['sort_order'],
                              'category': line['title'],
                              'matchstring': matchstring,
@@ -697,27 +696,27 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
                              SET category = CASE {0}
                                             ELSE '{1}'
                                             END
-                           WHERE source =  '{2}'"""
+                           WHERE scope =  '{2}'"""
 
-        unsafe_recat_update = recat_update.format(recat_cases, recat_else, source_prefix)
+        unsafe_recat_update = recat_update.format(recat_cases, recat_else, scope_prefix)
         cur.execute(unsafe_recat_update)
 
     else:
         # Build a category list from the data
         category_insert = """INSERT INTO category_list (
-                         SELECT %(source_prefix)s,
+                         SELECT %(scope_prefix)s,
                                 row_number() OVER(ORDER BY category asc),
                                 category,
                                 NULL,
                                 TRUE
                            FROM (SELECT DISTINCT category
                                    FROM task_history_recat
-                                  WHERE source = %(source_prefix)s
+                                  WHERE scope = %(scope_prefix)s
                                   ORDER BY category) as foo)"""
-        cur.execute(category_insert, {'source_prefix': source_prefix})
+        cur.execute(category_insert, {'scope_prefix': scope_prefix})
 
     tall_backlog_insert = """INSERT INTO tall_backlog(
-                             SELECT source,
+                             SELECT scope,
                                     date,
                                     category,
                                     status,
@@ -725,12 +724,12 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
                                     COUNT(title) as count,
                                     maint_type
                                FROM task_history_recat
-                              WHERE source = %(source_prefix)s
-                              GROUP BY status, category, maint_type, date, source)"""
+                              WHERE scope = %(scope_prefix)s
+                              GROUP BY status, category, maint_type, date, scope)"""
 
-    cur.execute(tall_backlog_insert, {'source_prefix': source_prefix})
-    cur.execute('SELECT find_recently_closed(%(source_prefix)s)', {'source_prefix': source_prefix})
-    cur.execute('SELECT find_recently_closed_task(%(source_prefix)s)', {'source_prefix': source_prefix})
+    cur.execute(tall_backlog_insert, {'scope_prefix': scope_prefix})
+    cur.execute('SELECT find_recently_closed(%(scope_prefix)s)', {'scope_prefix': scope_prefix})
+    cur.execute('SELECT find_recently_closed_task(%(scope_prefix)s)', {'scope_prefix': scope_prefix})
 
     ######################################################################
     # Prepare all the csv files and working directories
@@ -740,31 +739,31 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
     # write the file /tmp/phlog/report.csv and then move it to
     # /tmp/foo/report.csv
 
-    subprocess.call('rm -rf /tmp/{0}/'.format(source_prefix), shell=True)
+    subprocess.call('rm -rf /tmp/{0}/'.format(scope_prefix), shell=True)
     subprocess.call('rm -rf /tmp/phlog/', shell=True)
-    subprocess.call('mkdir -p /tmp/{0}'.format(source_prefix), shell=True)
-    subprocess.call('chmod g+w /tmp/{0}'.format(source_prefix), shell=True)
+    subprocess.call('mkdir -p /tmp/{0}'.format(scope_prefix), shell=True)
+    subprocess.call('chmod g+w /tmp/{0}'.format(scope_prefix), shell=True)
     subprocess.call('mkdir -p /tmp/phlog', shell=True)
     subprocess.call('chmod g+w /tmp/phlog', shell=True)
-    subprocess.call('psql -d phab -f make_report_csvs.sql -v prefix={0}'.
-                    format(source_prefix), shell=True)
+    subprocess.call('psql -d {0} -f make_report_csvs.sql -v scope_prefix={1}'.
+                    format(dbname, scope_prefix), shell=True)
     subprocess.call('mv /tmp/phlog/* /tmp/{0}/'.
-                    format(source_prefix), shell=True)
-    subprocess.call('rm ~/html/{0}_*'.format(source_prefix), shell=True)
+                    format(scope_prefix), shell=True)
+    subprocess.call('rm ~/html/{0}_*'.format(scope_prefix), shell=True)
     subprocess.call(
         'sed s/phl_/{0}_/g html/phl.html | sed s/Phlogiston/{1}/g > ~/html/{0}.html'.
-        format(source_prefix, source_title), shell=True)
-    subprocess.call('cp /tmp/{0}/maintenance_fraction_total_by_points.csv ~/html/{0}_maintenance_fraction_total_by_points.csv'.format(source_prefix), shell=True)
-    subprocess.call('cp /tmp/{0}/maintenance_fraction_total_by_count.csv ~/html/{0}_maintenance_fraction_total_by_count.csv'.format(source_prefix), shell=True)
-    subprocess.call('cp /tmp/{0}/category_possibilities.txt ~/html/{0}_category_possibilities.txt'.format(source_prefix), shell=True)
+        format(scope_prefix, scope_title), shell=True)
+    subprocess.call('cp /tmp/{0}/maintenance_fraction_total_by_points.csv ~/html/{0}_maintenance_fraction_total_by_points.csv'.format(scope_prefix), shell=True)
+    subprocess.call('cp /tmp/{0}/maintenance_fraction_total_by_count.csv ~/html/{0}_maintenance_fraction_total_by_count.csv'.format(scope_prefix), shell=True)
+    subprocess.call('cp /tmp/{0}/category_possibilities.txt ~/html/{0}_category_possibilities.txt'.format(scope_prefix), shell=True)
     script_dir = os.path.dirname(__file__)
-    file = '{0}_projects.csv'.format(source_prefix)
+    file = '{0}_projects.csv'.format(scope_prefix)
     f = open(os.path.join(script_dir, '../html/', file), 'w')
     for project_name in project_name_list:
         f.write("{0}\n".format(project_name))
     f.close()
 
-    file = '{0}_default_points.csv'.format(source_prefix)
+    file = '{0}_default_points.csv'.format(scope_prefix)
     f = open(os.path.join(script_dir, '../html/', file), 'w')
     f.write("{0}\n".format(default_points))
     f.close()
@@ -777,14 +776,14 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
                                   max(z.sort_order) as sort_order,
                                   sum(t.count) as xcount
                              FROM category_list z, tall_backlog t
-                            WHERE z.source = %(source_prefix)s
-                              AND z.source = t.source
+                            WHERE z.scope = %(scope_prefix)s
+                              AND z.scope = t.scope
                               AND z.category = t.category
                             GROUP BY z.category) as foo
                     WHERE xcount > 0
                    ORDER BY sort_order"""
 
-    cur.execute(cat_query, {'source_prefix': source_prefix})
+    cur.execute(cat_query, {'scope_prefix': scope_prefix})
     cat_list_of_tuples = cur.fetchall()
     cat_list = [item[0] for item in cat_list_of_tuples]
     colors = []
@@ -806,26 +805,26 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
 
         subprocess.call(
             'Rscript make_tranche_chart.R {0} {1} \"{2}\" \"{3}\"'.
-            format(source_prefix, i, color, category), shell=True)
+            format(scope_prefix, i, color, category), shell=True)
         tab_string += '<td><a href="#tab{0}">{1}</a></td>'.format(i,category)
         html_string += '<p id="tab{0}"><table>'.format(i)
-        points_png_name = "{0}_tranche{1}_burnup_points.png".format(source_prefix, i)
-        count_png_name = "{0}_tranche{1}_burnup_count.png".format(source_prefix, i)
+        points_png_name = "{0}_tranche{1}_burnup_points.png".format(scope_prefix, i)
+        count_png_name = "{0}_tranche{1}_burnup_count.png".format(scope_prefix, i)
         html_string += '<tr><td><a href="{0}"><img src="{0}"/></a></td>'.format(points_png_name)
         html_string += '<td><a href="{0}"><img src="{0}"/></a></tr>\n'.format(count_png_name)
-        points_png_name = "{0}_tranche{1}_velocity_points.png".format(source_prefix, i)
-        count_png_name = "{0}_tranche{1}_velocity_count.png".format(source_prefix, i)
+        points_png_name = "{0}_tranche{1}_velocity_points.png".format(scope_prefix, i)
+        count_png_name = "{0}_tranche{1}_velocity_count.png".format(scope_prefix, i)
         html_string += '<tr><td><a href="{0}"><img src="{0}"/></a></td>'.format(points_png_name)
         html_string += '<td><a href="{0}"><img src="{0}"/></a></tr>\n'.format(count_png_name)
-        points_png_name = "{0}_tranche{1}_forecast_points.png".format(source_prefix, i)
-        count_png_name = "{0}_tranche{1}_forecast_count.png".format(source_prefix, i)
+        points_png_name = "{0}_tranche{1}_forecast_points.png".format(scope_prefix, i)
+        count_png_name = "{0}_tranche{1}_forecast_count.png".format(scope_prefix, i)
         html_string += '<tr><td><a href="{0}"><img src="{0}"/></a></td>'.format(points_png_name)
         html_string += '<td><a href="{0}"><img src="{0}"/></a></tr>\n'.format(count_png_name)
         html_string += '</table></p>\n'
         i += 1
     tab_string += '</tr></table>'
     html_string += '</div>'
-    file = '{0}_tranches.html'.format(source_prefix)
+    file = '{0}_tranches.html'.format(scope_prefix)
     f = open(os.path.join(script_dir, '../html/', file), 'w')
     f.write(tab_string)
     f.write(html_string)
@@ -840,24 +839,24 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
                nom_count_fore,
                opt_count_fore
           FROM velocity v, category_list z
-         WHERE v.source = %(source_prefix)s
-           AND v.source = z.source
+         WHERE v.scope = %(scope_prefix)s
+           AND v.scope = z.scope
            AND v.category = z.category
            AND v.date = (SELECT MAX(date)
                            FROM velocity
-                          WHERE source = %(source_prefix)s)
+                          WHERE scope = %(scope_prefix)s)
          ORDER BY sort_order"""
 
     html_string = """<p><table border="1px solid lightgray" cellpadding="2" cellspacing="0"><tr><th rowspan="3">Category</th><th colspan="6">Weeks until completion</th></tr>
                                <tr><th colspan="3">By Points</th><th colspan="3">By Count</th></tr>
                                <tr><th>Pess.</th><th>Nominal</th><th>Opt.</th><th>Pess.</th><th>Nominal</th><th>Opt.</th></tr>"""
-    cur.execute(forecast_query, {'source_prefix': source_prefix})
+    cur.execute(forecast_query, {'scope_prefix': scope_prefix})
     for row in cur.fetchall():
         html_string += "<tr><td>{0}</td><td>{1}</td><td><b>{2}</b></td><td>{3}</td><td>{4}</td><td><b>{5}</b></td><td>{6}</td>".format(row[0],row[1],row[2],row[3],row[4],row[5],row[6])
 
     html_string += "</table></p>"
 
-    file = '{0}_current_forecasts.html'.format(source_prefix)
+    file = '{0}_current_forecasts.html'.format(scope_prefix)
     f = open(os.path.join(script_dir, '../html/', file), 'w')
     f.write(html_string)
     f.close()
@@ -866,20 +865,20 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
                                          title,
                                          category
                                     FROM task_history_recat
-                                   WHERE source = %(source_prefix)s
+                                   WHERE scope = %(scope_prefix)s
                                      AND status = '"open"'
                                      AND date = (SELECT MAX(date)
                                                    FROM task_history_recat
-                                                  WHERE source = %(source_prefix)s)
+                                                  WHERE scope = %(scope_prefix)s)
                                 ORDER BY category, title"""
 
     html_string = """<p><table border="1px solid lightgray" cellpadding="2" cellspacing="0"><tr><th>ID></th><th>Task</th><th>Category</th></tr>"""  # noqa
-    cur.execute(open_task_category_query, {'source_prefix': source_prefix})
+    cur.execute(open_task_category_query, {'scope_prefix': scope_prefix})
     for row in cur.fetchall():
         html_string += "<tr><td><a href=\"https://phabricator.wikimedia.org/T{0}\">{0}: {1}</a></td><td>{2}</td></tr>".format(row[0],row[1],row[2])
 
     html_string += "</table></p>"
-    file = '{0}_open_by_category.html'.format(source_prefix)
+    file = '{0}_open_by_category.html'.format(scope_prefix)
     f = open(os.path.join(script_dir, '../html/', file), 'w')
     f.write(html_string)
     f.close()
@@ -889,16 +888,16 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
                                       date,
                                       category
                                  FROM recently_closed_task
-                                WHERE source = %(source_prefix)s
+                                WHERE scope = %(scope_prefix)s
                              ORDER BY category, date, id"""
 
     html_string = """<p><table border="1px solid lightgray" cellpadding="2" cellspacing="0"><tr><th>Date</th><th>Category</th><th>Task</th></tr>"""  # noqa
-    cur.execute(recently_closed_query, {'source_prefix': source_prefix})
+    cur.execute(recently_closed_query, {'scope_prefix': scope_prefix})
     for row in cur.fetchall():
         html_string += "<tr><td>{2}</td><td>{3}</td><td><b><a href=\"https://phabricator.wikimedia.org/T{0}\">{0}: {1}</a></td></tr>".format(row[0],row[1],row[2],row[3])
 
     html_string += "</table></p>"
-    file = '{0}_recently_closed.html'.format(source_prefix)
+    file = '{0}_recently_closed.html'.format(scope_prefix)
     f = open(os.path.join(script_dir, '../html/', file), 'w')
     f.write(html_string)
     f.close()
@@ -907,10 +906,10 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
     # Make the rest of the charts
     ######################################################################
     subprocess.call("Rscript make_charts.R {0} {1} {2}".
-                    format(source_prefix, source_title, 'True'), shell=True)
+                    format(scope_prefix, scope_title, 'True'), shell=True)
 
     subprocess.call("Rscript make_charts.R {0} {1} {2}".
-                    format(source_prefix, source_title, 'False'), shell=True)
+                    format(scope_prefix, scope_title, 'False'), shell=True)
 
     ######################################################################
     # Update dates
@@ -922,10 +921,10 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
     max_date_query = """
         SELECT MAX(date_modified), now()
           FROM task_history th, maniphest_transaction mt
-         WHERE th.source = %(source)s
+         WHERE th.scope = %(scope_prefix)s
            AND th.id = mt.task_id"""
 
-    cur.execute(max_date_query, {'source': source_prefix})
+    cur.execute(max_date_query, {'scope_prefix': scope_prefix})
     result = cur.fetchone()
     max_date = result[0]
     now_db = result[1]
@@ -941,13 +940,13 @@ def report(conn, VERBOSE, DEBUG, source_prefix, source_title,
     html_string += "</table></p>"
 
     script_dir = os.path.dirname(__file__)
-    file = '{0}_dates.html'.format(source_prefix)
+    file = '{0}_dates.html'.format(scope_prefix)
     f = open(os.path.join(script_dir, '../html/', file), 'w')
     f.write(html_string)
     f.close
 
     html_string = '<td>{0}</td><td>{1}</td>'.format(max_date_pt, now_pt)
-    file = '{0}_date_row.html'.format(source_prefix)
+    file = '{0}_date_row.html'.format(scope_prefix)
     f = open(os.path.join(script_dir, '../html/', file), 'w')
     f.write(html_string)
     f.close
