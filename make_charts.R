@@ -204,7 +204,8 @@ png(filename = sprintf("~/html/%s_forecast_points%s.png", args$scope_prefix, zoo
 
 p <- ggplot(forecast_done) +
   annotate("rect", xmin=first_cat, xmax=last_cat, ymin=quarter_start, ymax=next_quarter_start, fill="white", alpha=0.5) +
-  annotate("text", x=forecast_current$category, y=forecast_current$date, label=forecast_current$points_pct_complete, size=10, family="mono") +
+  annotate("text", x=forecast_current$category, y=forecast_current$date, label=forecast_current$points_pct_complete, size=10, family="mono", color="blue") +
+  annotate("text", x=1, y=forecast_current$date, label="Now (% Complete)", size=8, family="mono", color="blue") +
   geom_hline(aes(yintercept=as.numeric(now)), color="blue") +
   geom_point(aes(x=category, y=resolved_date), size=8, shape=18) +
   geom_errorbar(data = forecast_current, aes(x=category, y=nom_points_date, ymax=pes_points_date, ymin=opt_points_date, color=weeks_old), width=.3, size=2, alpha=.3) +
@@ -240,7 +241,8 @@ png(filename = sprintf("~/html/%s_forecast_count%s.png", args$scope_prefix, zoom
 
 p <- ggplot(forecast_done) +
   annotate("rect", xmin=first_cat, xmax=last_cat, ymin=quarter_start, ymax=next_quarter_start, fill="white", alpha=0.5) +
-  annotate("text", x=forecast_current$category, y=forecast_current$date, label=forecast_current$count_pct_complete, size=10, family="mono") +
+  annotate("text", x=forecast_current$category, y=forecast_current$date, label=forecast_current$count_pct_complete, size=10, family="mono", color="blue") +
+  annotate("text", x=1, y=forecast_current$date, label="Now (% Complete)", size=8, family="mono", color="blue") +
   geom_hline(aes(yintercept=as.numeric(now)), color="blue") +
   geom_point(aes(x=category, y=resolved_date), size=8, shape=18) +
   geom_errorbar(data = forecast_current, aes(x=category, y=nom_count_date, ymax=pes_count_date, ymin=opt_count_date, color=weeks_old), width=.3, size=2, alpha=.3) +
