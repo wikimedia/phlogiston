@@ -35,10 +35,10 @@ def main(argv):
     dbname = 'phab'
 
     # Wikimedia Phabricator constants
-    # using Epic tag as temporary test pending
     # https://phabricator.wikimedia.org/T119473
     global PHAB_TAGS
-    PHAB_TAGS = dict(new=1453,
+    PHAB_TAGS = dict(epic=942,
+                     new=1453,
                      maint=1454,
                      milestone=1656)
 
