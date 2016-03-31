@@ -11,7 +11,7 @@ library(reshape)
 suppressPackageStartupMessages(library("argparse"))
 parser <- ArgumentParser()
 
-parser$add_argument("project", nargs=1, help="Project prefix")
+parser$add_argument("scope_prefix", nargs=1, help="Scope prefix")
 parser$add_argument("tranche_num", nargs=1, help="Tranche Number")
 parser$add_argument("color", nargs=1, help="Color")
 parser$add_argument("tranche_name", nargs=1, help="Tranche Name")
@@ -46,15 +46,15 @@ theme_fivethirtynine <- function(base_size = 12, base_family = "sans"){
 ## Velocity
 ######################################################################
 
-velocity_t <- read.csv(sprintf("/tmp/%s/tranche_velocity.csv", args$project))
+velocity_t <- read.csv(sprintf("/tmp/%s/tranche_velocity.csv", args$scope_prefix))
 velocity_cat_t <- velocity_t[velocity_t$category == args$tranche_name,]
 velocity_cat_t$date <- as.Date(velocity_cat_t$date, "%Y-%m-%d")
 
-velocity_points <- read.csv(sprintf("/tmp/%s/tranche_velocity_points.csv", args$project))
+velocity_points <- read.csv(sprintf("/tmp/%s/tranche_velocity_points.csv", args$scope_prefix))
 velocity_cat_points <- velocity_points[velocity_points$category == args$tranche_name,]
 velocity_cat_points$date <- as.Date(velocity_cat_points$date, "%Y-%m-%d")
 
-png(filename = sprintf("~/html/%s_tranche%s_velocity_points.png", args$project, args$tranche_num), width=1000, height=300, units="px", pointsize=10)
+png(filename = sprintf("~/html/%s_tranche%s_velocity_points.png", args$scope_prefix, args$tranche_num), width=1000, height=300, units="px", pointsize=10)
 
 ggplot(velocity_cat_points) +
   geom_line(aes(x=date, y=pes_points_vel), size=3, color="darkorange2") +
@@ -67,11 +67,11 @@ ggplot(velocity_cat_points) +
   theme(axis.title.x=element_blank())
 dev.off()
 
-velocity_count <- read.csv(sprintf("/tmp/%s/tranche_velocity_count.csv", args$project))
+velocity_count <- read.csv(sprintf("/tmp/%s/tranche_velocity_count.csv", args$scope_prefix))
 velocity_cat_count <- velocity_count[velocity_count$category == args$tranche_name,]
 velocity_cat_count$date <- as.Date(velocity_cat_count$date, "%Y-%m-%d")
 
-png(filename = sprintf("~/html/%s_tranche%s_velocity_count.png", args$project, args$tranche_num), width=1000, height=300, units="px", pointsize=10)
+png(filename = sprintf("~/html/%s_tranche%s_velocity_count.png", args$scope_prefix, args$tranche_num), width=1000, height=300, units="px", pointsize=10)
 
 ggplot(velocity_cat_count) +
   geom_line(aes(x=date, y=pes_count_vel), size=3, color="darkorange2") +
@@ -88,10 +88,10 @@ dev.off()
 ## Forecast
 ######################################################################
 
-forecast <- read.csv(sprintf("/tmp/%s/forecast.csv", args$project))
+forecast <- read.csv(sprintf("/tmp/%s/forecast.csv", args$scope_prefix))
 forecast$date <- as.Date(forecast$date, "%Y-%m-%d")
 forecast <- forecast[forecast$category == args$tranche_name,]
-png(filename = sprintf("~/html/%s_tranche%s_forecast_points.png", args$project, args$tranche_num), width=1000, height=300, units="px", pointsize=10)
+png(filename = sprintf("~/html/%s_tranche%s_forecast_points.png", args$scope_prefix, args$tranche_num), width=1000, height=300, units="px", pointsize=10)
 
 ggplot(forecast) +
   geom_line(aes(x=date, y=pes_points_fore), color="darkorange2", size=3) +
@@ -104,7 +104,7 @@ ggplot(forecast) +
   theme(legend.title=element_blank())
 dev.off()
 
-png(filename = sprintf("~/html/%s_tranche%s_forecast_count.png", args$project, args$tranche_num), width=1000, height=300, units="px", pointsize=10)
+png(filename = sprintf("~/html/%s_tranche%s_forecast_count.png", args$scope_prefix, args$tranche_num), width=1000, height=300, units="px", pointsize=10)
 
 ggplot(forecast) +
   geom_line(aes(x=date, y=pes_count_fore), color="darkorange2", size=3) +
@@ -121,19 +121,19 @@ dev.off()
 ## Burnup
 ######################################################################
 
-backlog <- read.csv(sprintf("/tmp/%s/backlog.csv", args$project))
+backlog <- read.csv(sprintf("/tmp/%s/backlog.csv", args$scope_prefix))
 backlog <- backlog[backlog$category==args$tranche_name,]
 backlog$date <- as.Date(backlog$date, "%Y-%m-%d")
 ymin = 0
 ymax = Inf
 
-burnup_cat <- read.csv(sprintf("/tmp/%s/burnup_categories.csv", args$project))
+burnup_cat <- read.csv(sprintf("/tmp/%s/burnup_categories.csv", args$scope_prefix))
 burnup_cat <- burnup_cat[burnup_cat$category==args$tranche_name,]
 burnup_cat$date <- as.Date(burnup_cat$date, "%Y-%m-%d")
 
 forecast <- forecast[forecast$date >= now,]
 
-png(filename = sprintf("~/html/%s_tranche%s_burnup_points.png", args$project, args$tranche_num), width=1000, height=700, units="px", pointsize=10)
+png(filename = sprintf("~/html/%s_tranche%s_burnup_points.png", args$scope_prefix, args$tranche_num), width=1000, height=700, units="px", pointsize=10)
 ggplot(backlog) +
   labs(title=sprintf("%s burnup by points", args$tranche_name), y="Story Point Total") +
   theme_fivethirtynine() +
@@ -150,7 +150,7 @@ ggplot(backlog) +
   geom_line(data=forecast, aes(x=date, y=opt_points_growviz), color="gray", linetype=3, alpha=0.8, size=1)
 dev.off()
 
-png(filename = sprintf("~/html/%s_tranche%s_burnup_count.png", args$project, args$tranche_num), width=1000, height=700, units="px", pointsize=10)
+png(filename = sprintf("~/html/%s_tranche%s_burnup_count.png", args$scope_prefix, args$tranche_num), width=1000, height=700, units="px", pointsize=10)
 
 ggplot(backlog) +
   labs(title=sprintf("%s burnup by count", args$tranche_name), y="Story Count") +

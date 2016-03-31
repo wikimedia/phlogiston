@@ -1,12 +1,12 @@
 CREATE OR REPLACE FUNCTION wipe_reconstruction(
-       source_param varchar(6)
+       scope_prefix varchar(6)
 ) RETURNS void AS $$
 BEGIN
     DELETE FROM task_history
-     WHERE source = source_param;
+     WHERE scope = scope_prefix;
 
-    DELETE FROM task_milestone
-     WHERE source = source_param;
+    DELETE FROM task_category
+     WHERE scope = scope_prefix;
 END;
 $$ LANGUAGE plpgsql;
 

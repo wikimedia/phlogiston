@@ -11,8 +11,8 @@ library(stringr)
 suppressPackageStartupMessages(library("argparse"))
 parser <- ArgumentParser(formatter_class= 'argparse.RawTextHelpFormatter')
 
-parser$add_argument("project", nargs=1, help="Project prefix", default='an')
-parser$add_argument("title", nargs=1, help="Project title")
+parser$add_argument("scope_prefix", nargs=1, help="Scope prefix", default='phl')
+parser$add_argument("scope_title", nargs=1, help="Scope title")
 parser$add_argument("zoom", nargs=1, help="If true, show only zoomed categories")
 
 args <- parser$parse_args()
@@ -54,11 +54,11 @@ theme_fivethirtynine <- function(base_size = 12, base_family = "sans"){
 ######################################################################
 
 if (args$zoom == 'True') {
-  burn_done <- read.csv(sprintf("/tmp/%s/burn_done_zoom.csv", args$project))
-  burn_open <- read.csv(sprintf("/tmp/%s/burn_open_zoom.csv", args$project))
+  burn_done <- read.csv(sprintf("/tmp/%s/burn_done_zoom.csv", args$scope_prefix))
+  burn_open <- read.csv(sprintf("/tmp/%s/burn_open_zoom.csv", args$scope_prefix))
 } else {
-  burn_done <- read.csv(sprintf("/tmp/%s/burn_done.csv", args$project))
-  burn_open <- read.csv(sprintf("/tmp/%s/burn_open.csv", args$project))
+  burn_done <- read.csv(sprintf("/tmp/%s/burn_done.csv", args$scope_prefix))
+  burn_open <- read.csv(sprintf("/tmp/%s/burn_open.csv", args$scope_prefix))
 }
 
 bd_cat_count <- length(unique(burn_done$category))
@@ -95,7 +95,7 @@ bd_ylegend_points <- max(bd_labels_points$label_points, 10)
 bo_ylegend_count <- min(bo_labels_count$label_count, 10)
 bo_ylegend_points <- min(bo_labels_points$label_points, 10)
 
-png(filename = sprintf("~/html/%s_backlog_burnup_points%s.png", args$project, zoom_suffix), width=2000, height=1125, units="px", pointsize=30)
+png(filename = sprintf("~/html/%s_backlog_burnup_points%s.png", args$scope_prefix, zoom_suffix), width=2000, height=1125, units="px", pointsize=30)
 
 p <- ggplot(burn_done) +
   geom_area(position='stack', aes(x = date, y = points, group=category, fill=category, order=-category)) +
@@ -105,11 +105,11 @@ p <- ggplot(burn_done) +
   scale_x_date(limits=c(last_quarter_start, next_quarter_start), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   theme(legend.position = "none", axis.title.x=element_blank()) +
   guides(col = guide_legend(reverse=TRUE)) +
-  labs(title=sprintf("%s Backlog by points%s", args$title, zoom_title), y="Story Point Total") +
+  labs(title=sprintf("%s Backlog by points%s", args$scope_title, zoom_title), y="Story Point Total") +
   annotate("text", x=last_quarter_start, y=bo_ylegend_points, label="Open Tasks", hjust=0, size=10) +
   annotate("text", x=last_quarter_start, y=bd_ylegend_points, label="Complete Tasks", hjust=0, size=10) +
   geom_hline(aes(yintercept=c(0)), color="black", size=2) +
-  labs(fill="Milestone")
+  labs(fill="Category")
 if (nrow(bd_labels_points) > 0 ) {
     p <- p + geom_text(data=bd_labels_points, aes(x=max_date, y=label_points, label=category), hjust=0)
 }
@@ -120,7 +120,7 @@ if (nrow(bo_labels_points) > 0 ) {
 p
 dev.off()
 
-png(filename = sprintf("~/html/%s_backlog_burnup_count%s.png", args$project, zoom_suffix), width=2000, height=1125, units="px", pointsize=30)
+png(filename = sprintf("~/html/%s_backlog_burnup_count%s.png", args$scope_prefix, zoom_suffix), width=2000, height=1125, units="px", pointsize=30)
 
 ggplot(burn_done) +
   geom_area(position='stack', aes(x = date, y = count, group=category, fill=category, order=-category)) +
@@ -130,11 +130,11 @@ ggplot(burn_done) +
   scale_x_date(limits=c(last_quarter_start, next_quarter_start), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   theme(legend.position = "none", axis.title.x=element_blank()) +
   guides(col = guide_legend(reverse=TRUE)) +
-  labs(title=sprintf("%s Backlog by count%s", args$title, zoom_title), y="Task Count Total") +
+  labs(title=sprintf("%s Backlog by count%s", args$scope_title, zoom_title), y="Task Count Total") +
   annotate("text", x=last_quarter_start, y=bo_ylegend_count, label="Open Tasks", hjust=0, size=10) +
   annotate("text", x=last_quarter_start, y=bd_ylegend_count, label="Complete Tasks", hjust=0, size=10) +
   geom_hline(aes(yintercept=c(0)), color="black", size=2) +
-  labs(fill="Milestone") +
+  labs(fill="Category") +
   geom_text(data=bd_labels_count, aes(x=max_date, y=label_count, label=category), hjust=0) +
   geom_text(data=bo_labels_count, aes(x=max_date, y=label_count, label=category), hjust=0)
 dev.off()
@@ -144,35 +144,35 @@ dev.off()
 ## Velocity
 ######################################################################
 
-velocity <- read.csv(sprintf("/tmp/%s/velocity.csv", args$project))
+velocity <- read.csv(sprintf("/tmp/%s/velocity.csv", args$scope_prefix))
 velocity$date <- as.Date(velocity$date, "%Y-%m-%d")
 
-png(filename = sprintf("~/html/%s_velocity_points.png", args$project), width=2000, height=1125, units="px", pointsize=30)
+png(filename = sprintf("~/html/%s_velocity_points.png", args$scope_prefix), width=2000, height=1125, units="px", pointsize=30)
 
 ggplot(velocity, aes(date, points)) +
   geom_bar(stat="identity") +
   theme_fivethirtynine() +
   theme(axis.title.x=element_blank()) +
   scale_x_date(limits=c(three_months_ago, now), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
-  labs(title=sprintf("%s weekly velocity by points", args$title), y="Story Points")
+  labs(title=sprintf("%s weekly velocity by points", args$scope_title), y="Story Points")
 dev.off()
 
-png(filename = sprintf("~/html/%s_velocity_count.png", args$project), width=2000, height=1125, units="px", pointsize=30)
+png(filename = sprintf("~/html/%s_velocity_count.png", args$scope_prefix), width=2000, height=1125, units="px", pointsize=30)
 
 ggplot(velocity, aes(date, count)) +
   geom_bar(stat="identity") +
   theme_fivethirtynine() +
   theme(axis.title.x=element_blank()) +
   scale_x_date(limits=c(three_months_ago, now), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
-  labs(title=sprintf("%s weekly velocity by count", args$title), y="Tasks")
+  labs(title=sprintf("%s weekly velocity by count", args$scope_title), y="Tasks")
 dev.off()
 
 ######################################################################
 ## Forecast
 ######################################################################
 
-forecast_done <- read.csv(sprintf("/tmp/%s/forecast_done.csv", args$project))
-forecast <- read.csv(sprintf("/tmp/%s/forecast.csv", args$project))
+forecast_done <- read.csv(sprintf("/tmp/%s/forecast_done.csv", args$scope_prefix))
+forecast <- read.csv(sprintf("/tmp/%s/forecast.csv", args$scope_prefix))
 forecast$date <- as.Date(forecast$date, "%Y-%m-%d")
 forecast <- forecast[forecast$weeks_old < 5,]
 
@@ -200,7 +200,7 @@ forecast_current <- forecast[ forecast$weeks_old < 1 & forecast$weeks_old >= 0,]
 forecast_future_points <- na.omit(forecast[forecast$nom_points_date > forecast_end & forecast$weeks_old == 1, ])
 forecast_future_count <- na.omit(forecast[forecast$nom_count_date > forecast_end & forecast$weeks_old == 1, ])
 
-png(filename = sprintf("~/html/%s_forecast_points%s.png", args$project, zoom_suffix), width=2000, height=1125, units="px", pointsize=30)
+png(filename = sprintf("~/html/%s_forecast_points%s.png", args$scope_prefix, zoom_suffix), width=2000, height=1125, units="px", pointsize=30)
 
 p <- ggplot(forecast_done) +
   annotate("rect", xmin=first_cat, xmax=last_cat, ymin=quarter_start, ymax=next_quarter_start, fill="white", alpha=0.5) +
@@ -216,7 +216,7 @@ p <- ggplot(forecast_done) +
   scale_y_date(limits=c(forecast_start, forecast_end_plus), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   coord_flip() +
   theme_fivethirtynine() +
-  labs(title=sprintf("%s forecast completion dates based on points velocity%s", args$title, zoom_title), x="Milestone") +
+  labs(title=sprintf("%s forecast completion dates based on points velocity%s", args$scope_title, zoom_title), x="Category") +
   theme(legend.position = "none",
         axis.text.y = element_text(hjust=1),
         axis.title.x = element_blank())
@@ -236,7 +236,7 @@ if(nrow(done_during_quarter) > 0) {
 p
 dev.off()
 
-png(filename = sprintf("~/html/%s_forecast_count%s.png", args$project, zoom_suffix), width=2000, height=1125, units="px", pointsize=30)
+png(filename = sprintf("~/html/%s_forecast_count%s.png", args$scope_prefix, zoom_suffix), width=2000, height=1125, units="px", pointsize=30)
 
 p <- ggplot(forecast_done) +
   annotate("rect", xmin=first_cat, xmax=last_cat, ymin=quarter_start, ymax=next_quarter_start, fill="white", alpha=0.5) +
@@ -252,7 +252,7 @@ p <- ggplot(forecast_done) +
   scale_y_date(limits=c(forecast_start, forecast_end_plus), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   coord_flip() +
   theme_fivethirtynine() +
-  labs(title=sprintf("%s forecast completion dates based on count velocity%s", args$title, zoom_title), x="Milestone") +
+  labs(title=sprintf("%s forecast completion dates based on count velocity%s", args$scope_title, zoom_title), x="Category") +
   theme(legend.position = "none",
         axis.text.y = element_text(hjust=1),
         axis.title.x = element_blank())
@@ -276,7 +276,7 @@ dev.off()
 ## Recently Closed
 ######################################################################
 
-done <- read.csv(sprintf("/tmp/%s/recently_closed.csv", args$project))
+done <- read.csv(sprintf("/tmp/%s/recently_closed.csv", args$scope_prefix))
 done$date <- as.Date(done$date, "%Y-%m-%d")
 done$category <- paste(sprintf("%02d",done$sort_order), strtrim(done$category, 35))
 done$category <- factor(done$category, levels=rev(done$category[order(done$priority)]))
@@ -284,35 +284,35 @@ done$category <- factor(done$category, levels=rev(done$category[order(done$prior
 colorCount = length(unique(done$category))
 getPalette = colorRampPalette(brewer.pal(9, "YlGn"))
 
-png(filename = sprintf("~/html/%s_done_points.png", args$project), width=2000, height=1125, units="px", pointsize=30)
+png(filename = sprintf("~/html/%s_done_points.png", args$scope_prefix), width=2000, height=1125, units="px", pointsize=30)
 ggplot(done, aes(x=date, y=points, fill=factor(category))) +
   geom_bar(stat="identity")+ 
-  scale_fill_manual(values=getPalette(colorCount), name="Milestone") +
+  scale_fill_manual(values=getPalette(colorCount), name="Category") +
   theme_fivethirtynine() +
   theme(axis.title.x=element_blank()) +
   scale_x_date(limits=c(three_months_ago, now), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   theme(legend.direction='vertical', axis.title.x=element_blank()) +
-  labs(title=sprintf("%s Completed work by points", args$title), y="Points", x="Month", aesthetic="Milestone")
+  labs(title=sprintf("%s Completed work by points", args$scope_title), y="Points", x="Month", aesthetic="Category")
 dev.off()
 
-png(filename = sprintf("~/html/%s_done_count.png", args$project), width=2000, height=1125, units="px", pointsize=30)
+png(filename = sprintf("~/html/%s_done_count.png", args$scope_prefix), width=2000, height=1125, units="px", pointsize=30)
 ggplot(done, aes(x=date, y=count, fill=factor(category))) +
   geom_bar(stat="identity") +
-  scale_fill_manual(values=getPalette(colorCount), name="Milestone") +
+  scale_fill_manual(values=getPalette(colorCount), name="Category") +
   theme_fivethirtynine() +
   scale_x_date(limits=c(three_months_ago, now), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   theme(legend.direction='vertical', axis.title.x=element_blank()) +
-  labs(title=sprintf("%s Completed work by count", args$title), y="Count", x="Month", aesthetic="Milestone")
+  labs(title=sprintf("%s Completed work by count", args$scope_title), y="Count", x="Month", aesthetic="Category")
 dev.off()
 
 ######################################################################
 ## Maintenance Fraction
 ######################################################################
 
-## maint_frac <- read.csv(sprintf("/tmp/%s/maintenance_fraction.csv", args$project))
+## maint_frac <- read.csv(sprintf("/tmp/%s/maintenance_fraction.csv", args$scope_prefix))
 ## maint_frac$date <- as.Date(maint_frac$date, "%Y-%m-%d")
 
-## status_output <- png(filename = sprintf("~/html/%s_maint_frac.png", args$project), width=2000, height=1125, units="px", pointsize=30)
+## status_output <- png(filename = sprintf("~/html/%s_maint_frac.png", args$scope_prefix), width=2000, height=1125, units="px", pointsize=30)
 
 ## ggplot(maint_frac, aes(date, maint_frac_points)) +
 ##   geom_bar(stat="identity") +
@@ -320,25 +320,25 @@ dev.off()
 ##   scale_x_date(limits=c(three_months_ago, now), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
 ##   theme_fivethirtynine() +
 ##   theme(axis.title.x=element_blank()) +
-##   labs(title=sprintf("%s Maintenance Fraction by points", args$title), y="Fraction of completed work that is maintenance")
+##   labs(title=sprintf("%s Maintenance Fraction by points", args$scope_title), y="Fraction of completed work that is maintenance")
 ## dev.off()
 
-## status_output_count <- png(filename = sprintf("~/html/%s_maint_count_frac.png", args$project), width=2000, height=1125, units="px", pointsize=30)
+## status_output_count <- png(filename = sprintf("~/html/%s_maint_count_frac.png", args$scope_prefix), width=2000, height=1125, units="px", pointsize=30)
 ## ggplot(maint_frac, aes(date, maint_frac_count)) +
 ##   geom_bar(stat="identity") +
 ##   scale_y_continuous(labels=percent, limits=c(0,1)) + 
 ##   theme_fivethirtynine() +
 ##   theme(axis.title.x=element_blank()) +
 ##   scale_x_date(limits=c(three_months_ago, now), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
-##   labs(title=sprintf("%s Maintenance Fraction by count", args$title), y="Fraction of completed work that is maintenance")
+##   labs(title=sprintf("%s Maintenance Fraction by count", args$scope_title), y="Fraction of completed work that is maintenance")
 ## dev.off()
 
-maint_prop <- read.csv(sprintf("/tmp/%s/maintenance_proportion.csv", args$project))
+maint_prop <- read.csv(sprintf("/tmp/%s/maintenance_proportion.csv", args$scope_prefix))
 maint_prop$date <- as.Date(maint_prop$date, "%Y-%m-%d")
 maint_prop$maint_type <- factor(maint_prop$maint_type, levels=rev(maint_prop$maint_type[order(maint_prop$maint_type)]))
 
 
-status_output <- png(filename = sprintf("~/html/%s_maint_prop_points.png", args$project), width=2000, height=1125, units="px", pointsize=30)
+status_output <- png(filename = sprintf("~/html/%s_maint_prop_points.png", args$scope_prefix), width=2000, height=1125, units="px", pointsize=30)
 
 ggplot(maint_prop, aes(x=date, y=points, fill=factor(maint_type))) +
   geom_bar(stat="identity") +
@@ -346,10 +346,10 @@ ggplot(maint_prop, aes(x=date, y=points, fill=factor(maint_type))) +
   scale_x_date(limits=c(three_months_ago, now), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   theme_fivethirtynine() +
   theme(legend.direction='vertical', axis.title.x=element_blank()) +
-  labs(title=sprintf("%s Core Fraction type by points", args$title), y="Amount of completed work by type")
+  labs(title=sprintf("%s Core Fraction type by points", args$scope_title), y="Amount of completed work by type")
 dev.off()
 
-status_output <- png(filename = sprintf("~/html/%s_maint_prop_count.png", args$project), width=2000, height=1125, units="px", pointsize=30)
+status_output <- png(filename = sprintf("~/html/%s_maint_prop_count.png", args$scope_prefix), width=2000, height=1125, units="px", pointsize=30)
 
 ggplot(maint_prop, aes(x=date, y=count, fill=factor(maint_type))) +
   geom_bar(stat="identity") +
@@ -357,20 +357,20 @@ ggplot(maint_prop, aes(x=date, y=count, fill=factor(maint_type))) +
   scale_x_date(limits=c(three_months_ago, now), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   theme_fivethirtynine() +
   theme(legend.direction='vertical', axis.title.x=element_blank()) +
-  labs(title=sprintf("%s Core Fraction type by count", args$title), y="Amount of completed work by type")
+  labs(title=sprintf("%s Core Fraction type by count", args$scope_title), y="Amount of completed work by type")
 dev.off()
 
 ######################################################################
 ## Points Histogram
 ######################################################################
 
-points_histogram <- read.csv(sprintf("/tmp/%s/points_histogram.csv", args$project))
+points_histogram <- read.csv(sprintf("/tmp/%s/points_histogram.csv", args$scope_prefix))
 points_histogram$points <- factor(points_histogram$points)
-png(filename = sprintf("~/html/%s_points_histogram.png", args$project), width=2000, height=1125, units="px", pointsize=30)
+png(filename = sprintf("~/html/%s_points_histogram.png", args$scope_prefix), width=2000, height=1125, units="px", pointsize=30)
 
 ggplot(points_histogram, aes(points, count)) +
   geom_bar(stat="identity") +
   theme(axis.title.x=element_blank()) +
   facet_grid(priority ~ ., scales="free_y", space="free", margins=TRUE) +
-  labs(title=sprintf("%s Number of resolved tasks by points and priority", args$title), y="Count")
+  labs(title=sprintf("%s Number of resolved tasks by points and priority", args$scope_title), y="Count")
 dev.off()

@@ -6,9 +6,9 @@ SELECT date,
        SUM(count) as count,
        BOOL_OR(z.zoom) as zoom
   FROM tall_backlog t, category_list z
- WHERE t.source = :'prefix'
-   AND z.source = :'prefix'
-   AND t.source = z.source
+ WHERE t.scope = :'scope_prefix'
+   AND z.scope = :'scope_prefix'
+   AND t.scope = z.scope
    AND t.category = z.category
  GROUP BY date, t.category
  ORDER BY sort_order, date
@@ -22,7 +22,7 @@ SELECT date,
        count,
        SUM(points) OVER (PARTITION BY date ORDER BY sort_order, category) AS label_points,
        SUM(count) OVER (PARTITION BY date ORDER BY sort_order, category) AS label_count
-  FROM backlog_query(:'prefix', '"open"', True)
+  FROM backlog_query(:'scope_prefix', '"open"', True)
 ) TO '/tmp/phlog/burn_open_zoom.csv' DELIMITER ',' CSV HEADER;
 
 COPY (
@@ -33,7 +33,7 @@ SELECT date,
        count,
        SUM(points) OVER (PARTITION BY date ORDER BY sort_order, category) AS label_points,
        SUM(count) OVER (PARTITION BY date ORDER BY sort_order, category) AS label_count
-  FROM backlog_query(:'prefix', '"resolved"', True)
+  FROM backlog_query(:'scope_prefix', '"resolved"', True)
 ) TO '/tmp/phlog/burn_done_zoom.csv' DELIMITER ',' CSV HEADER;
 
 COPY (
@@ -44,7 +44,7 @@ SELECT date,
        count,
        SUM(points) OVER (PARTITION BY date ORDER BY sort_order, category) AS label_points,
        SUM(count) OVER (PARTITION BY date ORDER BY sort_order, category) AS label_count
-  FROM backlog_query(:'prefix', '"open"', False)
+  FROM backlog_query(:'scope_prefix', '"open"', False)
 ) TO '/tmp/phlog/burn_open.csv' DELIMITER ',' CSV HEADER;
 
 COPY (
@@ -55,7 +55,7 @@ SELECT date,
        count,
        SUM(points) OVER (PARTITION BY date ORDER BY sort_order, category) AS label_points,
        SUM(count) OVER (PARTITION BY date ORDER BY sort_order, category) AS label_count
-  FROM backlog_query(:'prefix', '"resolved"', False)
+  FROM backlog_query(:'scope_prefix', '"resolved"', False)
 ) TO '/tmp/phlog/burn_done.csv' DELIMITER ',' CSV HEADER;
 
 COPY (
@@ -64,10 +64,10 @@ SELECT date,
        SUM(count) as count
   FROM tall_backlog
  WHERE status = '"resolved"'
-   AND source = :'prefix'
+   AND scope = :'scope_prefix'
    AND category IN (SELECT category
                       FROM category_list
-                     WHERE source = :'prefix'
+                     WHERE scope = :'scope_prefix'
                        AND zoom = True)
  GROUP BY date
  ORDER BY date
@@ -79,10 +79,10 @@ SELECT date,
        SUM(count) as count
   FROM tall_backlog
  WHERE status = '"resolved"'
-   AND source = :'prefix'
+   AND scope = :'scope_prefix'
    AND category IN (SELECT category
                       FROM category_list
-                     WHERE source = :'prefix')
+                     WHERE scope = :'scope_prefix')
  GROUP BY date
  ORDER BY date
 ) TO '/tmp/phlog/burnup.csv' DELIMITER ',' CSV HEADER;
@@ -94,34 +94,34 @@ SELECT date,
        SUM(count) as count
   FROM tall_backlog
  WHERE status = '"resolved"'
-   AND source = :'prefix'
+   AND scope = :'scope_prefix'
    AND category in (SELECT category
                       FROM category_list
-                     WHERE source = :'prefix')
+                     WHERE scope = :'scope_prefix')
  GROUP BY date, category
  ORDER BY category, date
 ) TO '/tmp/phlog/burnup_categories.csv' DELIMITER ',' CSV HEADER;
 
 COPY (
 SELECT COUNT(*),
-       milestone_title,
+       category_title,
        project,
        projectcolumn
   FROM task_history
- WHERE source = :'prefix'
- GROUP BY milestone_title, project, projectcolumn
- ORDER BY milestone_title, project, projectcolumn
+ WHERE scope = :'scope_prefix'
+ GROUP BY category_title, project, projectcolumn
+ ORDER BY category_title, project, projectcolumn
 ) TO '/tmp/phlog/category_possibilities.txt';
 
 /* ####################################################################
    Maintenance fraction
 Divide all resolved work into Maintenance or New Project, by week. */
 
-DELETE FROM maintenance_week where source = :'prefix';
-DELETE FROM maintenance_delta where source = :'prefix';
+DELETE FROM maintenance_week where scope = :'scope_prefix';
+DELETE FROM maintenance_delta where scope = :'scope_prefix';
 
 INSERT INTO maintenance_week (
-SELECT source,
+SELECT scope,
        date,
        maint_type,
        SUM(points) as points,
@@ -131,12 +131,12 @@ SELECT source,
    AND EXTRACT(epoch FROM age(date - INTERVAL '1 day'))/604800 = ROUND(
        EXTRACT(epoch FROM age(date - INTERVAL '1 day'))/604800)
    AND date >= current_date - interval '3 months'
-   AND source = :'prefix'
- GROUP BY maint_type, date, source
+   AND scope = :'scope_prefix'
+ GROUP BY maint_type, date, scope
 );
 
 INSERT INTO maintenance_delta (
-SELECT source,
+SELECT scope,
        date,
        maint_type,
        (points - lag(points) OVER (ORDER BY date)) as maint_points,
@@ -144,8 +144,8 @@ SELECT source,
        (count - lag(count) OVER (ORDER BY date)) as maint_count
   FROM maintenance_week
  WHERE maint_type='Maintenance'
-   AND source = :'prefix'
- ORDER BY date, maint_type, source
+   AND scope = :'scope_prefix'
+ ORDER BY date, maint_type, scope
 );
 
 
@@ -155,9 +155,9 @@ UPDATE maintenance_delta a
                                     points - lag(points) OVER (ORDER BY date) as points
                                FROM maintenance_week
                               WHERE maint_type='New Functionality'
-                                AND source = :'prefix') as b
+                                AND scope = :'scope_prefix') as b
                       WHERE a.date = b.date
-                        AND source = :'prefix');
+                        AND scope = :'scope_prefix');
 
 UPDATE maintenance_delta a
    SET new_count = (SELECT count
@@ -165,18 +165,18 @@ UPDATE maintenance_delta a
                                     count - lag(count) OVER (ORDER BY date) as count
                                FROM maintenance_week
                               WHERE maint_type='New Functionality'
-                                AND source = :'prefix') as b
+                                AND scope = :'scope_prefix') as b
                       WHERE a.date = b.date
-                        AND source = :'prefix');
+                        AND scope = :'scope_prefix');
 
 COPY (
-SELECT source,
+SELECT scope,
        date,
        maint_type,
        count - LAG(count) OVER (PARTITION BY maint_type ORDER BY date) AS count,
        points - LAG(points) OVER (PARTITION BY maint_type ORDER BY date) AS points
   FROM maintenance_week
- WHERE source = :'prefix'
+ WHERE scope = :'scope_prefix'
  ORDER BY date, maint_type
  ) TO '/tmp/phlog/maintenance_proportion.csv' DELIMITER ',' CSV HEADER;
 
@@ -189,42 +189,42 @@ SELECT date,
        maint_points::float / nullif((maint_points + new_points),0) as maint_frac_points,
        maint_count::float / nullif((maint_count + new_count),0) as maint_frac_count
   FROM maintenance_delta
- WHERE source = :'prefix' ) as maintenance_fraction
+ WHERE scope = :'scope_prefix' ) as maintenance_fraction
 ) TO '/tmp/phlog/maintenance_fraction.csv' DELIMITER ',' CSV HEADER;
 
 COPY (
 SELECT ROUND(100 * maint_points::decimal / nullif((maint_points + new_points),0),0) as "Total Maintenance Fraction by Points"
   FROM (SELECT sum(maint_points) as maint_points
           FROM maintenance_delta
-         WHERE source = :'prefix') as x
+         WHERE scope = :'scope_prefix') as x
  CROSS JOIN 
        (SELECT sum(new_points)  as new_points
 	     FROM maintenance_delta
-         WHERE source = :'prefix') as y
+         WHERE scope = :'scope_prefix') as y
 ) TO '/tmp/phlog/maintenance_fraction_total_by_points.csv' DELIMITER ',' CSV;
 
 COPY (
 SELECT ROUND(100 * maint_count::decimal / nullif((maint_count + new_count),0),0) as "Total Maintenance Fraction by Count"
   FROM (SELECT sum(maint_count) as maint_count
           FROM maintenance_delta
-         WHERE source = :'prefix') as x
+         WHERE scope = :'scope_prefix') as x
  CROSS JOIN 
        (SELECT sum(new_count)  as new_count
 	     FROM maintenance_delta
-         WHERE source = :'prefix') as y
+         WHERE scope = :'scope_prefix') as y
 ) TO '/tmp/phlog/maintenance_fraction_total_by_count.csv' DELIMITER ',' CSV;
 
 /* ####################################################################
 Burnup and Velocity and Forecasts */
 
-SELECT calculate_velocities(:'prefix');
+SELECT calculate_velocities(:'scope_prefix');
 			      
 COPY (
 SELECT date,
        sum(delta_points_resolved) as points,
        sum(delta_count_resolved) as count
   FROM velocity
- WHERE source = :'prefix'
+ WHERE scope = :'scope_prefix'
  GROUP BY date
  ORDER BY date
 ) TO '/tmp/phlog/velocity.csv' DELIMITER ',' CSV HEADER;
@@ -235,7 +235,7 @@ SELECT date,
        delta_points_resolved as points,
        delta_count_resolved as count
   FROM velocity
- WHERE source = :'prefix'
+ WHERE scope = :'scope_prefix'
  ORDER BY category, date
 ) TO '/tmp/phlog/tranche_velocity.csv' DELIMITER ',' CSV HEADER;
 
@@ -246,7 +246,7 @@ SELECT date,
        nom_points_vel,
        pes_points_vel
   FROM velocity
- WHERE source = :'prefix'
+ WHERE scope = :'scope_prefix'
  ORDER BY category, date
 ) TO '/tmp/phlog/tranche_velocity_points.csv' DELIMITER ',' CSV HEADER;
 
@@ -257,7 +257,7 @@ SELECT date,
        nom_count_vel,
        pes_count_vel
   FROM velocity
- WHERE source = :'prefix'
+ WHERE scope = :'scope_prefix'
  ORDER BY category, date
 ) TO '/tmp/phlog/tranche_velocity_count.csv' DELIMITER ',' CSV HEADER;
 
@@ -299,8 +299,8 @@ SELECT date,
        TO_CHAR(count_resolved::float / NULLIF(count_total,0) * 100,'99') || '%' END AS count_pct_complete
   FROM velocity v, category_list z
  WHERE z.category = v.category
-   AND z.source = :'prefix'
-   AND v.source = :'prefix'
+   AND z.scope = :'scope_prefix'
+   AND v.scope = :'scope_prefix'
  ORDER BY date
 ) to '/tmp/phlog/forecast.csv' DELIMITER ',' CSV HEADER;
 
@@ -309,14 +309,14 @@ SELECT z.category,
        z.zoom,
        (SELECT SUM(points)
           FROM tall_backlog
-         WHERE source = :'prefix'
+         WHERE scope = :'scope_prefix'
            AND category = z.category
-           AND date = (SELECT MAX(date) FROM tall_backlog WHERE source = :'prefix')) AS points_total,
+           AND date = (SELECT MAX(date) FROM tall_backlog WHERE scope = :'scope_prefix')) AS points_total,
        (SELECT SUM(count)
           FROM tall_backlog
-         WHERE source = :'prefix'
+         WHERE scope = :'scope_prefix'
            AND category = z.category
-           AND date = (SELECT MAX(date) FROM tall_backlog WHERE source = :'prefix')) AS count_total,
+           AND date = (SELECT MAX(date) FROM tall_backlog WHERE scope = :'scope_prefix')) AS count_total,
        z.sort_order,
        first.first_open_date,
        last.last_open_date + INTERVAL '1 week' as resolved_date
@@ -324,17 +324,17 @@ SELECT z.category,
   LEFT OUTER JOIN (SELECT category,
                           MIN(date) as first_open_date
                      FROM tall_backlog
-                    WHERE source = :'prefix'
+                    WHERE scope = :'scope_prefix'
                       AND status = '"open"'
                     GROUP BY category) AS first ON (z.category = first.category)
   LEFT OUTER JOIN (SELECT category,
                           MAX(date) as last_open_date
                      FROM tall_backlog
-                    WHERE source = :'prefix'
+                    WHERE scope = :'scope_prefix'
                       AND status = '"open"'
                     GROUP BY category) AS last ON (z.category = last.category AND
-                                                date_trunc('day', last_open_date) <> (SELECT MAX(date) FROM tall_backlog WHERE source = :'prefix'))
-WHERE source = :'prefix'
+                                                date_trunc('day', last_open_date) <> (SELECT MAX(date) FROM tall_backlog WHERE scope = :'scope_prefix'))
+WHERE scope = :'scope_prefix'
 ORDER BY sort_order
 ) TO '/tmp/phlog/forecast_done.csv' DELIMITER ',' CSV HEADER;
 
@@ -347,8 +347,8 @@ SELECT rc.date,
        rc.category as category,
        rc.points,
        rc.count
-  FROM recently_closed rc LEFT OUTER JOIN category_list z USING (source, category)
- WHERE source = :'prefix'
+  FROM recently_closed rc LEFT OUTER JOIN category_list z USING (scope, category)
+ WHERE scope = :'scope_prefix'
    AND date >= current_date - interval '3 months'
  ORDER BY date, sort_order
 ) to '/tmp/phlog/recently_closed.csv' DELIMITER ',' CSV HEADER;
@@ -366,10 +366,10 @@ SELECT points,
   FROM task_history
  WHERE id in (SELECT DISTINCT id
                 FROM task_history
-               WHERE source = :'prefix')
+               WHERE scope = :'scope_prefix')
    AND date = (SELECT MAX(date)
                  FROM task_history
-                WHERE source = :'prefix')
+                WHERE scope = :'scope_prefix')
    AND status = '"resolved"') AS point_query
  GROUP BY points, priority
  ORDER BY priority, points

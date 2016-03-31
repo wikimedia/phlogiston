@@ -1,7 +1,7 @@
 DROP TABLE IF EXISTS category_list;
 
 CREATE TABLE category_list (
-       source varchar(6),
+       scope varchar(6),
        sort_order int,
        category text,
        matchstring text,
@@ -11,7 +11,7 @@ CREATE TABLE category_list (
 DROP TABLE IF EXISTS tall_backlog;
 
 CREATE TABLE tall_backlog (
-       source varchar(6),
+       scope varchar(6),
        date timestamp,
        category text,
        status text,
@@ -23,7 +23,7 @@ CREATE TABLE tall_backlog (
 DROP TABLE IF EXISTS task_history_recat;
 
 CREATE TABLE task_history_recat (
-       source varchar(6),
+       scope varchar(6),
        date timestamp,
        id int,
        title text,
@@ -34,7 +34,7 @@ CREATE TABLE task_history_recat (
        priority text
        );
 
-CREATE INDEX ON task_history_recat (source);
+CREATE INDEX ON task_history_recat (scope);
 CREATE INDEX ON task_history_recat (status);
 CREATE INDEX ON task_history_recat (date);
 CREATE INDEX ON task_history_recat (id);
@@ -42,7 +42,7 @@ CREATE INDEX ON task_history_recat (id);
 DROP TABLE IF EXISTS recently_closed;
 
 CREATE TABLE recently_closed (
-    source varchar(6),
+    scope varchar(6),
     date date,
     category text,
     points int,
@@ -52,7 +52,7 @@ CREATE TABLE recently_closed (
 DROP TABLE IF EXISTS recently_closed_task;
 
 CREATE TABLE recently_closed_task (
-    source varchar(6),
+    scope varchar(6),
     date date,
     id int,
     title text,
@@ -63,7 +63,7 @@ DROP TABLE IF EXISTS maintenance_week;
 DROP TABLE IF EXISTS maintenance_delta;
 
 CREATE TABLE maintenance_week (
-    source varchar(6),
+    scope varchar(6),
     date timestamp,
     maint_type text,
     points int,
@@ -71,7 +71,7 @@ CREATE TABLE maintenance_week (
 );
 
 CREATE TABLE maintenance_delta (
-    source varchar(6),
+    scope varchar(6),
     date timestamp,
     maint_type text,
     maint_points int,
@@ -83,7 +83,7 @@ CREATE TABLE maintenance_delta (
 DROP TABLE IF EXISTS velocity;
 
 CREATE TABLE velocity (
-    source varchar(6),
+    scope varchar(6),
     category text,
     date timestamp,
     points_total int,
@@ -139,7 +139,7 @@ CREATE TABLE velocity (
 DROP TABLE IF EXISTS open_backlog_size;
 
 CREATE TABLE open_backlog_size (
-    source varchar(6),
+    scope varchar(6),
     category text,
     date timestamp,
     points int,

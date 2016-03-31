@@ -9,7 +9,7 @@ projects called "VisualEditor 2014/15 Q3 blockers" and
 from those projects. */
 
 INSERT INTO task_history_recat (
-SELECT source,
+SELECT scope,
        date,
        id,
        title,
@@ -19,7 +19,7 @@ SELECT source,
        'Strategic'       
   FROM task_history
  WHERE project != 'VisualEditor'
-   AND source = :'prefix');
+   AND scope = :'scope_prefix');
 
 
 /* Prior to 18 June 2015, VE work in the VisualEditor project was not
@@ -28,7 +28,7 @@ project prior to that date can be considered Uncategorized,
 regardless of state or column. */
 
 INSERT INTO task_history_recat(
-SELECT source,
+SELECT scope,
        date,
        id,
        title,
@@ -39,7 +39,7 @@ SELECT source,
   FROM task_history
  WHERE project = 'VisualEditor'
    AND date < '2015-06-18'
-   AND source = :'prefix');
+   AND scope = :'scope_prefix');
 
 /* Since June 18, 2018, the projectcolumn in the VisualEditor project
 should be accurate, so any VE task in a Tranche should use the tranche
@@ -48,13 +48,13 @@ any task after June 18th and not in a tranche) should be old data
 getting cleaned up. */
 
 INSERT INTO task_history_recat(
-SELECT source,
+SELECT scope,
        date,
        id,
        title,
        COALESCE(project,'') || ' ' ||
        COALESCE(projectcolumn,'') || ' ' ||
-       COALESCE(milestone_title,'') as category,
+       COALESCE(category_title,'') as category,
        status,
        points,
        CASE WHEN projectcolumn SIMILAR TO 'TR0%' THEN 'Core'
@@ -62,7 +62,7 @@ SELECT source,
             ELSE 'Core' END
   FROM task_history
  WHERE project = 'VisualEditor'
-   AND source = :'prefix'
+   AND scope = :'scope_prefix'
    AND date >= '2015-06-18');
 
 /* Simplify status fields */
@@ -70,11 +70,11 @@ SELECT source,
 UPDATE task_history_recat
    SET status = '"open"'
  WHERE status = '"stalled"'
-   AND source = :'prefix';
+   AND scope = :'scope_prefix';
 
 DELETE FROM task_history_recat
  WHERE (status = '"duplicate"'
     OR status = '"invalid"'
     OR status = '"declined"')
-   AND source = :'prefix';
+   AND scope = :'scope_prefix';
 

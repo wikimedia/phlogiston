@@ -1,57 +1,57 @@
 CREATE OR REPLACE FUNCTION wipe_reporting(
-       source_param varchar(6)
+       scope_prefix varchar(6)
 ) RETURNS void AS $$
 BEGIN
     DELETE FROM task_history_recat
-     WHERE source = source_param;
+     WHERE scope = scope_prefix;
 
     DELETE FROM tall_backlog
-     WHERE source = source_param;
+     WHERE scope = scope_prefix;
 
     DELETE FROM category_list
-     WHERE source = source_param;
+     WHERE scope = scope_prefix;
 
     DELETE FROM recently_closed
-     WHERE source = source_param;
+     WHERE scope = scope_prefix;
 
     DELETE FROM recently_closed_task
-     WHERE source = source_param;
+     WHERE scope = scope_prefix;
 
     DELETE FROM maintenance_week
-     WHERE source = source_param;
+     WHERE scope = scope_prefix;
 
     DELETE FROM maintenance_delta
-     WHERE source = source_param;
+     WHERE scope = scope_prefix;
 
     DELETE FROM velocity
-     WHERE source = source_param;
+     WHERE scope = scope_prefix;
 
     DELETE FROM open_backlog_size
-     WHERE source = source_param;
+     WHERE scope = scope_prefix;
 
 END;
 $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION find_recently_closed(
-    source_prefix varchar(6)
+    scope_prefix varchar(6)
     ) RETURNS void AS $$
 DECLARE
   weekrow record;
 BEGIN
 
     DELETE FROM recently_closed
-     WHERE source = source_prefix;
+     WHERE scope = scope_prefix;
 
     FOR weekrow IN SELECT DISTINCT date
                      FROM task_history_recat
                     WHERE EXTRACT(epoch FROM age(date - INTERVAL '1 day'))/604800 = ROUND(
                           EXTRACT(epoch FROM age(date - INTERVAL '1 day'))/604800)
-                      AND source = source_prefix
+                      AND scope = scope_prefix
                     ORDER BY date
     LOOP
 
         INSERT INTO recently_closed (
-            SELECT source_prefix as source,
+            SELECT scope_prefix as scope,
                    date,
                    category,
                    sum(points) AS points,
@@ -59,11 +59,11 @@ BEGIN
               FROM task_history_recat
              WHERE status = '"resolved"'
                AND date = weekrow.date
-               AND source = source_prefix
+               AND scope = scope_prefix
                AND id NOT IN (SELECT id
                                 FROM task_history
                                WHERE status = '"resolved"'
-                                 AND source = source_prefix
+                                 AND scope = scope_prefix
                                  AND date = weekrow.date - interval '1 week' )
              GROUP BY date, category
              );
@@ -74,24 +74,24 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION find_recently_closed_task(
-    source_prefix varchar(6)
+    scope_prefix varchar(6)
     ) RETURNS void AS $$
 DECLARE
   daterow record;
 BEGIN
 
     DELETE FROM recently_closed_task
-     WHERE source = source_prefix;
+     WHERE scope = scope_prefix;
 
     FOR daterow IN SELECT DISTINCT date
                      FROM task_history_recat
-                    WHERE source = source_prefix
+                    WHERE scope = scope_prefix
                       AND date > now() - interval '14 days'
                     ORDER BY date
     LOOP
 
         INSERT INTO recently_closed_task (
-             SELECT source_prefix as source,
+             SELECT scope_prefix as scope,
                     date,
                     id,
                     title,
@@ -99,11 +99,11 @@ BEGIN
               FROM task_history_recat
              WHERE status = '"resolved"'
                AND date = daterow.date
-               AND source = source_prefix
+               AND scope = scope_prefix
                AND id NOT IN (SELECT id
                                 FROM task_history
                                WHERE status = '"resolved"'
-                                 AND source = source_prefix
+                                 AND scope = scope_prefix
                                  AND date = daterow.date - interval '1 day' )
              );
     END LOOP;
@@ -114,7 +114,7 @@ $$ LANGUAGE plpgsql;
 
 
 CREATE OR REPLACE FUNCTION backlog_query (
-       source_prefix varchar(6),
+       scope_prefix varchar(6),
        status_input text,
        zoom_input boolean
 ) RETURNS TABLE(date timestamp, category text, sort_order int, points numeric, count numeric) AS $$
@@ -126,9 +126,9 @@ BEGIN
                SUM(t.points)::numeric as points,
                SUM(t.count)::numeric as count
           FROM tall_backlog t, category_list z
-         WHERE t.source = source_prefix
-           AND z.source = source_prefix
-           AND t.source = z.source
+         WHERE t.scope = scope_prefix
+           AND z.scope = scope_prefix
+           AND t.scope = z.scope
            AND t.category = z.category
            AND t.status = status_input
            AND (z.zoom = True OR z.zoom = zoom_input)
@@ -139,7 +139,7 @@ $$ LANGUAGE plpgsql;
 
 
 CREATE OR REPLACE FUNCTION calculate_velocities(
-    source_prefix varchar(6)
+    scope_prefix varchar(6)
     ) RETURNS void AS $$
 DECLARE
   past_dates date[];
@@ -171,7 +171,7 @@ DECLARE
   threem_avg_count_grow float;
 BEGIN
 
-    DELETE FROM velocity where source = source_prefix;
+    DELETE FROM velocity where scope = scope_prefix;
 
     -- Select dates at one week multiples of today
     -- from 6 months ago (enough for full quarter plus 3 mo before for
@@ -200,33 +200,33 @@ BEGIN
 
     -- load historical data into velocity
     INSERT INTO velocity (
-    SELECT source,
+    SELECT scope,
            category,
            date,
            SUM(points) AS points_total,
            SUM(count) AS count_total
       FROM tall_backlog
      WHERE date = ANY (past_dates)
-       AND source = source_prefix
-     GROUP BY date, source, category);
+       AND scope = scope_prefix
+     GROUP BY date, scope, category);
 
     -- load more historical data into velocity
     UPDATE velocity v
        SET points_resolved = sum_points_resolved,
            count_resolved = sum_count_resolved
-      FROM (SELECT source,
+      FROM (SELECT scope,
                    date,
                    category,
                    SUM(points) AS sum_points_resolved,
                    SUM(count) AS sum_count_resolved
               FROM tall_backlog
              WHERE status = '"resolved"'
-               AND source = source_prefix
-             GROUP BY source, date, category) as t
+               AND scope = scope_prefix
+             GROUP BY scope, date, category) as t
      WHERE t.date = v.date
        AND t.category = v.category
-       AND t.source = v.source
-       AND v.source = source_prefix;
+       AND t.scope = v.scope
+       AND v.scope = scope_prefix;
 
     -- calculate deltas for historical data
     UPDATE velocity
@@ -234,20 +234,20 @@ BEGIN
            delta_count_resolved = COALESCE(subq.delta_count_resolved,0),
            delta_points_total = COALESCE(subq.delta_points_total,0),
            delta_count_total = COALESCE(subq.delta_count_total,0)
-      FROM (SELECT source,
+      FROM (SELECT scope,
                    date,
                    category,
                    count_resolved - lag(count_resolved) OVER
-                       (PARTITION BY source, category ORDER BY date) as delta_count_resolved,
+                       (PARTITION BY scope, category ORDER BY date) as delta_count_resolved,
                    points_resolved - lag(points_resolved) OVER
-                       (PARTITION BY source, category ORDER BY date) as delta_points_resolved,
+                       (PARTITION BY scope, category ORDER BY date) as delta_points_resolved,
                    count_total - lag(count_total) OVER
-                       (PARTITION BY source, category ORDER BY date) as delta_count_total,
+                       (PARTITION BY scope, category ORDER BY date) as delta_count_total,
                    points_total - lag(points_total) OVER
-                       (PARTITION BY source, category ORDER BY date) as delta_points_total
+                       (PARTITION BY scope, category ORDER BY date) as delta_points_total
       FROM velocity
-     WHERE source = source_prefix) as subq
-     WHERE velocity.source = subq.source
+     WHERE scope = scope_prefix) as subq
+     WHERE velocity.scope = subq.scope
        AND velocity.date = subq.date
        AND velocity.category = subq.category;   
 
@@ -257,7 +257,7 @@ BEGIN
         FOR tranche IN SELECT DISTINCT category
                          FROM tall_backlog
                         WHERE date = weekday
-                          AND source = source_prefix
+                          AND scope = scope_prefix
                         ORDER BY category
         LOOP
             SELECT SUM(total::float)/3
@@ -268,7 +268,7 @@ BEGIN
                       FROM velocity subqv
                      WHERE subqv.date > weekday - interval '3 months'
                        AND subqv.date <= weekday
-                       AND subqv.source = source_prefix
+                       AND subqv.scope = scope_prefix
                        AND subqv.category = tranche.category
                      ORDER BY subqv.delta_points_resolved 
                      LIMIT 3) AS x;
@@ -279,7 +279,7 @@ BEGIN
                       FROM velocity subqv
                      WHERE subqv.date > weekday - interval '3 months'
                        AND subqv.date <= weekday
-                       AND subqv.source = source_prefix
+                       AND subqv.scope = scope_prefix
                        AND subqv.category = tranche.category
                      ORDER BY subqv.delta_points_resolved DESC
                      LIMIT 3) AS x;
@@ -289,7 +289,7 @@ BEGIN
               FROM velocity subqv
              WHERE subqv.date > weekday - interval '3 months'
                AND subqv.date <= weekday
-               AND subqv.source = source_prefix
+               AND subqv.scope = scope_prefix
                AND subqv.category = tranche.category;
 
             SELECT SUM(total::float)/3
@@ -300,7 +300,7 @@ BEGIN
                       FROM velocity subqv
                      WHERE subqv.date > weekday - interval '3 weeks'
                        AND subqv.date <= weekday
-                       AND subqv.source = source_prefix
+                       AND subqv.scope = scope_prefix
                        AND subqv.category = tranche.category
                      ORDER BY subqv.delta_points_total DESC
                      LIMIT 3) AS x;
@@ -313,7 +313,7 @@ BEGIN
                       FROM velocity subqv
                      WHERE subqv.date > weekday - interval '3 months'
                        AND subqv.date <= weekday
-                       AND subqv.source = source_prefix
+                       AND subqv.scope = scope_prefix
                        AND subqv.category = tranche.category
                      ORDER BY subqv.delta_points_total DESC
                      LIMIT 3) AS x;
@@ -326,7 +326,7 @@ BEGIN
                       FROM velocity subqv
                      WHERE subqv.date > weekday - interval '3 weeks'
                        AND subqv.date <= weekday
-                       AND subqv.source = source_prefix
+                       AND subqv.scope = scope_prefix
                        AND subqv.category = tranche.category) AS x;
 
             SELECT AVG(total::float)
@@ -337,7 +337,7 @@ BEGIN
                       FROM velocity subqv
                      WHERE subqv.date > weekday - interval '3 months'
                        AND subqv.date <= weekday
-                       AND subqv.source = source_prefix
+                       AND subqv.scope = scope_prefix
                        AND subqv.category = tranche.category) as x;
 
             SELECT SUM(total::float)/3 AS min_count_vel
@@ -348,7 +348,7 @@ BEGIN
                       FROM velocity subqv
                      WHERE subqv.date > weekday - interval '3 months'
                        AND subqv.date <= weekday
-                       AND subqv.source = source_prefix
+                       AND subqv.scope = scope_prefix
                        AND subqv.category = tranche.category
                      ORDER BY subqv.delta_count_resolved 
                      LIMIT 3) AS x;
@@ -359,7 +359,7 @@ BEGIN
                       FROM velocity subqv
                      WHERE subqv.date > weekday - interval '3 months'
                        AND subqv.date <= weekday
-                       AND subqv.source = source_prefix
+                       AND subqv.scope = scope_prefix
                        AND subqv.category = tranche.category
                      ORDER BY subqv.delta_count_resolved DESC
                      LIMIT 3) AS x;
@@ -369,7 +369,7 @@ BEGIN
               FROM velocity subqv
              WHERE subqv.date > weekday - interval '3 months'
                AND subqv.date <= weekday
-               AND subqv.source = source_prefix
+               AND subqv.scope = scope_prefix
                AND subqv.category = tranche.category;
 
             SELECT SUM(total::float)/3
@@ -380,7 +380,7 @@ BEGIN
                       FROM velocity subqv
                      WHERE subqv.date > weekday - interval '3 weeks'
                        AND subqv.date <= weekday
-                       AND subqv.source = source_prefix
+                       AND subqv.scope = scope_prefix
                        AND subqv.category = tranche.category
                      ORDER BY subqv.delta_count_total DESC
                      LIMIT 3) AS x;
@@ -393,7 +393,7 @@ BEGIN
                       FROM velocity subqv
                      WHERE subqv.date > weekday - interval '3 months'
                        AND subqv.date <= weekday
-                       AND subqv.source = source_prefix
+                       AND subqv.scope = scope_prefix
                        AND subqv.category = tranche.category
                      ORDER BY subqv.delta_count_total DESC
                      LIMIT 3) AS x;
@@ -406,7 +406,7 @@ BEGIN
                       FROM velocity subqv
                      WHERE subqv.date > weekday - interval '3 weeks'
                        AND subqv.date <= weekday
-                       AND subqv.source = source_prefix
+                       AND subqv.scope = scope_prefix
                        AND subqv.category = tranche.category) AS x;
 
             SELECT AVG(total::float)
@@ -417,7 +417,7 @@ BEGIN
                       FROM velocity subqv
                      WHERE subqv.date > weekday - interval '3 months'
                        AND subqv.date <= weekday
-                       AND subqv.source = source_prefix
+                       AND subqv.scope = scope_prefix
                        AND subqv.category = tranche.category) as x;
 
             SELECT threem_avg_points_grow
@@ -449,7 +449,7 @@ BEGIN
                    threew_max_points_growrate = threew_max_points_grow,
                    threem_max_count_growrate = threem_max_count_grow,
                    threew_max_count_growrate = threew_max_count_grow
-             WHERE source = source_prefix
+             WHERE scope = scope_prefix
                AND category = tranche.category
                AND date = weekday;
 
@@ -469,7 +469,7 @@ BEGIN
                                     GREATEST((nom_points_vel - nom_points_total_growrate),1)),
            opt_points_fore = round((points_total - points_resolved)::float /
                                     GREATEST((opt_points_vel - opt_points_total_growrate),1))
-     WHERE source = source_prefix
+     WHERE scope = scope_prefix
        AND points_resolved < points_total;
 
     UPDATE velocity
@@ -479,7 +479,7 @@ BEGIN
                                     GREATEST((nom_count_vel - nom_count_total_growrate),1)),
            opt_count_fore = round((count_total - count_resolved)::float /
                                     GREATEST((opt_count_vel - opt_count_total_growrate),1))
-     WHERE source = source_prefix
+     WHERE scope = scope_prefix
        AND count_resolved < count_total;
        
     -- convert # of weeks in future to specific date
@@ -491,32 +491,32 @@ BEGIN
            pes_count_date = date_trunc('day', date + (pes_count_fore * interval '1 week')),
            nom_count_date = date_trunc('day', date + (nom_count_fore * interval '1 week')),
            opt_count_date = date_trunc('day', date + (opt_count_fore * interval '1 week'))
-     WHERE source = source_prefix;
+     WHERE scope = scope_prefix;
 
     -- calculate future projections based on today's forecasts
     -- include today to get zero-based forecast viz lines
 
     FOR tranche IN SELECT DISTINCT category
                      FROM tall_backlog
-                    WHERE source = source_prefix
+                    WHERE scope = scope_prefix
                     ORDER BY category
     LOOP
         SELECT MAX(date)
           INTO most_recent_data
           FROM velocity
-         WHERE source = source_prefix
+         WHERE scope = scope_prefix
            AND category = tranche.category
            AND date < now();
 
         FOREACH weekday IN ARRAY future_dates
         LOOP
             weeks_ahead := EXTRACT(EPOCH FROM date_trunc('day', weekday) - date_trunc('day', now())) / 604800;
-            INSERT INTO velocity (source, category, date,
+            INSERT INTO velocity (scope, category, date,
                    pes_points_growviz, nom_points_growviz, opt_points_growviz,
                    pes_count_growviz, nom_count_growviz, opt_count_growviz,
                    pes_points_velviz, nom_points_velviz, opt_points_velviz,
                    pes_count_velviz, nom_count_velviz, opt_count_velviz) (
-            SELECT source, category, weekday,
+            SELECT scope, category, weekday,
                    points_total + (pes_points_total_growrate * weeks_ahead),
                    points_total + (nom_points_total_growrate * weeks_ahead),
                    points_total + (opt_points_total_growrate * weeks_ahead),
@@ -530,7 +530,7 @@ BEGIN
                    count_resolved + (nom_count_vel * weeks_ahead),
                    count_resolved + (opt_count_vel * weeks_ahead)
               FROM velocity
-             WHERE source = source_prefix
+             WHERE scope = scope_prefix
                AND category = tranche.category
                AND date = most_recent_data);
 
@@ -543,7 +543,7 @@ $$ LANGUAGE plpgsql;
 
 
 CREATE OR REPLACE FUNCTION set_category_retroactive(
-    source_prefix varchar(6)
+    scope_prefix varchar(6)
     ) RETURNS void AS $$
 BEGIN
 
@@ -552,9 +552,9 @@ BEGIN
       FROM task_history_recat t0
      WHERE t0.date = (SELECT MAX(date)
                         FROM task_history_recat
-                       WHERE source = source_prefix)
-       AND t0.source = source_prefix
-       AND t.source = source_prefix
+                       WHERE scope = scope_prefix)
+       AND t0.scope = scope_prefix
+       AND t.scope = scope_prefix
        AND t0.id = t.id;
 
     RETURN;
