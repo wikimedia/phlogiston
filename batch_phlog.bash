@@ -1,6 +1,6 @@
 #!/bin/bash
 mode=""
-source_list=""
+scope_list=""
 
 function show_help {
     echo "Usage: ./batch_phlog.bash -m mode -s scope [-s scope]" 
@@ -14,7 +14,7 @@ while getopts "h?m:s:" opt; do
            ;;
         m) mode=$OPTARG
            ;;
-        s) source_list+=("$OPTARG")
+        s) scope_list+=("$OPTARG")
            ;;
     esac
 done
