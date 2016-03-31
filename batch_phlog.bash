@@ -1,12 +1,12 @@
 #!/bin/bash
 mode=""
-projects=""
+source_list=""
 
 function show_help {
-    echo "Usage: ./batch_phlog.bash -m [mode] -p [project1] -p [project2]" 
+    echo "Usage: ./batch_phlog.bash -m mode -s scope [-s scope]" 
 }
 
-while getopts "h?m:p:" opt; do
+while getopts "h?m:s:" opt; do
     case "$opt" in
         h|\?)
            show_help
@@ -14,7 +14,7 @@ while getopts "h?m:p:" opt; do
            ;;
         m) mode=$OPTARG
            ;;
-        p) project_list+=("$OPTARG")
+        s) source_list+=("$OPTARG")
            ;;
     esac
 done
@@ -69,8 +69,8 @@ case "$mode" in
 esac
 
 cd ${PHLOGDIR}
-for project in ${project_list[@]}; do
-    echo "$(date): Starting ${action} for ${project}"
-    python3 -u phlogiston.py ${reconstruct_flag} --report --verbose --project ${project}_source.py 2>&1
-    echo "$(date): Done with ${action} for ${project}"
+for scope in ${scope_list[@]}; do
+    echo "$(date): Starting ${action} for ${scope}"
+    python3 -u phlogiston.py ${reconstruct_flag} --report --verbose --scope_prefix ${scope} 2>&1
+    echo "$(date): Done with ${action} for ${scope}"
 done
