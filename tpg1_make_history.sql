@@ -26,21 +26,12 @@ SELECT source,
        points,
        maint_type
   FROM task_history
- WHERE source = :'prefix');
-
-/* Make categorization retroactive - most recent categorization is
-applied to complete history of each task, as if it always had that
-category */
-
-UPDATE task_history_recat t
-   SET category = t0.category
-  FROM task_history_recat t0
- WHERE t0.date = (SELECT MAX(date)
-                    FROM task_history_recat
-                   WHERE source = :'prefix')
-   AND t0.source = :'prefix'
-   AND t.source = :'prefix'
-   AND t0.id = t.id;
+ WHERE source = :'prefix'
+   AND (SELECT COUNT(*)
+          FROM maniphest_edge
+         WHERE project = '942'
+           AND edge_date = date
+           AND task = id) = 0);
 
 /* Filter out statuses that are probably ignorable. */
 
