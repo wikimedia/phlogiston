@@ -18,12 +18,14 @@ parser$add_argument("tranche_name", nargs=1, help="Tranche Name")
 
 args <- parser$parse_args()
 
-now <- Sys.Date()
+velocity_recent_date <- read.csv(sprintf("/tmp/%s/velocity_recent_date.csv", args$scope_prefix))
+velocity_recent_date$date <- as.Date(velocity_recent_date$date, "%Y-%m-%d")
+
+now <- velocity_recent_date$date
 start_date <- now - 91
-end_date <- now + 91
-last_quarter_start  <- as.Date(c("2015-10-01"))
-quarter_start  <- as.Date(c("2016-01-01"))
-next_quarter_start    <- as.Date(c("2016-04-01"))
+end_date <- now + 92
+quarter_start  <- as.Date(c("2016-04-01"))
+next_quarter_start    <- as.Date(c("2016-07-01"))
 
 # common theme from https://github.com/Ironholds/wmf/blob/master/R/dataviz.R
 theme_fivethirtynine <- function(base_size = 12, base_family = "sans"){
@@ -124,14 +126,14 @@ dev.off()
 backlog <- read.csv(sprintf("/tmp/%s/backlog.csv", args$scope_prefix))
 backlog <- backlog[backlog$category==args$tranche_name,]
 backlog$date <- as.Date(backlog$date, "%Y-%m-%d")
-ymin = 0
-ymax = Inf
 
 burnup_cat <- read.csv(sprintf("/tmp/%s/burnup_categories.csv", args$scope_prefix))
 burnup_cat <- burnup_cat[burnup_cat$category==args$tranche_name,]
 burnup_cat$date <- as.Date(burnup_cat$date, "%Y-%m-%d")
 
 forecast <- forecast[forecast$date >= now,]
+forecast_current <- na.omit(forecast[ forecast$weeks_old < 1 & forecast$weeks_old >= 0 & forecast$count_resolved > 0,])
+forecast_current$opt_count_date <- as.Date(forecast_current$opt_count_date, "%Y-%m-%d")
 
 png(filename = sprintf("~/html/%s_tranche%s_burnup_points.png", args$scope_prefix, args$tranche_num), width=1000, height=700, units="px", pointsize=10)
 ggplot(backlog) +
@@ -152,7 +154,7 @@ dev.off()
 
 png(filename = sprintf("~/html/%s_tranche%s_burnup_count.png", args$scope_prefix, args$tranche_num), width=1000, height=700, units="px", pointsize=10)
 
-ggplot(backlog) +
+p <- ggplot(backlog) +
   labs(title=sprintf("%s burnup by count", args$tranche_name), y="Story Count") +
   theme_fivethirtynine() +
   theme(legend.title=element_blank(), axis.title.x=element_blank()) +
@@ -166,4 +168,15 @@ ggplot(backlog) +
   geom_line(data=forecast, aes(x=date, y=pes_count_growviz), color="gray", linetype=3, alpha=0.8, size=1) +
   geom_line(data=forecast, aes(x=date, y=nom_count_growviz), color="gray", linetype=2, alpha=0.8, size=3) +
   geom_line(data=forecast, aes(x=date, y=opt_count_growviz), color="gray", linetype=3, alpha=0.8, size=1)
+
+if(nrow(forecast_current) > 0) {
+  p = p + annotate("segment",
+                   x=forecast_current$opt_count_date,
+                   xend=forecast_current$opt_count_date,
+                   y=0,
+                   yend=forecast_current$opt_count_velviz) +
+  annotate("text", x=forecast_current$opt_count_date, y=0, label=forecast_current$opt_count_date)
+}
+
+p
 dev.off()

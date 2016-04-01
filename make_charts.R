@@ -24,13 +24,17 @@ if (args$zoom == 'True') {
   zoom_title = ""
   zoom_suffix = ""
 }
-now <- Sys.Date()
-forecast_start <- as.Date(c("2016-01-01"))
-forecast_end   <- as.Date(c("2016-07-01"))
+
+velocity_recent_date <- read.csv(sprintf("/tmp/%s/velocity_recent_date.csv", args$scope_prefix))
+velocity_recent_date$date <- as.Date(velocity_recent_date$date, "%Y-%m-%d")
+
+now <- velocity_recent_date$date
+forecast_start <- as.Date(c("2016-04-01"))
+forecast_end   <- as.Date(c("2016-08-01"))
 forecast_end_plus <- forecast_end + 7
-last_quarter_start  <- as.Date(c("2015-10-01"))
-quarter_start  <- as.Date(c("2016-01-01"))
-next_quarter_start    <- as.Date(c("2016-04-01"))
+last_quarter_start  <- as.Date(c("2016-01-01"))
+quarter_start  <- as.Date(c("2016-04-01"))
+next_quarter_start    <- as.Date(c("2016-07-01"))
 three_months_ago <- now - 91
 
 # common theme from https://github.com/Ironholds/wmf/blob/master/R/dataviz.R
@@ -236,6 +240,8 @@ if(nrow(done_during_quarter) > 0) {
 
 p
 dev.off()
+
+print(forecast_current)
 
 png(filename = sprintf("~/html/%s_forecast_count%s.png", args$scope_prefix, zoom_suffix), width=2000, height=1125, units="px", pointsize=30)
 

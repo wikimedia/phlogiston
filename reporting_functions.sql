@@ -140,7 +140,7 @@ $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION calculate_velocities(
     scope_prefix varchar(6)
-    ) RETURNS void AS $$
+    ) RETURNS date AS $$
 DECLARE
   past_dates date[];
   future_dates date[];
@@ -173,19 +173,22 @@ BEGIN
 
     DELETE FROM velocity where scope = scope_prefix;
 
-    -- Select dates at one week multiples of today
+    SELECT MAX(date)
+      INTO most_recent_data
+      FROM tall_backlog
+     WHERE scope = scope_prefix
+       AND count > 0;
+
+    -- Select dates at one week multiples of most_recent_data date
     -- from 6 months ago (enough for full quarter plus 3 mo before for
     -- historical baseline) to 3 months forward (full quarter)
-    -- TODO: may need to restore a one-day offset to match 
-    -- this line in phlogiston.py:
-    -- working_date += datetime.timedelta(days=1)
 
     SELECT ARRAY(
     SELECT date_trunc('day', dd)::date
       INTO past_dates
       FROM GENERATE_SERIES
-           (now() - interval '26 weeks',
-            now(),
+           (most_recent_data - interval '26 weeks',
+            most_recent_data,
             '1 week'::interval) dd
     );
 
@@ -193,8 +196,8 @@ BEGIN
     SELECT date_trunc('day', dd)::date
       INTO future_dates
       FROM GENERATE_SERIES
-           (now(),
-            now() + interval '13 weeks',
+           (most_recent_data,
+            most_recent_data + interval '13 weeks',
             '1 week'::interval) dd
     );
 
@@ -501,16 +504,10 @@ BEGIN
                     WHERE scope = scope_prefix
                     ORDER BY category
     LOOP
-        SELECT MAX(date)
-          INTO most_recent_data
-          FROM velocity
-         WHERE scope = scope_prefix
-           AND category = tranche.category
-           AND date < now();
 
         FOREACH weekday IN ARRAY future_dates
         LOOP
-            weeks_ahead := EXTRACT(EPOCH FROM date_trunc('day', weekday) - date_trunc('day', now())) / 604800;
+            weeks_ahead := EXTRACT(EPOCH FROM date_trunc('day', weekday) - date_trunc('day', most_recent_data)) / 604800;
             INSERT INTO velocity (scope, category, date,
                    pes_points_growviz, nom_points_growviz, opt_points_growviz,
                    pes_count_growviz, nom_count_growviz, opt_count_growviz,
@@ -532,12 +529,13 @@ BEGIN
               FROM velocity
              WHERE scope = scope_prefix
                AND category = tranche.category
-               AND date = most_recent_data);
+               AND date = most_recent_data
+               AND count_total IS NOT NULL);
 
         END LOOP;
     END LOOP;
 
-    RETURN;
+    RETURN most_recent_data;
 END;
 $$ LANGUAGE plpgsql;
 

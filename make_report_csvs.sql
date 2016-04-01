@@ -128,8 +128,8 @@ SELECT scope,
        SUM(count) as count
   FROM tall_backlog
  WHERE status = '"resolved"'
-   AND EXTRACT(epoch FROM age(date - INTERVAL '1 day'))/604800 = ROUND(
-       EXTRACT(epoch FROM age(date - INTERVAL '1 day'))/604800)
+   AND EXTRACT(epoch FROM age(date))/604800 = ROUND(
+       EXTRACT(epoch FROM age(date))/604800)
    AND date >= current_date - interval '3 months'
    AND scope = :'scope_prefix'
  GROUP BY maint_type, date, scope
@@ -217,7 +217,9 @@ SELECT ROUND(100 * maint_count::decimal / nullif((maint_count + new_count),0),0)
 /* ####################################################################
 Burnup and Velocity and Forecasts */
 
-SELECT calculate_velocities(:'scope_prefix');
+COPY (
+SELECT calculate_velocities(:'scope_prefix') AS date
+) TO '/tmp/phlog/velocity_recent_date.csv' DELIMITER ',' CSV HEADER;
 			      
 COPY (
 SELECT date,
@@ -263,7 +265,7 @@ SELECT date,
 
 COPY (
 SELECT date,
-       EXTRACT(epoch FROM age(date - INTERVAL '1 day'))/604800 AS weeks_old,
+       EXTRACT(epoch FROM age(date))/604800 AS weeks_old,
        v.category,
        z.zoom,
        sort_order,
