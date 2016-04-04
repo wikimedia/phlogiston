@@ -190,8 +190,8 @@ forecast_done$resolved_date <- as.Date(forecast_done$resolved_date, "%Y-%m-%d")
 forecast_done$category <- paste(sprintf("%02d",forecast_done$sort_order), strtrim(forecast_done$category, 35))
 first_cat = forecast_done$category[1]
 last_cat = tail(forecast_done$category,1)
-done_before_quarter <- na.omit(forecast_done[forecast_done$resolved_date <= quarter_start, ])
-done_during_quarter <- na.omit(forecast_done[forecast_done$resolved_date > quarter_start, ])
+done_before_chart <- na.omit(forecast_done[forecast_done$resolved_date <= forecast_start, ])
+done_during_chart <- na.omit(forecast_done[forecast_done$resolved_date > forecast_start, ])
 forecast$category <- paste(sprintf("%02d",forecast$sort_order), strtrim(forecast$category, 35))
 forecast$pes_points_date <- as.Date(forecast$pes_points_date, "%Y-%m-%d")
 forecast$nom_points_date <- as.Date(forecast$nom_points_date, "%Y-%m-%d")
@@ -230,12 +230,12 @@ if(nrow(forecast_future_points) > 0) {
    p = p + geom_text(data = forecast_future_points, aes(x=category, y=forecast_end_plus, label=format(nom_points_date, format="nominal\n%b %Y")), size=8, color="SlateGray")
 }
 
-if(nrow(done_before_quarter) > 0) {
-  p = p + geom_text(data = done_before_quarter, aes(x=category, y=quarter_start, label=format(resolved_date, format="%b %d\n%Y")), size=8)
+if(nrow(done_before_chart) > 0) {
+  p = p + geom_text(data = done_before_chart, aes(x=category, y=quarter_start, label=format(resolved_date, format="%b %d\n%Y")), size=8)
 }
 
-if(nrow(done_during_quarter) > 0) {
-  p = p + geom_text(data = done_during_quarter, aes(x=category, y=resolved_date, label=format(resolved_date, format="%b %d\n%Y")), size=8)
+if(nrow(done_during_chart) > 0) {
+  p = p + geom_text(data = done_during_chart, aes(x=category, y=resolved_date, label=format(resolved_date, format="%b %d\n%Y")), size=8)
 }
 
 p
@@ -269,12 +269,12 @@ if(nrow(forecast_future_count) > 0) {
   p = p + geom_text(data = forecast_future_count, aes(x=category, y=forecast_end_plus, label=format(nom_count_date, format="nominal\n%b %Y")), size=8, color="SlateGray")
 }
 
-if(nrow(done_before_quarter) > 0) {
-  p = p + geom_text(data = done_before_quarter, aes(x=category, y=quarter_start, label=format(resolved_date, format="%b %d\n%Y")), size=8)
+if(nrow(done_before_chart) > 0) {
+  p = p + geom_text(data = done_before_chart, aes(x=category, y=quarter_start, label=format(resolved_date, format="%b %d\n%Y")), size=8)
 }
 
-if(nrow(done_during_quarter) > 0) {
-  p = p + geom_text(data = done_during_quarter, aes(x=category, y=resolved_date, label=format(resolved_date, format="%b %d\n%Y")), size=8)
+if(nrow(done_during_chart) > 0) {
+  p = p + geom_text(data = done_during_chart, aes(x=category, y=resolved_date, label=format(resolved_date, format="%b %d\n%Y")), size=8)
 }
 p
 dev.off()
