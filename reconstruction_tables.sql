@@ -23,6 +23,7 @@ CREATE INDEX ON task_history (status);
 CREATE INDEX ON task_history (date);
 CREATE INDEX ON task_history (id);
 CREATE INDEX ON task_history (date,id);
+CREATE INDEX ON task_history (id, scope, date);
 
 CREATE TABLE task_category (
        scope varchar(6),
@@ -35,3 +36,4 @@ CREATE INDEX ON task_category (task_id);
 CREATE INDEX ON task_category (task_id, scope);
 CREATE INDEX ON task_category (category_id);
 CREATE INDEX ON task_category (scope);
+CREATE INDEX ON task_category (task_id, scope, date);
