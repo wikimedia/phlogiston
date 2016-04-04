@@ -29,7 +29,7 @@ velocity_recent_date <- read.csv(sprintf("/tmp/%s/velocity_recent_date.csv", arg
 velocity_recent_date$date <- as.Date(velocity_recent_date$date, "%Y-%m-%d")
 
 now <- velocity_recent_date$date
-forecast_start <- as.Date(c("2016-04-01"))
+forecast_start <- as.Date(c("2016-01-01"))
 forecast_end   <- as.Date(c("2016-08-01"))
 forecast_end_plus <- forecast_end + 7
 last_quarter_start  <- as.Date(c("2016-01-01"))
