@@ -241,8 +241,6 @@ if(nrow(done_during_chart) > 0) {
 p
 dev.off()
 
-print(forecast_current)
-
 png(filename = sprintf("~/html/%s_forecast_count%s.png", args$scope_prefix, zoom_suffix), width=2000, height=1125, units="px", pointsize=30)
 
 p <- ggplot(forecast_done) +
