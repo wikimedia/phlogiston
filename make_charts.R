@@ -114,12 +114,13 @@ p <- ggplot(burn_done) +
   annotate("text", x=last_quarter_start, y=bd_ylegend_points, label="Complete Tasks", hjust=0, size=10) +
   geom_hline(aes(yintercept=c(0)), color="black", size=2) +
   labs(fill="Category")
+
 if (nrow(bd_labels_points) > 0 ) {
-    p <- p + geom_text(data=bd_labels_points, aes(x=max_date, y=label_points, label=category), hjust=0)
+    p <- p + geom_text(data=bd_labels_points, aes(x=max_date, y=label_points, label=category), size=9, hjust=0)
 }
 
 if (nrow(bo_labels_points) > 0 ) {
-   p <- p + geom_text(data=bo_labels_points, aes(x=max_date, y=label_points, label=category), hjust=0)
+   p <- p + geom_text(data=bo_labels_points, aes(x=max_date, y=label_points, label=category), size=9, hjust=0)
 }
 p
 dev.off()
@@ -139,8 +140,8 @@ ggplot(burn_done) +
   annotate("text", x=last_quarter_start, y=bd_ylegend_count, label="Complete Tasks", hjust=0, size=10) +
   geom_hline(aes(yintercept=c(0)), color="black", size=2) +
   labs(fill="Category") +
-  geom_text(data=bd_labels_count, aes(x=max_date, y=label_count, label=category), hjust=0) +
-  geom_text(data=bo_labels_count, aes(x=max_date, y=label_count, label=category), hjust=0)
+  geom_text(data=bd_labels_count, aes(x=max_date, y=label_count, label=category), size=9, hjust=0) +
+  geom_text(data=bo_labels_count, aes(x=max_date, y=label_count, label=category), size=9, hjust=0)
 dev.off()
 
 
