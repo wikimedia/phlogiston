@@ -98,6 +98,11 @@ def main(argv):
         else:
             default_points = ''
 
+        if config.has_option('vars', 'backlog_resolved_cutoff'):
+            backlog_resolved_cutoff = config['vars']['backlog_resolved_cutoff']
+        else:
+            backlog_resolved_cutoff = None
+
         if config.has_option('vars', 'retroactive_categories'):
             retroactive_categories = config['vars']['retroactive_categories']
         else:
@@ -122,7 +127,7 @@ def main(argv):
         if scope_prefix:
             report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
                    scope_title, default_points, project_name_list,
-                   retroactive_categories)
+                   retroactive_categories, backlog_resolved_cutoff)
         else:
             print("Report specified without a scope_prefix.\nPlease specify a scope_prefix with --scope_prefix.")  # noqa
     conn.close()
@@ -629,8 +634,9 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
     cur.close()
     
 
-def report(conn, dbname, VERBOSE, DEBUG, scope_prefix, scope_title,
-           default_points, project_name_list, retroactive_categories):
+def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
+           scope_title, default_points, project_name_list,
+           retroactive_categories, backlog_resolved_cutoff):
     # note that all the COPY commands in the psql scripts run
     # server-side as user postgres
   
@@ -660,7 +666,12 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix, scope_title,
 
     if retroactive_categories:
         cur.execute('SELECT set_category_retroactive(%(scope_prefix)s)',
-                {'scope_prefix': scope_prefix})
+                    {'scope_prefix': scope_prefix})
+
+    if backlog_resolved_cutoff:
+        cur.execute('SELECT no_resolved_before_start(%(scope_prefix)s, %(backlog_resolved_cutoff)s)',
+                    {'scope_prefix': scope_prefix, 'backlog_resolved_cutoff': backlog_resolved_cutoff})
+
 
     # Reload the Recategorization mapping
     recat_data = '{0}_recategorization.csv'.format(scope_prefix)

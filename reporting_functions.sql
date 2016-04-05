@@ -32,6 +32,25 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION no_resolved_before_start(
+    scope_prefix varchar(6),
+    backlog_resolved_cutoff date
+    ) RETURNS void AS $$
+BEGIN
+
+    DELETE FROM task_history_recat thr
+     WHERE thr.scope = scope_prefix
+       AND thr.id IN (SELECT id
+                        FROM task_history th
+                       WHERE date = backlog_resolved_cutoff
+                         AND scope = scope_prefix
+                         AND status = '"resolved"');
+    RETURN;
+
+END;
+$$ LANGUAGE plpgsql;
+
+
 CREATE OR REPLACE FUNCTION find_recently_closed(
     scope_prefix varchar(6)
     ) RETURNS void AS $$
