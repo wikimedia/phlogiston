@@ -1,0 +1,87 @@
+<html>
+  <head><title>${title} Burnup Charts</title></head>
+  <link rel="stylesheet" type="text/css" href="phlogiston.css">
+  <body>
+    <h1>${title} Charts</h1>
+    <table>
+      <tr>
+        <td>
+          <p><a href="#burnups">Burnup charts</a></p>
+          <p><a href="#velocity">Velocity Charts: Velocity, Recently Closed</a></p>
+          <p><a href="#analysis">Analysis charts: Maintenance fraction, backlog growth</a></p>
+        </td>
+        <td>
+          <!--# include file="${scope_prefix}_dates.html" -->
+          <p>These charts include data from the following Phabricator projects, in this order:</p>
+          <b><pre><!--# include file="${scope_prefix}_projects.csv" --></pre></b>
+        </td>
+        <td>
+          <ul>
+            <li><a href="${scope_prefix}_category_possibilities.txt">Full list of possible categories.</a></li>
+            <li><a href="https://github.com/wikimedia/phlogiston/blob/master/${scope_prefix}_recategorization.csv">Rules for recategorizing tasks</a></li>
+            <li><a href="${scope_prefix}_recently_closed.html">Recently closed tasks</a></li>
+            <li><a href="${scope_prefix}_open_by_category.html">All open tasks, sorted by category</a></li>
+            <li><a href="${scope_prefix}_points_histogram.png">Histogram of stories by points</a>.  Unpointed stories are defaulted to <b><!--# include file="${scope_prefix}_default_points.csv" --></b>points.</li></ul>
+        </td>
+      </tr>
+    </table>
+    <h2>Forecasts</h2>
+    <p>
+      <table>
+	<tr>
+	  <td>
+	    <a href="${scope_prefix}_forecast_points_zoom.png"><img src="${scope_prefix}_forecast_points_zoom.png"/></a><br/><a href="${scope_prefix}_forecast_points.png">Unzoomed.</a>
+	  </td>
+	  <td>
+	    <a href="${scope_prefix}_forecast_count_zoom.png"><img src="${scope_prefix}_forecast_count_zoom.png"/></a><br/><a href="${scope_prefix}_forecast_count.png">Unzoomed.</a>
+	  </td>
+	</tr>
+      </table>
+    </p>
+    <p><a href="https://www.mediawiki.org/wiki/Guide_to_Phlogiston_Reports#Forecast">Explanation</a>. See also <a href="${scope_prefix}_current_forecasts.html">Complete forecast dates</a> for the raw data behind this chart.</p>
+    <a name="burnups"><h2>Project Burnup</h2></a>
+    <p>
+      <table>
+	<tr>
+	  <td>
+	    <a href="${scope_prefix}_backlog_burnup_points_zoom.png"><img src="${scope_prefix}_backlog_burnup_points_zoom.png"/></a><br/>
+            <a href="${scope_prefix}_backlog_burnup_points.png">Unzoomed.</a><br/>
+	  </td>
+	  <td>
+	    <a href="${scope_prefix}_backlog_burnup_count_zoom.png"><img src="${scope_prefix}_backlog_burnup_count_zoom.png"/></a><br/>
+            <a href="${scope_prefix}_backlog_burnup_count.png">Unzoomed.</a>
+	  </td>
+	</tr>
+      </table>
+    </p>
+    <p><a href="https://www.mediawiki.org/wiki/Guide_to_Phlogiston_Reports#Combined_Burnup">Explanation</a>.</p>
+    <h2>Per-Category Burnups</h2>
+    <!--# block name="no-tranche" -->Per-milestone charts not available<!--# endblock -->
+    <!--# include file="${scope_prefix}_tranches.html" stub="no-tranche" -->
+    <a name="velocity"><h2>Velocity</h2></a>
+    <p>
+      <table>
+	<tr>
+	  <td>
+	    <a href="${scope_prefix}_velocity_points.png"><img src="${scope_prefix}_velocity_points.png"/></a>
+	  </td>
+	  <td>
+	    <a href="${scope_prefix}_velocity_count.png"><img src="${scope_prefix}_velocity_count.png"/></a>
+	  </td>
+	</tr>
+      </table>
+    </p>
+    <p><a href="https://www.mediawiki.org/wiki/Guide_to_Phlogiston_Reports#Combined_Velocity">Explanation</a>.</p>
+    <table>
+      <tr>
+	<td>
+	  <a href="${scope_prefix}_done_points.png"><img src="${scope_prefix}_done_points.png"/></a>
+	</td>
+	<td>
+	  <a href="${scope_prefix}_done_count.png"><img src="${scope_prefix}_done_count.png"/></a>
+	</td>
+      </tr>
+    </table>
+    <p><a href="https://www.mediawiki.org/wiki/Guide_to_Phlogiston_Reports#Completed_Work">Explanation</a>.</p>
+  </body>
+</html>

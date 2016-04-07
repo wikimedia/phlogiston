@@ -11,7 +11,7 @@ import pytz
 import getopt
 import subprocess
 import time
-
+from string import Template
 
 def main(argv):
     try:
@@ -760,14 +760,18 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
                     format(dbname, scope_prefix), shell=True)
     subprocess.call('mv /tmp/phlog/* /tmp/{0}/'.
                     format(scope_prefix), shell=True)
-    subprocess.call('rm ~/html/{0}_*'.format(scope_prefix), shell=True)
-    subprocess.call(
-        'sed s/phl_/{0}_/g html/phl.html | sed s/Phlogiston/{1}/g > ~/html/{0}.html'.
-        format(scope_prefix, scope_title), shell=True)
+    subprocess.call('rm ~/html/{0}*'.format(scope_prefix), shell=True)
+
+    script_dir = os.path.dirname(__file__)
+    report_html = Template(open('html/report.html').read())
+    report_output = open(os.path.join(script_dir, '../html/{0}.html'.format(scope_prefix)), 'w')
+    report_output.write(report_html.substitute(
+        {'title': scope_title, 'scope_prefix': scope_prefix}))
+
     subprocess.call('cp /tmp/{0}/maintenance_fraction_total_by_points.csv ~/html/{0}_maintenance_fraction_total_by_points.csv'.format(scope_prefix), shell=True)
     subprocess.call('cp /tmp/{0}/maintenance_fraction_total_by_count.csv ~/html/{0}_maintenance_fraction_total_by_count.csv'.format(scope_prefix), shell=True)
     subprocess.call('cp /tmp/{0}/category_possibilities.txt ~/html/{0}_category_possibilities.txt'.format(scope_prefix), shell=True)
-    script_dir = os.path.dirname(__file__)
+
     file = '{0}_projects.csv'.format(scope_prefix)
     f = open(os.path.join(script_dir, '../html/', file), 'w')
     for project_name in project_name_list:
