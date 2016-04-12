@@ -664,10 +664,6 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
     subprocess.call("psql -d {0} -f {1} -v scope_prefix={2}".
                     format(dbname, report_tables_script, scope_prefix), shell=True)
 
-    if retroactive_categories:
-        cur.execute('SELECT set_category_retroactive(%(scope_prefix)s)',
-                    {'scope_prefix': scope_prefix})
-
     if backlog_resolved_cutoff:
         cur.execute('SELECT no_resolved_before_start(%(scope_prefix)s, %(backlog_resolved_cutoff)s)',
                     {'scope_prefix': scope_prefix, 'backlog_resolved_cutoff': backlog_resolved_cutoff})
@@ -678,7 +674,7 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
     if os.path.isfile(recat_data):
         category_save = """
         INSERT INTO category_list
-        VALUES (%(scope_prefix)s, %(sort_order)s, %(category)s, %(matchstring)s, %(zoom)s)"""
+        VALUES (%(scope_prefix)s, %(sort_order)s, %(category)s, %(t1)s, %(t2)s, %(matchstring)s, %(zoom)s)"""
         recat_cases = ''
         recat_else = ''
         with open(recat_data, 'rt') as f:
@@ -693,12 +689,17 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
                             {'scope_prefix': scope_prefix,
                              'sort_order': line['sort_order'],
                              'category': line['title'],
+                             't1': line['t1'],
+                             't2': line['t2'],
                              'matchstring': matchstring,
                              'zoom': zoom})
 
                 # build up the recategorization query
                 if line['matchstring'] == 'PhlogOther':
                     recat_else = line['title']
+                elif line['t1']:
+                    # if a tag is specified, handle this later
+                    pass
                 else:
                     recat_cases += ' WHEN category LIKE \'{0}\' THEN \'{1}\''.format(  # noqa
                         matchstring, line['title'])
@@ -710,7 +711,12 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
                            WHERE scope =  '{2}'"""
 
         unsafe_recat_update = recat_update.format(recat_cases, recat_else, scope_prefix)
+        if VERBOSE:
+            print('{0} {1}: Applying recategorization'.
+                  format(scope_prefix, datetime.datetime.now()))
         cur.execute(unsafe_recat_update)
+        cur.execute('SELECT apply_tag_based_recategorization(%(scope_prefix)s)',
+                    {'scope_prefix': scope_prefix})
 
     else:
         # Build a category list from the data
@@ -725,6 +731,10 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
                                   WHERE scope = %(scope_prefix)s
                                   ORDER BY category) as foo)"""
         cur.execute(category_insert, {'scope_prefix': scope_prefix})
+
+    if retroactive_categories:
+        cur.execute('SELECT set_category_retroactive(%(scope_prefix)s)',
+                    {'scope_prefix': scope_prefix})
 
     tall_backlog_insert = """INSERT INTO tall_backlog(
                              SELECT scope,

@@ -4,6 +4,8 @@ CREATE TABLE category_list (
        scope varchar(6),
        sort_order int,
        category text,
+       t1 int,
+       t2 int,
        matchstring text,
        zoom boolean
 );
