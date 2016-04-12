@@ -1,4 +1,4 @@
 sort_order,zoom_list,title,matchstring
 1,True,Current,Collaboration-Team-Current
 2,True,Backlog,Collaboration-Team-Backlog
-3,False,Other,PhlogOther
+3,True,Other,PhlogOther
