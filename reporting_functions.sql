@@ -565,14 +565,17 @@ CREATE OR REPLACE FUNCTION apply_tag_based_recategorization(
 BEGIN
 
     UPDATE task_history_recat t
-       SET category = t0.category
-      FROM task_history_recat t0
-     WHERE t0.date = (SELECT MAX(date)
-                        FROM task_history_recat
-                       WHERE scope = scope_prefix)
-       AND t0.scope = scope_prefix
-       AND t.scope = scope_prefix
-       AND t0.id = t.id;
+       SET category = cl.category
+      FROM category_list cl
+      WHERE cl.t1 IN (SELECT project
+                        FROM maniphest_edge
+                       WHERE task = t.id
+                         AND edge_date = t.date)
+        AND cl.t2 IN (SELECT project
+                        FROM maniphest_edge
+                       WHERE task = t.id
+                         AND edge_date = t.date)
+       AND t.scope = scope_prefix;
 
     RETURN;
 END;
