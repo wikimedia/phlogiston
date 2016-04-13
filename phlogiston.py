@@ -696,7 +696,8 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
         with open(recat_data, 'rt') as f:
             reader = csv.DictReader(f)
             for line in reader:
-                matchstring = '%' + line['matchstring'] + '%'
+                if line['matchstring']:
+                    matchstring = '%' + line['matchstring'] + '%'
                 if line['zoom_list'].lower() in ['true', 't', '1', 'yes', 'y']:
                     zoom = True
                 else:
