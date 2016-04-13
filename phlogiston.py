@@ -698,6 +698,8 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
             for line in reader:
                 if line['matchstring']:
                     matchstring = '%' + line['matchstring'] + '%'
+                else:
+                    matchstring = ''
                 if line['zoom_list'].lower() in ['true', 't', '1', 'yes', 'y']:
                     zoom = True
                 else:
