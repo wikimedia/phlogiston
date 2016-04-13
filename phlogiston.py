@@ -700,6 +700,14 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
                     matchstring = '%' + line['matchstring'] + '%'
                 else:
                     matchstring = ''
+                if line['t1']:
+                    t1 = line['t1']
+                else:
+                    t1 = None
+                if line['t2']:
+                    t2 = line['t2']
+                else:
+                    t2 = None
                 if line['zoom_list'].lower() in ['true', 't', '1', 'yes', 'y']:
                     zoom = True
                 else:
@@ -708,8 +716,8 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
                             {'scope_prefix': scope_prefix,
                              'sort_order': line['sort_order'],
                              'category': line['title'],
-                             't1': line['t1'],
-                             't2': line['t2'],
+                             't1': t1,
+                             't2': t2,
                              'matchstring': matchstring,
                              'zoom': zoom})
 
