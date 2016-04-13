@@ -724,7 +724,7 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
                 # build up the recategorization query
                 if line['matchstring'] == 'PhlogOther':
                     recat_else = line['title']
-                elif line['t1']:
+                elif t1:
                     # if a tag is specified, handle this later
                     pass
                 else:
@@ -741,7 +741,8 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
         if VERBOSE:
             print('{0} {1}: Applying recategorization'.
                   format(scope_prefix, datetime.datetime.now()))
-        cur.execute(unsafe_recat_update)
+        if recat_cases:
+            cur.execute(unsafe_recat_update)
         cur.execute('SELECT apply_tag_based_recategorization(%(scope_prefix)s)',
                     {'scope_prefix': scope_prefix})
 
