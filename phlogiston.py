@@ -622,7 +622,7 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
               format(scope_prefix, datetime.datetime.now()))
     cur.execute(categories_sql,{'scope_prefix': scope_prefix, 'start_date': start_date})
     cur.execute(category_self_sql,{'scope_prefix': scope_prefix,
-
+                                   'category_id': PHAB_TAGS['category'] })
 
     correct_status_sql = """
         UPDATE task_history th
