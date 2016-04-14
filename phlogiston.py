@@ -698,16 +698,23 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
             for line in reader:
                 try:
                     matchstring = '%' + line['matchstring'] + '%'
-                except KeyError:
+                except (KeyError,  TypeError):
                     matchstring = ''
+
+                t1 = None
                 try:
-                    t1 = line['t1']
+                    if line['t1']:
+                        t1 = line['t1']
                 except KeyError:
-                    t1 = None
+                    pass
+
+                t2 = None
                 try:
-                    t2 = line['t2']
+                    if line['t2']:
+                        t2 = line['t2']
                 except KeyError:
-                    t2 = None
+                    pass
+
                 if line['zoom_list'].lower() in ['true', 't', '1', 'yes', 'y']:
                     zoom = True
                 else:
@@ -733,18 +740,23 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
                 else:
                     print('Bad line in recat file: {0}'.format(line))
 
-        recat_update = """UPDATE task_history_recat
-                             SET category = CASE {0}
-                                            ELSE '{1}'
-                                            END
-                           WHERE scope =  '{2}'"""
+        if recat_cases:
+            recat_update = """UPDATE task_history_recat
+                                 SET category = CASE {0}
+                                                ELSE '{1}'
+                                                END
+                               WHERE scope =  '{2}'"""
+            unsafe_recat_update = recat_update.format(recat_cases, recat_else, scope_prefix)
+        else:
+            recat_update = """UPDATE task_history_recat 
+                                        SET category = \'{0}\'
+                               WHERE scope = '{1}'"""
+            unsafe_recat_update = recat_update.format(recat_else, scope_prefix)
 
-        unsafe_recat_update = recat_update.format(recat_cases, recat_else, scope_prefix)
         if VERBOSE:
             print('{0} {1}: Applying recategorization'.
                   format(scope_prefix, datetime.datetime.now()))
-        if recat_cases:
-            cur.execute(unsafe_recat_update)
+        cur.execute(unsafe_recat_update)
         cur.execute('SELECT apply_tag_based_recategorization(%(scope_prefix)s)',
                     {'scope_prefix': scope_prefix})
 

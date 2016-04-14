@@ -562,21 +562,24 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION apply_tag_based_recategorization(
     scope_prefix varchar(6)
     ) RETURNS void AS $$
+DECLARE
+  categoryrow record;
 BEGIN
 
-    UPDATE task_history_recat t
-       SET category = cl.category
-      FROM category_list cl
-      WHERE cl.t1 IN (SELECT project
-                        FROM maniphest_edge
-                       WHERE task = t.id
-                         AND edge_date = t.date)
-        AND cl.t2 IN (SELECT project
-                        FROM maniphest_edge
-                       WHERE task = t.id
-                         AND edge_date = t.date)
-       AND t.scope = scope_prefix;
-
+    FOR categoryrow IN SELECT category, t1, t2
+                         FROM category_list
+                        WHERE scope = scope_prefix
+    LOOP
+        UPDATE task_history_recat t
+           SET category = categoryrow.category
+         WHERE t.id IN (SELECT task
+                          FROM maniphest_edge
+                         WHERE project = categoryrow.t1)
+           AND t.id IN (SELECT task
+                          FROM maniphest_edge
+                         WHERE project = categoryrow.t2)
+           AND t.scope = scope_prefix;
+    END LOOP;			 
     RETURN;
 END;
 $$ LANGUAGE plpgsql;
