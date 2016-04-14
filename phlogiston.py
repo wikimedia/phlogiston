@@ -696,17 +696,17 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
         with open(recat_data, 'rt') as f:
             reader = csv.DictReader(f)
             for line in reader:
-                if line['matchstring']:
+                try:
                     matchstring = '%' + line['matchstring'] + '%'
-                else:
+                except KeyError:
                     matchstring = ''
-                if line['t1']:
+                try:
                     t1 = line['t1']
-                else:
+                except KeyError:
                     t1 = None
-                if line['t2']:
+                try:
                     t2 = line['t2']
-                else:
+                except KeyError:
                     t2 = None
                 if line['zoom_list'].lower() in ['true', 't', '1', 'yes', 'y']:
                     zoom = True
@@ -727,9 +727,11 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
                 elif t1:
                     # if a tag is specified, handle this later
                     pass
-                else:
+                elif matchstring:
                     recat_cases += ' WHEN category LIKE \'{0}\' THEN \'{1}\''.format(  # noqa
                         matchstring, line['title'])
+                else:
+                    print('Bad line in recat file: {0}'.format(line))
 
         recat_update = """UPDATE task_history_recat
                              SET category = CASE {0}
