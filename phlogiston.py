@@ -755,6 +755,8 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
                                 row_number() OVER(ORDER BY category asc),
                                 category,
                                 NULL,
+                                NULL,
+                                NULL,
                                 TRUE
                            FROM (SELECT DISTINCT category
                                    FROM task_history_recat
