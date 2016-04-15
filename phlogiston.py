@@ -814,11 +814,11 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
                     format(dbname, scope_prefix), shell=True)
     subprocess.call('mv /tmp/phlog/* /tmp/{0}/'.
                     format(scope_prefix), shell=True)
-    subprocess.call('rm ~/html/{0}*'.format(scope_prefix), shell=True)
+    subprocess.call('rm ~/html/{0}_*'.format(scope_prefix), shell=True)
 
     script_dir = os.path.dirname(__file__)
     report_html = Template(open('html/report.html').read())
-    report_output = open(os.path.join(script_dir, '../html/{0}.html'.format(scope_prefix)), 'w')
+    report_output = open(os.path.join(script_dir, '../html/{0}_report.html'.format(scope_prefix)), 'w')
     report_output.write(report_html.substitute(
         {'title': scope_title, 'scope_prefix': scope_prefix}))
 
@@ -913,7 +913,8 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
            AND v.category = z.category
            AND v.date = (SELECT MAX(date)
                            FROM velocity
-                          WHERE scope = %(scope_prefix)s)
+                          WHERE scope = %(scope_prefix)s
+                            AND opt_count_fore IS NOT NULL)
          ORDER BY sort_order"""
 
     html_string = """<p><table border="1px solid lightgray" cellpadding="2" cellspacing="0"><tr><th rowspan="3">Category</th><th colspan="6">Weeks until completion</th></tr>
@@ -941,10 +942,10 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
                                                   WHERE scope = %(scope_prefix)s)
                                 ORDER BY category, title"""
 
-    html_string = """<p><table border="1px solid lightgray" cellpadding="2" cellspacing="0"><tr><th>ID></th><th>Task</th><th>Category</th></tr>"""  # noqa
+    html_string = """<p><table border="1px solid lightgray" cellpadding="2" cellspacing="0"><tr><th>ID</th><th>Task</th><th>Category</th></tr>"""  # noqa
     cur.execute(open_task_category_query, {'scope_prefix': scope_prefix})
     for row in cur.fetchall():
-        html_string += "<tr><td><a href=\"https://phabricator.wikimedia.org/T{0}\">{0}: {1}</a></td><td>{2}</td></tr>".format(row[0],row[1],row[2])
+        html_string += "<tr><td><a href=\"https://phabricator.wikimedia.org/T{0}\">{0}</a></td><td>{1}</td><td>{2}</td></tr>".format(row[0],row[1],row[2])
 
     html_string += "</table></p>"
     file = '{0}_open_by_category.html'.format(scope_prefix)
