@@ -3,16 +3,17 @@ sort_order,zoom_list,title,matchstring
 1,TRUE,Interrupt,TR0
 2,TRUE,Enwiki IP A/B test,experiment defaulting anonymous editors to the visual editor on
 3,TRUE,Enwiki on for IPs,Re-enable VisualEditor by default for all logged-out users of the English Wikipedia
-4,TRUE,Enwiki on for all,TR1
-5,TRUE,jQueryIME,Make ULS input methods work in content editable divs of VisualEditor
-6,TRUE,Japanese,Make VisualEditor good enough to use with all common IMEs for Japanese
-7,TRUE,Korean,Make VisualEditor good enough to use with all common IMEs for Korean
-8,TRUE,Arabic,Make VisualEditor good enough to use with all common IMEs for Arabic script wikis
-9,TRUE,Indic,Make VisualEditor good enough to use with all common IMEs for Indic script wikis
-10,TRUE,Han,Make VisualEditor good enough to use with all common IMEs for Han script wikis
-11,TRUE,Other Language support,TR3
-12,FALSE,Links,TR4
-13,FALSE,Formulae,Improve support for math editing by improving the UX of the Math extension and researching its usability
-14,TRUE,Charts,easier to create and edit charts from within VisualEditor
-15,TRUE,Rich media,TR5
-16,FALSE,Mobile,TR2
+4,TRUE,Wikivoyages on for all,Enable VisualEditor by default for all users of all Wikivoyages
+5,TRUE,Wikimedia wikis on for all,TR1
+6,TRUE,jQueryIME,Make ULS input methods work in content editable divs of VisualEditor
+7,TRUE,Japanese,Make VisualEditor good enough to use with all common IMEs for Japanese
+8,TRUE,Korean,Make VisualEditor good enough to use with all common IMEs for Korean
+9,TRUE,Arabic,Make VisualEditor good enough to use with all common IMEs for Arabic script wikis
+10,TRUE,Indic,Make VisualEditor good enough to use with all common IMEs for Indic script wikis
+11,TRUE,Han,Make VisualEditor good enough to use with all common IMEs for Han script wikis
+12,TRUE,Other Language support,TR3
+13,FALSE,Links,TR4
+14,FALSE,Formulae,Improve support for math editing by improving the UX of the Math extension and researching its usability
+15,TRUE,Charts,easier to create and edit charts from within VisualEditor
+16,TRUE,Rich media,TR5
+17,FALSE,Mobile,TR2
