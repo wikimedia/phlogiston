@@ -3,6 +3,7 @@
 import configparser
 import csv
 import datetime
+import html
 import json
 import os.path
 import psycopg2
@@ -911,10 +912,11 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
          WHERE v.scope = %(scope_prefix)s
            AND v.scope = z.scope
            AND v.category = z.category
+           AND v.count_total IS NOT NULL
            AND v.date = (SELECT MAX(date)
                            FROM velocity
                           WHERE scope = %(scope_prefix)s
-                            AND opt_count_fore IS NOT NULL)
+                            AND count_total IS NOT NULL)
          ORDER BY sort_order"""
 
     html_string = """<p><table border="1px solid lightgray" cellpadding="2" cellspacing="0"><tr><th rowspan="3">Category</th><th colspan="6">Weeks until completion</th></tr>
@@ -945,7 +947,7 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
     html_string = """<p><table border="1px solid lightgray" cellpadding="2" cellspacing="0"><tr><th>ID</th><th>Task</th><th>Category</th></tr>"""  # noqa
     cur.execute(open_task_category_query, {'scope_prefix': scope_prefix})
     for row in cur.fetchall():
-        html_string += "<tr><td><a href=\"https://phabricator.wikimedia.org/T{0}\">{0}</a></td><td>{1}</td><td>{2}</td></tr>".format(row[0],row[1],row[2])
+        html_string += "<tr><td><a href=\"https://phabricator.wikimedia.org/T{0}\">{0}</a></td><td>{1}</td><td>{2}</td></tr>".format(row[0],html.escape(row[1]),html.escape(row[2]))
 
     html_string += "</table></p>"
     file = '{0}_open_by_category.html'.format(scope_prefix)
