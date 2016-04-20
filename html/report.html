@@ -6,7 +6,9 @@
     <table>
       <tr>
         <td>
+          <p><a href="#forecasts">Forecasts</a></p>
           <p><a href="#burnups">Burnup charts</a></p>
+          <p><a href="#category_burnups">Per-Category Burnups</a></p>
           <p><a href="#velocity">Velocity Charts: Velocity, Recently Closed</a></p>
           <p><a href="#analysis">Analysis charts: Maintenance fraction, backlog growth</a></p>
         </td>
@@ -26,6 +28,7 @@
       </tr>
     </table>
     <h2>Forecasts</h2>
+    <p>Overview of all categories, and the status (size of category, completion date, or completion % and forecast completion range).</p>
     <p>
       <table>
 	<tr>
@@ -40,6 +43,7 @@
     </p>
     <p><a href="https://www.mediawiki.org/wiki/Guide_to_Phlogiston_Reports#Forecast">Explanation</a>. See also <a href="${scope_prefix}_current_forecasts.html">Complete forecast dates</a> for the raw data behind this chart.</p>
     <a name="burnups"><h2>Project Burnup</h2></a>
+    <p>History of completed work (above the line) and open work (below the line) for all categories of work over time.</p>
     <p>
       <table>
 	<tr>
@@ -55,10 +59,12 @@
       </table>
     </p>
     <p><a href="https://www.mediawiki.org/wiki/Guide_to_Phlogiston_Reports#Combined_Burnup">Explanation</a>.</p>
-    <h2>Per-Category Burnups</h2>
+    <h2><a name="category_burnups">Per-Category Burnups</a></h2>
     <!--# block name="no-tranche" -->Per-milestone charts not available<!--# endblock -->
     <!--# include file="${scope_prefix}_tranches.html" stub="no-tranche" -->
+    <p><a href="https://www.mediawiki.org/wiki/Guide_to_Phlogiston_Reports#Per-category_charts">Explanation</a>.</p>
     <a name="velocity"><h2>Velocity</h2></a>
+    <p>Completed work per week.</p>
     <p>
       <table>
 	<tr>
@@ -72,6 +78,7 @@
       </table>
     </p>
     <p><a href="https://www.mediawiki.org/wiki/Guide_to_Phlogiston_Reports#Combined_Velocity">Explanation</a>.</p>
+    <p>Completed work per week, broken out by category, with highest-priority work on the bottom, in darkest green.</p>
     <table>
       <tr>
 	<td>
