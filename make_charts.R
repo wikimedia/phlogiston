@@ -201,16 +201,17 @@ forecast$pes_count_date <- as.Date(forecast$pes_count_date, "%Y-%m-%d")
 forecast$nom_count_date <- as.Date(forecast$nom_count_date, "%Y-%m-%d")
 forecast$opt_count_date <- as.Date(forecast$opt_count_date, "%Y-%m-%d")
 
-forecast_current <- forecast[ forecast$weeks_old < 1 & forecast$weeks_old >= 0,]
-forecast_future_points <- na.omit(forecast[forecast$nom_points_date > forecast_end & forecast$weeks_old == 1, ])
-forecast_future_count <- na.omit(forecast[forecast$nom_count_date > forecast_end & forecast$weeks_old == 1, ])
-
+forecast_current <- forecast[ forecast$weeks_old < 1 & forecast$weeks_old >= 0 & is.na(forecast$pes_points_growviz) ,]
+forecast_future_points <- forecast_current[forecast_current$nom_points_date > forecast_end,]
+forecast_future_count <- forecast_current[forecast_current$nom_count_date > forecast_end,]
+forecast_no_data_points <- forecast_current[is.na(forecast_current$opt_points_date),]
+forecast_no_data_count <- forecast_current[is.na(forecast_current$opt_count_date),]
 png(filename = sprintf("~/html/%s_forecast_points%s.png", args$scope_prefix, zoom_suffix), width=2000, height=1125, units="px", pointsize=30)
 
 p <- ggplot(forecast_done) +
   annotate("rect", xmin=first_cat, xmax=last_cat, ymin=quarter_start, ymax=next_quarter_start, fill="white", alpha=0.5) +
   annotate("text", x=forecast_current$category, y=forecast_current$date, label=forecast_current$points_pct_complete, size=10, family="mono", color="blue") +
-  annotate("text", x=1, y=forecast_current$date, label="Now (% Complete)", size=8, family="mono", color="blue") +
+  annotate("text", x=0.5, y=forecast_current$date, label="Now (% Complete)", size=8, family="mono", color="blue") +
   geom_hline(aes(yintercept=as.numeric(now)), color="blue") +
   geom_point(aes(x=category, y=resolved_date), size=8, shape=18) +
   geom_errorbar(data = forecast_current, aes(x=category, y=nom_points_date, ymax=pes_points_date, ymin=opt_points_date, color=weeks_old), width=.3, size=2, alpha=.3) +
@@ -239,6 +240,10 @@ if(nrow(done_during_chart) > 0) {
   p = p + geom_text(data = done_during_chart, aes(x=category, y=resolved_date, label=format(resolved_date, format="%b %d\n%Y")), size=8)
 }
 
+if(nrow(forecast_no_data_points) > 0) {
+  p = p + geom_text(data = forecast_no_data_points, aes(x=category, y=next_quarter_start, label='No forecast'), size=8, color="SlateGray")
+}
+
 p
 dev.off()
 
@@ -247,7 +252,7 @@ png(filename = sprintf("~/html/%s_forecast_count%s.png", args$scope_prefix, zoom
 p <- ggplot(forecast_done) +
   annotate("rect", xmin=first_cat, xmax=last_cat, ymin=quarter_start, ymax=next_quarter_start, fill="white", alpha=0.5) +
   annotate("text", x=forecast_current$category, y=forecast_current$date, label=forecast_current$count_pct_complete, size=10, family="mono", color="blue") +
-  annotate("text", x=1, y=forecast_current$date, label="Now (% Complete)", size=8, family="mono", color="blue") +
+  annotate("text", x=0.5, y=forecast_current$date, label="Now (% Complete)", size=8, family="mono", color="blue") +
   geom_hline(aes(yintercept=as.numeric(now)), color="blue") +
   geom_point(aes(x=category, y=resolved_date), size=8, shape=18) +
   geom_errorbar(data = forecast_current, aes(x=category, y=nom_count_date, ymax=pes_count_date, ymin=opt_count_date, color=weeks_old), width=.3, size=2, alpha=.3) +
@@ -275,6 +280,11 @@ if(nrow(done_before_chart) > 0) {
 if(nrow(done_during_chart) > 0) {
   p = p + geom_text(data = done_during_chart, aes(x=category, y=resolved_date, label=format(resolved_date, format="%b %d\n%Y")), size=8)
 }
+
+if(nrow(forecast_no_data_count) > 0) {
+  p = p + geom_text(data = forecast_no_data_count, aes(x=category, y=next_quarter_start, label='No forecast'), size=8, color="SlateGray")
+}
+
 p
 dev.off()
 
