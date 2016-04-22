@@ -1,19 +1,7 @@
 sort_order,zoom_list,title,matchstring
-1,True,Core defined,A documented and agreed upon definition%
-2,True,Core tracking method decided,agreed upon method for tracking data
-3,True,"One week, one team Core Fraction report",Audience-facing product teams able to produce
-4,True,50% of Strategic tests executed,of tests against strategic possibilities executed
-5,True,Other TPG Strategy,TPG follows a selected and documented strategy
-6,True,Process Results from Q3 CSAT,Process Results from Q3 CSAT
-7,True,Evaluate 2 new KPIs,evaluate 2 possible new KPIs
-8,True,Other KPI/CSAT work,"Maintain, improve, and refine TPG%s KPIs (Q3 CSAT)"
-9,True,Burn-up charts FY2016Q3 support,Support teams using Phlogiston/Phragile Burnups in FY2016Q3
-10,False,Burn-up charts FY2016Q2 support,Burn-up charts actively used by three teams
-11,True,Defined and documented strategy for the Team Practices Group,Defined and documented strategy for the Team Practices Group
-12,False,Five high-priority project management-related Phabricator feature requests upstreamed,Five high-priority project management-related Phabricator feature requests upstreamed
-13,False,Five teams sample their maintenance fraction and two teams track it throughout the quarter,Five teams sample their maintenance fraction and two teams track it throughout the quarter
-14,False,Work Breakdown aspect of SPDPP piloted for three teams,Work Breakdown aspect of SPDPP piloted for three teams
-15,True,Team Health Check,Team Health Check Rethink
-16,True,Product Group Strategy,Facilitate FY2016 Strategy process for Product group
-17,True,Other Q3,"TPG does ""Other"" work in FY2016Q3"
-18,False,Uncategorized,PhlogOther
+1,True,TPG-2016Q4-Assess-Skills,Assess skills within TPG...
+2,True,TPG-2016Q4-Support-Quarterly,Support Quarterly Planning...
+3,True,TPG-2016Q4-Measure-Light-Engagement,Define a plan for measuring...
+4,True,Essential Functions,TPG-Essential-Functions
+5,False,TPG FY2016Q3 Quarterly Goals,TPG-2016Q3
+6,True,Uncategorized,PhlogOther
