@@ -1,8 +1,8 @@
 <html>
-  <head><title>${title} Burnup Charts</title></head>
+  <head><title>{{ title }} Burnup Charts</title></head>
   <link rel="stylesheet" type="text/css" href="style.css">
   <body>
-    <h1>${title} Charts</h1>
+    <h1>{{ title }} Charts</h1>
     <table>
       <tr>
         <td>
@@ -13,17 +13,23 @@
           <p><a href="#analysis">Analysis charts: Maintenance fraction, backlog growth</a></p>
         </td>
         <td>
-          <!--# include file="${scope_prefix}_dates.html" -->
+          <!--# include file="{{ scope_prefix }}_dates.html" -->
           <p>These charts include data from the following Phabricator projects, in this order:</p>
-          <b><pre><!--# include file="${scope_prefix}_projects.csv" --></pre></b>
+          <b><pre><!--# include file="{{ scope_prefix }}_projects.csv" --></pre></b>
         </td>
         <td>
           <ul>
-            <li><a href="${scope_prefix}_category_possibilities.txt">Full list of possible categories.</a></li>
-            <li><a href="https://github.com/wikimedia/phlogiston/blob/master/${scope_prefix}_recategorization.csv">Rules for recategorizing tasks</a></li>
-            <li><a href="${scope_prefix}_recently_closed.html">Recently closed tasks</a></li>
-            <li><a href="${scope_prefix}_open_by_category.html">All open tasks, sorted by category</a></li>
-            <li><a href="${scope_prefix}_points_histogram.png">Histogram of stories by points</a>.  Unpointed stories are defaulted to <b><!--# include file="${scope_prefix}_default_points.csv" --></b>points.</li></ul>
+            <li><a href="{{ scope_prefix }}_category_possibilities.txt">Full list of possible categories.</a></li>
+            <li><a href="https://github.com/wikimedia/phlogiston/blob/master/{{ scope_prefix }}_recategorization.csv">Rules for recategorizing tasks</a></li>
+            <li><a href="{{ scope_prefix }}_recently_closed.html">Recently closed tasks</a></li>
+            <li><a href="{{ scope_prefix }}_open_by_category.html">All open tasks, sorted by category</a></li>
+            <li><a href="{{ scope_prefix }}_points_histogram.png">Histogram of stories by points</a>.  Unpointed stories are defaulted to <b><!--# include file="{{ scope_prefix }}_default_points.csv" --></b>points.</li></ul>
+          {% if show_points and not show_count %}
+          This report shows charts by task points and not task count.  This can be changed in configuration.
+          {% endif %}
+          {% if show_count and not show_points %}
+          This report shows charts by task count and not task points.  This can be changed in configuration.
+          {% endif %}
         </td>
       </tr>
     </table>
@@ -32,52 +38,64 @@
     <p>
       <table>
 	<tr>
+          {% if show_points %}
 	  <td>
-	    <a href="${scope_prefix}_forecast_points_zoom.png"><img src="${scope_prefix}_forecast_points_zoom.png"/></a><br/><a href="${scope_prefix}_forecast_points.png">Unzoomed.</a>
+	    <a href="{{ scope_prefix }}_forecast_points_zoom.png"><img src="{{ scope_prefix }}_forecast_points_zoom.png"/></a><br/><a href="{{ scope_prefix }}_forecast_points.png">Unzoomed.</a>
 	  </td>
+          {% endif %}
           <td>
             <!--# block name="no_tranche_toc" --><!--# endblock -->
-            <!--# include file="${scope_prefix}_tranche_toc.html" stub="no_tranche_toc"-->
+            <!--# include file="{{ scope_prefix }}_tranche_toc.html" stub="no_tranche_toc"-->
           </td>
+          {% if show_count %}
 	  <td>
-	    <a href="${scope_prefix}_forecast_count_zoom.png"><img src="${scope_prefix}_forecast_count_zoom.png"/></a><br/><a href="${scope_prefix}_forecast_count.png">Unzoomed.</a>
+	    <a href="{{ scope_prefix }}_forecast_count_zoom.png"><img src="{{ scope_prefix }}_forecast_count_zoom.png"/></a><br/><a href="{{ scope_prefix }}_forecast_count.png">Unzoomed.</a>
 	  </td>
+          {% endif %}
 	</tr>
       </table>
     </p>
-    <p><a href="https://www.mediawiki.org/wiki/Guide_to_Phlogiston_Reports#Forecast">Explanation</a>. See also <a href="${scope_prefix}_current_forecasts.html">Complete forecast dates</a> for the raw data behind this chart.</p>
+    <p><a href="https://www.mediawiki.org/wiki/Guide_to_Phlogiston_Reports#Forecast">Explanation</a>. See also <a href="{{ scope_prefix }}_current_forecasts.html">Complete forecast dates</a> for the raw data behind this chart.</p>
     <a name="burnups"><h2>Project Burnup</h2></a>
     <p>History of completed work (above the line) and open work (below the line) for all categories of work over time.</p>
     <p>
       <table>
 	<tr>
+          {% if show_points %}
 	  <td>
-	    <a href="${scope_prefix}_backlog_burnup_points_zoom.png"><img src="${scope_prefix}_backlog_burnup_points_zoom.png"/></a><br/>
-            <a href="${scope_prefix}_backlog_burnup_points.png">Unzoomed.</a><br/>
+	    <a href="{{ scope_prefix }}_backlog_burnup_points_zoom.png"><img src="{{ scope_prefix }}_backlog_burnup_points_zoom.png"/></a><br/>
+            <a href="{{ scope_prefix }}_backlog_burnup_points.png">Unzoomed.</a><br/>
 	  </td>
+          {% endif %}
+          {% if show_count %}
 	  <td>
-	    <a href="${scope_prefix}_backlog_burnup_count_zoom.png"><img src="${scope_prefix}_backlog_burnup_count_zoom.png"/></a><br/>
-            <a href="${scope_prefix}_backlog_burnup_count.png">Unzoomed.</a>
+	    <a href="{{ scope_prefix }}_backlog_burnup_count_zoom.png"><img src="{{ scope_prefix }}_backlog_burnup_count_zoom.png"/></a><br/>
+            <a href="{{ scope_prefix }}_backlog_burnup_count.png">Unzoomed.</a>
 	  </td>
+          {% endif %}
 	</tr>
       </table>
     </p>
     <p><a href="https://www.mediawiki.org/wiki/Guide_to_Phlogiston_Reports#Combined_Burnup">Explanation</a>.</p>
     <h2><a name="category_burnups">Per-Category Burnups</a></h2>
     <!--# block name="no-tranche" -->Per-milestone charts not available<!--# endblock -->
-    <!--# include file="${scope_prefix}_tranches.html" stub="no-tranche" -->
+    <!--# include file="{{ scope_prefix }}_tranches.html" stub="no-tranche" -->
     <p><a href="https://www.mediawiki.org/wiki/Guide_to_Phlogiston_Reports#Per-category_charts">Explanation</a>.</p>
     <a name="velocity"><h2>Velocity</h2></a>
     <p>Completed work per week.</p>
     <p>
       <table>
 	<tr>
+          {% if show_points %}
 	  <td>
-	    <a href="${scope_prefix}_velocity_points.png"><img src="${scope_prefix}_velocity_points.png"/></a>
+	    <a href="{{ scope_prefix }}_velocity_points.png"><img src="{{ scope_prefix }}_velocity_points.png"/></a>
 	  </td>
+          {% endif %}
+          {% if show_count %}
 	  <td>
-	    <a href="${scope_prefix}_velocity_count.png"><img src="${scope_prefix}_velocity_count.png"/></a>
+	    <a href="{{ scope_prefix }}_velocity_count.png"><img src="{{ scope_prefix }}_velocity_count.png"/></a>
 	  </td>
+          {% endif %}
 	</tr>
       </table>
     </p>
@@ -85,12 +103,16 @@
     <p>Completed work per week, broken out by category, with highest-priority work on the bottom, in darkest green.</p>
     <table>
       <tr>
+        {% if show_points %}
 	<td>
-	  <a href="${scope_prefix}_done_points.png"><img src="${scope_prefix}_done_points.png"/></a>
+	  <a href="{{ scope_prefix }}_done_points.png"><img src="{{ scope_prefix }}_done_points.png"/></a>
 	</td>
+        {% endif %}
+        {% if show_count %}
 	<td>
-	  <a href="${scope_prefix}_done_count.png"><img src="${scope_prefix}_done_count.png"/></a>
+	  <a href="{{ scope_prefix }}_done_count.png"><img src="{{ scope_prefix }}_done_count.png"/></a>
 	</td>
+        {% endif %}
       </tr>
     </table>
     <p><a href="https://www.mediawiki.org/wiki/Guide_to_Phlogiston_Reports#Completed_Work">Explanation</a>.</p>

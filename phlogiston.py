@@ -12,7 +12,8 @@ import pytz
 import getopt
 import subprocess
 import time
-from string import Template
+
+from jinja2 import Template
 
 def main(argv):
     try:
@@ -94,6 +95,16 @@ def main(argv):
                   format(scope_prefix, e))
             sys.exit(1)
 
+        show_points = True
+        if config.has_option('vars', 'show_points'):
+            if not config.getboolean('vars','show_points'):
+                show_points = False
+
+        show_count = True
+        if config.has_option('vars', 'show_count'):
+            if not config.getboolean('vars','show_count'):
+                show_count = False
+
         if config.has_option('vars', 'default_points'):
             default_points = config['vars']['default_points']
         else:
@@ -128,7 +139,8 @@ def main(argv):
         if scope_prefix:
             report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
                    scope_title, default_points, project_name_list,
-                   retroactive_categories, backlog_resolved_cutoff)
+                   retroactive_categories, backlog_resolved_cutoff,
+                   show_points, show_count)
         else:
             print("Report specified without a scope_prefix.\nPlease specify a scope_prefix with --scope_prefix.")  # noqa
     conn.close()
@@ -653,7 +665,8 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
 
 def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
            scope_title, default_points, project_name_list,
-           retroactive_categories, backlog_resolved_cutoff):
+           retroactive_categories, backlog_resolved_cutoff,
+           show_points, show_count):
     # note that all the COPY commands in the psql scripts run
     # server-side as user postgres
   
@@ -820,8 +833,11 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
     script_dir = os.path.dirname(__file__)
     report_html = Template(open('html/report.html').read())
     report_output = open(os.path.join(script_dir, '../html/{0}_report.html'.format(scope_prefix)), 'w')
-    report_output.write(report_html.substitute(
-        {'title': scope_title, 'scope_prefix': scope_prefix}))
+    report_output.write(report_html.render(
+        {'title': scope_title,
+         'scope_prefix': scope_prefix,
+         'show_points': show_points,
+         'show_count': show_count}))
 
     subprocess.call('cp /tmp/{0}/maintenance_fraction_total_by_points.csv ~/html/{0}_maintenance_fraction_total_by_points.csv'.format(scope_prefix), shell=True)
     subprocess.call('cp /tmp/{0}/maintenance_fraction_total_by_count.csv ~/html/{0}_maintenance_fraction_total_by_count.csv'.format(scope_prefix), shell=True)
