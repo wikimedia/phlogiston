@@ -5,6 +5,5 @@ project_list = TPG-2016Q4-Assess-Skills,TPG-2016Q4-Support-Quarterly,TPG-2016Q4-
 start_date = 2016-01-01
 retroactive_categories = True
 backlog_resolved_cutoff = 2016-04-01
-
-
+show_points = False
 
