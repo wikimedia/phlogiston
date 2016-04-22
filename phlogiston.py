@@ -883,10 +883,8 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
     i = 0
     tab_string = '<table><tr>'
     html_string = '<div class="tabs">'
-    toc_string = '<ul>'
     for cat_entry in reversed(cat_list):
         category = cat_entry[0]
-        zoom = cat_entry[1]
         try:          
             color = colors[i]
         except:
@@ -895,8 +893,6 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
         subprocess.call(
             'Rscript make_tranche_chart.R {0} {1} \"{2}\" \"{3}\"'.
             format(scope_prefix, i, color, category), shell=True)
-        if zoom:
-            toc_string += '<li><a href="#tab{0}">{1}</a></li>'.format(i,category)
         tab_string += '<td><a href="#tab{0}">{1}</a></td>'.format(i,category)
         html_string += '<p id="tab{0}"><table>'.format(i)
         points_png_name = "{0}_tranche{1}_burnup_points.png".format(scope_prefix, i)
@@ -915,12 +911,20 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
         i += 1
     tab_string += '</tr></table>'
     html_string += '</div>'
-    toc_string += '</ul>'
+
     file = '{0}_tranches.html'.format(scope_prefix)
     f = open(os.path.join(script_dir, '../html/', file), 'w')
     f.write(tab_string)
     f.write(html_string)
     f.close()
+
+    toc_string = '<p>Per-category burnups</p><ul>'
+    for cat_entry in cat_list:
+        category = cat_entry[0]
+        zoom = cat_entry[1]
+        if zoom:
+            toc_string += '<li><a href="#tab{0}">{1}</a></li>'.format(i,category)
+    toc_string += '</ul>'
     file_toc = '{0}_tranche_toc.html'.format(scope_prefix)
     f = open(os.path.join(script_dir, '../html/', file_toc), 'w')
     f.write(toc_string)
