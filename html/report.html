@@ -13,7 +13,11 @@
           <p><a href="#analysis">Analysis charts: Maintenance fraction, backlog growth</a></p>
         </td>
         <td>
-          <!--# include file="{{ scope_prefix }}_dates.html" -->
+          <table class="bord">
+            <tr><th></th><th>UTC</th><th>PT</th></tr>
+            <tr><th>Most Recent Data</th><th>{{ max_date_utc }}</th><th>{{ max_date_pt }}</th></tr>
+            <tr><th>Report Date</th><th>{{ now_utc }}</th><th>{{ now_pt }}</th></tr>
+          </table>
           <p>These charts include data from the following Phabricator projects, in this order:</p>
           <b><pre><!--# include file="{{ scope_prefix }}_projects.csv" --></pre></b>
         </td>

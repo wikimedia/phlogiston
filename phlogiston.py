@@ -831,14 +831,7 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
     subprocess.call('rm ~/html/{0}_*'.format(scope_prefix), shell=True)
 
     script_dir = os.path.dirname(__file__)
-    report_html = Template(open('html/report.html').read())
-    report_output = open(os.path.join(script_dir, '../html/{0}_report.html'.format(scope_prefix)), 'w')
-    report_output.write(report_html.render(
-        {'title': scope_title,
-         'scope_prefix': scope_prefix,
-         'show_points': show_points,
-         'show_count': show_count}))
-
+    
     subprocess.call('cp /tmp/{0}/maintenance_fraction_total_by_points.csv ~/html/{0}_maintenance_fraction_total_by_points.csv'.format(scope_prefix), shell=True)
     subprocess.call('cp /tmp/{0}/maintenance_fraction_total_by_count.csv ~/html/{0}_maintenance_fraction_total_by_count.csv'.format(scope_prefix), shell=True)
     subprocess.call('cp /tmp/{0}/category_possibilities.txt ~/html/{0}_category_possibilities.txt'.format(scope_prefix), shell=True)
@@ -1017,9 +1010,6 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
     # Update dates
     ######################################################################
 
-    html_string = """<p><table class="bord">
-    <tr><th></th><th>UTC</th><th>PT</th></tr>"""
-
     max_date_query = """
         SELECT MAX(date_modified), now()
           FROM task_history th, maniphest_transaction mt
@@ -1037,23 +1027,29 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
     now_utc = now_db.astimezone(utc).strftime('%a %Y-%b-%d %I:%M %p')
     now_pt = now_db.astimezone(pt).strftime('%a %Y-%b-%d %I:%M %p') 
 
-    html_string += "<tr><th>Most Recent Data</th><th>{0}</th><th>{1}</th></tr>".format(max_date_utc, max_date_pt)
-    html_string += "<tr><th>Report Date</th><th>{0}</th><th>{1}</th></tr>".format(now_utc, now_pt)
-    html_string += "</table></p>"
+    date_row_html = Template(open('html/date_row.html').read())
+    date_row_output = open(os.path.join(script_dir, '../html/{0}_date_row'.format(scope_prefix)), 'w')
+    date_row_output.write(date_row_html.render(
+        { 'max_date_pt': max_date_pt,
+          'now_pt': now_pt
+        }))
+    date_row_output.close()
 
-    script_dir = os.path.dirname(__file__)
-    file = '{0}_dates.html'.format(scope_prefix)
-    f = open(os.path.join(script_dir, '../html/', file), 'w')
-    f.write(html_string)
-    f.close
-
-    html_string = '<td>{0}</td><td>{1}</td>'.format(max_date_pt, now_pt)
-    file = '{0}_date_row.html'.format(scope_prefix)
-    f = open(os.path.join(script_dir, '../html/', file), 'w')
-    f.write(html_string)
-    f.close
+    report_html = Template(open('html/report.html').read())
+    report_output = open(os.path.join(script_dir, '../html/{0}_report.html'.format(scope_prefix)), 'w')
+    report_output.write(report_html.render(
+        {'title': scope_title,
+         'scope_prefix': scope_prefix,
+         'show_points': show_points,
+         'show_count': show_count,
+         'max_date_pt': max_date_pt,
+         'max_date_utc': max_date_utc,
+         'now_pt': now_pt,
+         'now_utc': now_utc,
+        }))
+    report_output.close()
 
     cur.close()
-
+    
 if __name__ == "__main__":
     main(sys.argv[1:])
