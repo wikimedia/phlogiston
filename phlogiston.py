@@ -911,12 +911,14 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
     f.write(html_string)
     f.close()
 
+    i = len(cat_list) - 1
     toc_string = '<p>Per-category burnups</p><ul>'
     for cat_entry in cat_list:
         category = cat_entry[0]
         zoom = cat_entry[1]
         if zoom:
             toc_string += '<li><a href="#tab{0}">{1}</a></li>'.format(i,category)
+        i = i - 1
     toc_string += '</ul>'
     file_toc = '{0}_tranche_toc.html'.format(scope_prefix)
     f = open(os.path.join(script_dir, '../html/', file_toc), 'w')
@@ -1028,7 +1030,7 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
     now_pt = now_db.astimezone(pt).strftime('%a %Y-%b-%d %I:%M %p') 
 
     date_row_html = Template(open('html/date_row.html').read())
-    date_row_output = open(os.path.join(script_dir, '../html/{0}_date_row'.format(scope_prefix)), 'w')
+    date_row_output = open(os.path.join(script_dir, '../html/{0}_date_row.html'.format(scope_prefix)), 'w')
     date_row_output.write(date_row_html.render(
         { 'max_date_pt': max_date_pt,
           'now_pt': now_pt
