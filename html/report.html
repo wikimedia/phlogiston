@@ -19,7 +19,11 @@
             <tr><th>Report Date</th><th>{{ now_utc }}</th><th>{{ now_pt }}</th></tr>
           </table>
           <p>These charts include data from the following Phabricator projects, in this order:</p>
-          <b><pre><!--# include file="{{ scope_prefix }}_projects.csv" --></pre></b>
+          <pre>
+	      {% for project in project_name_list %}
+	      <b>{{ project }}</b>
+	  {% endfor %}
+          </pre>
         </td>
         <td>
           <ul>
@@ -27,7 +31,8 @@
             <li><a href="https://github.com/wikimedia/phlogiston/blob/master/{{ scope_prefix }}_recategorization.csv">Rules for recategorizing tasks</a></li>
             <li><a href="{{ scope_prefix }}_recently_closed.html">Recently closed tasks</a></li>
             <li><a href="{{ scope_prefix }}_open_by_category.html">All open tasks, sorted by category</a></li>
-            <li><a href="{{ scope_prefix }}_points_histogram.png">Histogram of stories by points</a>.  Unpointed stories are defaulted to <b><!--# include file="{{ scope_prefix }}_default_points.csv" --></b>points.</li></ul>
+            <li><a href="{{ scope_prefix }}_points_histogram.png">Histogram of stories by points</a>.</li>
+	    <li><a href="{{ scope_prefix }}_unpointed.html">Unpointed stories</a> are defaulted to <b>{{ default_points }}</b> points.</li></ul>
           {% if show_points and not show_count %}
           This report shows charts by task points and not task count.  This can be changed in configuration.
           {% endif %}
@@ -48,8 +53,14 @@
 	  </td>
           {% endif %}
           <td>
-            <!--# block name="no_tranche_toc" --><!--# endblock -->
-            <!--# include file="{{ scope_prefix }}_tranche_toc.html" stub="no_tranche_toc"-->
+	    <p>Per-category burnups</p>
+	    <ul>
+	      {% for row in category_list %}
+	      {% if row.1 %}
+	      <li><a href="#tab{{ loop.revindex0 }}">{{ row.0 }}</a></li>
+	      {% endif %}
+	      {% endfor %}
+	    </ul>
           </td>
           {% if show_count %}
 	  <td>
@@ -82,8 +93,50 @@
     </p>
     <p><a href="https://www.mediawiki.org/wiki/Guide_to_Phlogiston_Reports#Combined_Burnup">Explanation</a>.</p>
     <h2><a name="category_burnups">Per-Category Burnups</a></h2>
-    <!--# block name="no-tranche" -->Per-milestone charts not available<!--# endblock -->
-    <!--# include file="{{ scope_prefix }}_tranches.html" stub="no-tranche" -->
+    <table>
+      <tr>
+	{% for row in rev_category_list %}
+	<td>
+	  <a href="#tab{{ loop.index0 }}">{{ row.0 }}</a>
+	</td>
+	{% endfor %}
+      </tr>
+    </table>
+
+    <div class="tabs">
+    {% for i in range(category_count) %}
+    <p id="tab{{ i }}">
+      <table>
+        <tr>
+          {% if show_points %}
+          <td><a href="{{ scope_prefix }}_tranche{{ i }}_burnup_points.png"><img src="{{ scope_prefix }}_tranche{{ i }}_burnup_points.png"/></a></td>
+          {% endif %}
+          {% if show_count %}
+          <td><a href="{{ scope_prefix }}_tranche{{ i }}_burnup_count.png"><img src="{{ scope_prefix }}_tranche{{ i }}_burnup_count.png"/></a></td>
+          {% endif %}
+        </tr>
+        <tr>
+          {% if show_points %}
+          <td><a href="{{ scope_prefix }}_tranche{{ i }}_velocity_points.png"><img src="{{ scope_prefix }}_tranche{{ i }}_velocity_points.png"/></a></td>
+          {% endif %}
+          {% if show_count %}
+          <td><a href="{{ scope_prefix }}_tranche{{ i }}_velocity_count.png"><img src="{{ scope_prefix }}_tranche{{ i }}_velocity_count.png"/></a></td>
+          {% endif %}
+        </tr>
+        <tr>
+          {% if show_points %}
+          <td><a href="{{ scope_prefix }}_tranche{{ i }}_forecast_points.png"><img src="{{ scope_prefix }}_tranche{{ i }}_forecast_points.png"/></a></td>
+          {% endif %}
+          {% if show_count %}
+          <td><a href="{{ scope_prefix }}_tranche{{ i }}_forecast_count.png"><img src="{{ scope_prefix }}_tranche{{ i }}_forecast_count.png"/></a></td>
+          {% endif %}
+        </tr>
+      </table>
+    </p>
+    {% endfor %}
+    </div>
+
+
     <p><a href="https://www.mediawiki.org/wiki/Guide_to_Phlogiston_Reports#Per-category_charts">Explanation</a>.</p>
     <a name="velocity"><h2>Velocity</h2></a>
     <p>Completed work per week.</p>

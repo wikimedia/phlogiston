@@ -1,0 +1,21 @@
+<html>
+  <head>
+    <title>{{ title }} List of unpointed tasks</title>
+  </head>
+  <body>
+    <table class='bord'>
+      <tr>
+	<th>ID</th>
+	<th>Title</th>
+	<th>Category</th>
+      </tr>
+      {% for row in unpointed_results %}
+      <tr>
+	<td><a href="https://phabricator.wikimedia.org/T{{ row.0 }}">{{ row.0 }}</a></td>
+	<td>{{ row.1|e }}</td>
+        <td>{{ row.2|e }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </body>
+</html>

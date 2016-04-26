@@ -836,16 +836,6 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
     subprocess.call('cp /tmp/{0}/maintenance_fraction_total_by_count.csv ~/html/{0}_maintenance_fraction_total_by_count.csv'.format(scope_prefix), shell=True)
     subprocess.call('cp /tmp/{0}/category_possibilities.txt ~/html/{0}_category_possibilities.txt'.format(scope_prefix), shell=True)
 
-    file = '{0}_projects.csv'.format(scope_prefix)
-    f = open(os.path.join(script_dir, '../html/', file), 'w')
-    for project_name in project_name_list:
-        f.write("{0}\n".format(project_name))
-    f.close()
-
-    file = '{0}_default_points.csv'.format(scope_prefix)
-    f = open(os.path.join(script_dir, '../html/', file), 'w')
-    f.write("{0}\n".format(default_points))
-    f.close()
 
     ######################################################################
     # for each category, generate burnup charts
@@ -873,61 +863,18 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
     for item in color_output:
         if '#' in item:
             colors.append(item)
+
     i = 0
-    tab_string = '<table><tr>'
-    html_string = '<div class="tabs">'
     for cat_entry in reversed(cat_list):
         category = cat_entry[0]
         try:          
             color = colors[i]
         except:
             color = '#DDDDDD'
-
-        if DEBUG:
-            print('Rscript make_tranche_chart.R {0} {1} \"{2}\" \"{3}\"'.
-            format(scope_prefix, i, color, category))
-
         subprocess.call(
             'Rscript make_tranche_chart.R {0} {1} \"{2}\" \"{3}\"'.
             format(scope_prefix, i, color, category), shell=True)
-        tab_string += '<td><a href="#tab{0}">{1}</a></td>'.format(i,category)
-        html_string += '<p id="tab{0}"><table>'.format(i)
-        points_png_name = "{0}_tranche{1}_burnup_points.png".format(scope_prefix, i)
-        count_png_name = "{0}_tranche{1}_burnup_count.png".format(scope_prefix, i)
-        html_string += '<tr><td><a href="{0}"><img src="{0}"/></a></td>'.format(points_png_name)
-        html_string += '<td><a href="{0}"><img src="{0}"/></a></tr>\n'.format(count_png_name)
-        points_png_name = "{0}_tranche{1}_velocity_points.png".format(scope_prefix, i)
-        count_png_name = "{0}_tranche{1}_velocity_count.png".format(scope_prefix, i)
-        html_string += '<tr><td><a href="{0}"><img src="{0}"/></a></td>'.format(points_png_name)
-        html_string += '<td><a href="{0}"><img src="{0}"/></a></tr>\n'.format(count_png_name)
-        points_png_name = "{0}_tranche{1}_forecast_points.png".format(scope_prefix, i)
-        count_png_name = "{0}_tranche{1}_forecast_count.png".format(scope_prefix, i)
-        html_string += '<tr><td><a href="{0}"><img src="{0}"/></a></td>'.format(points_png_name)
-        html_string += '<td><a href="{0}"><img src="{0}"/></a></tr>\n'.format(count_png_name)
-        html_string += '</table></p>\n'
         i += 1
-    tab_string += '</tr></table>'
-    html_string += '</div>'
-
-    file = '{0}_tranches.html'.format(scope_prefix)
-    f = open(os.path.join(script_dir, '../html/', file), 'w')
-    f.write(tab_string)
-    f.write(html_string)
-    f.close()
-
-    i = len(cat_list) - 1
-    toc_string = '<p>Per-category burnups</p><ul>'
-    for cat_entry in cat_list:
-        category = cat_entry[0]
-        zoom = cat_entry[1]
-        if zoom:
-            toc_string += '<li><a href="#tab{0}">{1}</a></li>'.format(i,category)
-        i = i - 1
-    toc_string += '</ul>'
-    file_toc = '{0}_tranche_toc.html'.format(scope_prefix)
-    f = open(os.path.join(script_dir, '../html/', file_toc), 'w')
-    f.write(toc_string)
-    f.close()
 
     forecast_query = """
         SELECT v.category,
@@ -984,6 +931,33 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
     f.write(html_string)
     f.close()
     
+    unpointed_task_query = """SELECT thr.id,
+                                     thr.title,
+                                     thr.category
+                                FROM task_history_recat thr,
+                                     category_list z
+                               WHERE thr.scope = %(scope_prefix)s
+                                 AND thr.date = (SELECT MAX(date)
+                                                   FROM task_history_recat
+                                                  WHERE scope = %(scope_prefix)s)
+                                 AND thr.id IN (SELECT id 
+                                              FROM maniphest_task 
+                                             WHERE story_points IS NULL)
+                                 AND z.scope = %(scope_prefix)s
+                                 AND thr.category = z.category
+                               ORDER BY z.sort_order, id"""
+
+    cur.execute(unpointed_task_query, {'scope_prefix': scope_prefix})
+    unpointed_results = cur.fetchall()
+    unpointed_html = Template(open('html/unpointed.html').read())
+    unpointed_output = open(os.path.join(script_dir, '../html/{0}_unpointed.html'.format(scope_prefix)), 'w')
+    unpointed_output.write(unpointed_html.render(
+        { 'unpointed_results': unpointed_results,
+          'title': scope_title,
+        }))
+    unpointed_output.close()
+
+
     recently_closed_query = """SELECT id,
                                       title,
                                       date,
@@ -1046,12 +1020,17 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
     report_output.write(report_html.render(
         {'title': scope_title,
          'scope_prefix': scope_prefix,
+         'default_points': default_points,
+         'project_name_list': project_name_list,
          'show_points': show_points,
          'show_count': show_count,
          'max_date_pt': max_date_pt,
          'max_date_utc': max_date_utc,
          'now_pt': now_pt,
          'now_utc': now_utc,
+         'category_count': len(cat_list),
+         'category_list': cat_list,
+         'rev_category_list': reversed(cat_list)
         }))
     report_output.close()
 
