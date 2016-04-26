@@ -258,8 +258,8 @@ p <- ggplot(forecast_done) +
   geom_errorbar(data = forecast_current, aes(x=category, y=nom_count_date, ymax=pes_count_date, ymin=opt_count_date, color=weeks_old), width=.3, size=2, alpha=.3) +
   geom_point(data = forecast_current, aes(x=category, y=nom_count_date), size=7, shape=5, color="Black") +
   geom_text(data = forecast_current, aes(x=category, y=nom_count_date, label=format(nom_count_date, format="%b %d\n%Y")), size=8, color="DarkSlateGray") +
-  geom_text(data = forecast_done, aes(x=category, y=forecast_start, label=count_total, size=log(count_total))) +
-  scale_size_continuous(range = c(2,8)) +
+  geom_text(data = forecast_done, aes(x=category, y=forecast_start, label=count_total, size=count_total)) +
+  scale_size_continuous(range = c(5,9)) +
   scale_x_discrete(limits = rev(forecast_done$category)) +
   scale_y_date(limits=c(forecast_start, forecast_end_plus), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   coord_flip() +
