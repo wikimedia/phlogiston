@@ -90,12 +90,18 @@ dev.off()
 ## Forecast
 ######################################################################
 
+
+
+
 forecast <- read.csv(sprintf("/tmp/%s/forecast.csv", args$scope_prefix))
 forecast$date <- as.Date(forecast$date, "%Y-%m-%d")
 forecast <- forecast[forecast$category == args$tranche_name,]
+forecast_points <- forecast[ is.na(forecast$opt_points_fore) == 0,]
+forecast_count <- forecast[ is.na(forecast$opt_count_fore) == 0,]
+
 png(filename = sprintf("~/html/%s_tranche%s_forecast_points.png", args$scope_prefix, args$tranche_num), width=1000, height=300, units="px", pointsize=10)
 
-ggplot(forecast) +
+ggplot(forecast_points) +
   geom_line(aes(x=date, y=pes_points_fore), color="darkorange2", size=3) +
   geom_line(aes(x=date, y=opt_points_fore), color="chartreuse3", size=3) +
   geom_line(aes(x=date, y=nom_points_fore), color="gray", size=2) +
@@ -104,11 +110,12 @@ ggplot(forecast) +
   scale_y_continuous(limits=c(0,14), breaks=pretty_breaks(n=7), oob=squish) +
   theme_fivethirtynine() +
   theme(legend.title=element_blank())
+
 dev.off()
 
 png(filename = sprintf("~/html/%s_tranche%s_forecast_count.png", args$scope_prefix, args$tranche_num), width=1000, height=300, units="px", pointsize=10)
 
-ggplot(forecast) +
+ggplot(forecast_count) +
   geom_line(aes(x=date, y=pes_count_fore), color="darkorange2", size=3) +
   geom_line(aes(x=date, y=opt_count_fore), color="chartreuse3", size=3) +
   geom_line(aes(x=date, y=nom_count_fore), color="gray", size=2) +

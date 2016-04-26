@@ -883,6 +883,10 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
         except:
             color = '#DDDDDD'
 
+        if DEBUG:
+            print('Rscript make_tranche_chart.R {0} {1} \"{2}\" \"{3}\"'.
+            format(scope_prefix, i, color, category))
+
         subprocess.call(
             'Rscript make_tranche_chart.R {0} {1} \"{2}\" \"{3}\"'.
             format(scope_prefix, i, color, category), shell=True)
