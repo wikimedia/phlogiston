@@ -933,7 +933,8 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
     
     unpointed_task_query = """SELECT thr.id,
                                      thr.title,
-                                     thr.category
+                                     thr.category,
+                                     thr.status
                                 FROM task_history_recat thr,
                                      category_list z
                                WHERE thr.scope = %(scope_prefix)s
@@ -945,7 +946,7 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
                                              WHERE story_points IS NULL)
                                  AND z.scope = %(scope_prefix)s
                                  AND thr.category = z.category
-                               ORDER BY z.sort_order, id"""
+                               ORDER BY z.sort_order, thr.status, id"""
 
     cur.execute(unpointed_task_query, {'scope_prefix': scope_prefix})
     unpointed_results = cur.fetchall()
