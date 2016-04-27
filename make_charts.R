@@ -202,11 +202,18 @@ forecast$nom_count_date <- as.Date(forecast$nom_count_date, "%Y-%m-%d")
 forecast$opt_count_date <- as.Date(forecast$opt_count_date, "%Y-%m-%d")
 
 forecast_current <- forecast[ forecast$weeks_old < 1 & forecast$weeks_old >= 0 & is.na(forecast$pes_points_growviz) ,]
+
 forecast_future_points <- forecast_current[forecast_current$nom_points_date > forecast_end,]
 forecast_future_count <- forecast_current[forecast_current$nom_count_date > forecast_end,]
+
+forecast_never_points <- forecast_current[!is.na(forecast_current$opt_points_date) & is.na(forecast_current$nom_points_date),]
+forecast_never_count <- forecast_current[!is.na(forecast_current$opt_count_date) & is.na(forecast_current$nom_count_date),]
+
 forecast_no_data_points <- forecast_current[is.na(forecast_current$opt_points_date),]
 forecast_no_data_count <- forecast_current[is.na(forecast_current$opt_count_date),]
+
 png(filename = sprintf("~/html/%s_forecast_points%s.png", args$scope_prefix, zoom_suffix), width=2000, height=1125, units="px", pointsize=30)
+
 
 p <- ggplot(forecast_done) +
   annotate("rect", xmin=first_cat, xmax=last_cat, ymin=quarter_start, ymax=next_quarter_start, fill="white", alpha=0.5) +
@@ -241,11 +248,14 @@ if(nrow(done_during_chart) > 0) {
 }
 
 if(nrow(forecast_no_data_points) > 0) {
-  p = p + geom_text(data = forecast_no_data_points, aes(x=category, y=next_quarter_start, label='No forecast'), size=8, color="SlateGray")
+  p = p + geom_text(data = forecast_no_data_points, aes(x=category, y=next_quarter_start, label='Not enough data'), size=8, color="SlateGray")
+}
+
+if(nrow(forecast_never_points) > 0) {
+  p = p + geom_text(data = forecast_never_points, aes(x=category, y=next_quarter_start, label='Never'), size=8, color="SlateGray")
 }
 
 p
-dev.off()
 
 png(filename = sprintf("~/html/%s_forecast_count%s.png", args$scope_prefix, zoom_suffix), width=2000, height=1125, units="px", pointsize=30)
 
@@ -282,7 +292,11 @@ if(nrow(done_during_chart) > 0) {
 }
 
 if(nrow(forecast_no_data_count) > 0) {
-  p = p + geom_text(data = forecast_no_data_count, aes(x=category, y=next_quarter_start, label='No forecast'), size=8, color="SlateGray")
+  p = p + geom_text(data = forecast_no_data_count, aes(x=category, y=next_quarter_start, label='Insufficient velocity data'), size=8, color="SlateGray")
+}
+
+if(nrow(forecast_never_count) > 0) {
+  p = p + geom_text(data = forecast_never_count, aes(x=category, y=next_quarter_start, label='Never'), size=8, color="SlateGray")
 }
 
 p
