@@ -309,7 +309,7 @@ BEGIN
             SELECT AVG(delta_points_resolved::float)
               INTO avg_points_vel
               FROM velocity subqv
-             WHERE subqv.date > weekday - interval '3 months'
+             WHERE subqv.date > weekday - interval '3 weeks'
                AND subqv.date <= weekday
                AND subqv.scope = scope_prefix
                AND subqv.category = tranche.category;
@@ -389,7 +389,7 @@ BEGIN
             SELECT AVG(delta_count_resolved::float)
               INTO avg_count_vel
               FROM velocity subqv
-             WHERE subqv.date > weekday - interval '3 months'
+             WHERE subqv.date > weekday - interval '3 weeks'
                AND subqv.date <= weekday
                AND subqv.scope = scope_prefix
                AND subqv.category = tranche.category;
@@ -442,25 +442,25 @@ BEGIN
                        AND subqv.scope = scope_prefix
                        AND subqv.category = tranche.category) as x;
 
-            SELECT threem_avg_points_grow
+            SELECT threew_avg_points_grow
               INTO avg_points_grow;
 
-            SELECT (threem_avg_points_grow + threem_max_points_grow)/2
+            SELECT GREATEST(threem_avg_points_grow, threem_max_points_grow)
               INTO max_points_grow;
 
-            SELECT threem_avg_count_grow
+            SELECT threew_avg_count_grow
               INTO avg_count_grow;
 
-            SELECT (threem_avg_count_grow + threem_max_count_grow)/2
+            SELECT GREATEST(threem_avg_count_grow, threem_max_count_grow)
               INTO max_count_grow;
 
             UPDATE velocity
                SET pes_points_vel = min_points_vel,
-                   nom_points_vel = avg_points_vel,
-                   opt_points_vel = max_points_vel,
+                   nom_points_vel = GREATEST(avg_points_vel,1),
+                   opt_points_vel = GREATEST(max_points_vel,2),
                    pes_count_vel = min_count_vel,
-                   nom_count_vel = avg_count_vel,
-                   opt_count_vel = max_count_vel,
+                   nom_count_vel = GREATEST(avg_count_vel,1),
+                   opt_count_vel = GREATEST(max_count_vel,2),
                    opt_points_total_growrate = 0,
                    nom_points_total_growrate = avg_points_grow,
                    pes_points_total_growrate = max_points_grow,
@@ -480,29 +480,61 @@ BEGIN
 
     -- generate actual forecast in weeks for all historical data
     -- (for everything but the current week, this is technically a retrocast)
-    -- Forecast backlog growth is subtracted from forecast velocity to determine
-    -- projected velocity used in calculations
-    -- minimum velocity is set to 1 in these calculations
+    -- Forecast is size of open backlog divided by velocity
+    -- Velocity is forecast velocity, with a minimum of 1 point or story per week,
+    -- minus forecast backlog growth
 
     UPDATE velocity
-       SET pes_points_fore = round((points_total - points_resolved)::float /
-                                    GREATEST((pes_points_vel - pes_points_total_growrate),1)),
-           nom_points_fore = round((points_total - points_resolved)::float /
-                                    GREATEST((nom_points_vel - nom_points_total_growrate),1)),
-           opt_points_fore = round((points_total - points_resolved)::float /
-                                    GREATEST((opt_points_vel - opt_points_total_growrate),1))
+       SET pes_points_fore = ROUND((points_total - points_resolved)::float /
+                                   NULLIF((pes_points_vel - pes_points_total_growrate),0)),
+           nom_points_fore = ROUND((points_total - points_resolved)::float /
+                                   NULLIF((nom_points_vel - nom_points_total_growrate),0)),
+           opt_points_fore = ROUND((points_total - points_resolved)::float /
+                                   NULLIF((opt_points_vel - opt_points_total_growrate),0))
      WHERE scope = scope_prefix
        AND points_resolved < points_total;
 
     UPDATE velocity
-       SET pes_count_fore = round((count_total - count_resolved)::float /
-                                    GREATEST((pes_count_vel - pes_count_total_growrate),1)),
-           nom_count_fore = round((count_total - count_resolved)::float /
-                                    GREATEST((nom_count_vel - nom_count_total_growrate),1)),
-           opt_count_fore = round((count_total - count_resolved)::float /
-                                    GREATEST((opt_count_vel - opt_count_total_growrate),1))
+       SET pes_points_fore = NULL
+     WHERE pes_points_fore <= 0
+       AND scope = scope_prefix;
+
+    UPDATE velocity
+       SET nom_points_fore = NULL
+     WHERE nom_points_fore <= 0
+       AND scope = scope_prefix;
+
+    UPDATE velocity
+       SET opt_points_fore = NULL
+     WHERE opt_points_fore <= 0
+       AND scope = scope_prefix;
+
+
+    UPDATE velocity
+       SET pes_count_fore = ROUND((count_total - count_resolved)::float /
+                                   NULLIF((pes_count_vel - pes_count_total_growrate),0)),
+           nom_count_fore = ROUND((count_total - count_resolved)::float /
+                                   NULLIF((nom_count_vel - nom_count_total_growrate),0)),
+           opt_count_fore = ROUND((count_total - count_resolved)::float /
+                                   NULLIF((opt_count_vel - opt_count_total_growrate),0))
      WHERE scope = scope_prefix
        AND count_resolved < count_total;
+
+    UPDATE velocity
+       SET pes_count_fore = NULL
+     WHERE pes_count_fore <= 0
+       AND scope = scope_prefix;
+
+    UPDATE velocity
+       SET nom_count_fore = NULL
+     WHERE nom_count_fore <= 0
+       AND scope = scope_prefix;
+
+    UPDATE velocity
+       SET opt_count_fore = NULL
+     WHERE opt_count_fore <= 0
+       AND scope = scope_prefix;
+       
        
     -- convert # of weeks in future to specific date
     

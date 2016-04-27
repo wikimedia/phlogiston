@@ -47,7 +47,6 @@ theme_fivethirtynine <- function(base_size = 12, base_family = "sans"){
 ######################################################################
 ## Velocity
 ######################################################################
-
 velocity_t <- read.csv(sprintf("/tmp/%s/tranche_velocity.csv", args$scope_prefix))
 velocity_cat_t <- velocity_t[velocity_t$category == args$tranche_name,]
 velocity_cat_t$date <- as.Date(velocity_cat_t$date, "%Y-%m-%d")
@@ -90,46 +89,67 @@ dev.off()
 ## Forecast
 ######################################################################
 
-
-
-
 forecast <- read.csv(sprintf("/tmp/%s/forecast.csv", args$scope_prefix))
 forecast$date <- as.Date(forecast$date, "%Y-%m-%d")
 forecast <- forecast[forecast$category == args$tranche_name,]
-forecast_points <- forecast[ is.na(forecast$opt_points_fore) == 0,]
-forecast_count <- forecast[ is.na(forecast$opt_count_fore) == 0,]
+forecast_opt_points <- forecast[ is.na(forecast$opt_points_fore) == 0,]
+forecast_nom_points <- forecast[ is.na(forecast$nom_points_fore) == 0,]
+forecast_pes_points <- forecast[ is.na(forecast$pes_points_fore) == 0,]
+forecast_opt_count <- forecast[ is.na(forecast$opt_count_fore) == 0,]
+forecast_nom_count <- forecast[ is.na(forecast$nom_count_fore) == 0,]
+forecast_pes_count <- forecast[ is.na(forecast$pes_count_fore) == 0,]
 
 png(filename = sprintf("~/html/%s_tranche%s_forecast_points.png", args$scope_prefix, args$tranche_num), width=1000, height=300, units="px", pointsize=10)
 
-ggplot(forecast_points) +
-  geom_line(aes(x=date, y=pes_points_fore), color="darkorange2", size=3) +
-  geom_line(aes(x=date, y=opt_points_fore), color="chartreuse3", size=3) +
-  geom_line(aes(x=date, y=nom_points_fore), color="gray", size=2) +
+p <- ggplot(forecast) +
   labs(title=sprintf("%s completion forecast by points", args$tranche_name), y="weeks remaining") +
   scale_x_date(limits=c(start_date, end_date), date_minor_breaks="1 week", label=date_format("%b %d\n%Y")) +
   scale_y_continuous(limits=c(0,14), breaks=pretty_breaks(n=7), oob=squish) +
   theme_fivethirtynine() +
   theme(legend.title=element_blank())
 
+if(nrow(forecast_pes_points) > 0) {
+  p = p + geom_line(aes(x=date, y=pes_points_fore), color="darkorange2", size=3)
+}
+
+if(nrow(forecast_opt_points) > 0) {
+  p = p + geom_line(aes(x=date, y=opt_points_fore), color="chartreuse3", size=3)
+}
+
+if(nrow(forecast_nom_points) > 0) {
+  p = p + geom_line(aes(x=date, y=nom_points_fore), color="gray", size=2)
+}
+
+p
 dev.off()
 
 png(filename = sprintf("~/html/%s_tranche%s_forecast_count.png", args$scope_prefix, args$tranche_num), width=1000, height=300, units="px", pointsize=10)
 
-ggplot(forecast_count) +
-  geom_line(aes(x=date, y=pes_count_fore), color="darkorange2", size=3) +
-  geom_line(aes(x=date, y=opt_count_fore), color="chartreuse3", size=3) +
-  geom_line(aes(x=date, y=nom_count_fore), color="gray", size=2) +
+p <- ggplot(forecast) +
   labs(title=sprintf("%s completion forecast by count", args$tranche_name), y="weeks remaining") +
   scale_x_date(limits=c(start_date, end_date), date_minor_breaks="1 week", label=date_format("%b %d\n%Y"))+
   scale_y_continuous(limits=c(0,14), breaks=pretty_breaks(n=7), oob=squish ) +
   theme_fivethirtynine() +
   theme(legend.title=element_blank())
+
+if(nrow(forecast_pes_count) > 0) {
+  p = p + geom_line(aes(x=date, y=pes_count_fore), color="darkorange2", size=3)
+}
+
+if(nrow(forecast_opt_count) > 0) {
+  p = p + geom_line(aes(x=date, y=opt_count_fore), color="chartreuse3", size=3)
+}
+
+if(nrow(forecast_nom_count) > 0) {
+  p = p +  geom_line(aes(x=date, y=nom_count_fore), color="gray", size=2)
+}
+
+p
 dev.off()
 
 ######################################################################
 ## Burnup
 ######################################################################
-
 backlog <- read.csv(sprintf("/tmp/%s/backlog.csv", args$scope_prefix))
 backlog <- backlog[backlog$category==args$tranche_name,]
 backlog$date <- as.Date(backlog$date, "%Y-%m-%d")
