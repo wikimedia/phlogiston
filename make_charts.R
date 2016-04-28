@@ -209,8 +209,8 @@ forecast_future_count <- forecast_current[forecast_current$nom_count_date > fore
 forecast_never_points <- forecast_current[!is.na(forecast_current$opt_points_date) & is.na(forecast_current$nom_points_date),]
 forecast_never_count <- forecast_current[!is.na(forecast_current$opt_count_date) & is.na(forecast_current$nom_count_date),]
 
-forecast_no_data_points <- forecast_current[is.na(forecast_current$opt_points_date),]
-forecast_no_data_count <- forecast_current[is.na(forecast_current$opt_count_date),]
+forecast_no_data_points <- forecast_current[is.na(forecast_current$opt_points_date) & (forecast_current$points_total > forecast_current$points_resolved),]
+forecast_no_data_count <- forecast_current[is.na(forecast_current$opt_count_date) & (forecast_current$count_total > forecast_current$count_resolved),] 
 
 png(filename = sprintf("~/html/%s_forecast_points%s.png", args$scope_prefix, zoom_suffix), width=2000, height=1125, units="px", pointsize=30)
 
@@ -220,9 +220,9 @@ p <- ggplot(forecast_done) +
   annotate("text", x=forecast_current$category, y=forecast_current$date, label=forecast_current$points_pct_complete, size=10, family="mono", color="blue") +
   annotate("text", x=0.5, y=forecast_current$date, label="Now (% Complete)", size=8, family="mono", color="blue") +
   geom_hline(aes(yintercept=as.numeric(now)), color="blue") +
-  geom_point(aes(x=category, y=resolved_date), size=8, shape=18) +
+  geom_point(aes(x=category, y=resolved_date), size=6, shape=18) +
   geom_errorbar(data = forecast_current, aes(x=category, y=nom_points_date, ymax=pes_points_date, ymin=opt_points_date, color=weeks_old), width=.3, size=2, alpha=.3) +
-  geom_point(data = forecast_current, aes(x=category, y=nom_points_date), size=7, shape=5, color="Black") +
+  geom_point(data = forecast_current, aes(x=category, y=nom_points_date), size=5, shape=5, color="Black") +
   geom_text(data = forecast_current, aes(x=category, y=nom_points_date, label=format(nom_points_date, format="%b %d\n%Y")), size=8, color="DarkSlateGray") +
   geom_point(data = forecast_done, aes(x=category, y=forecast_start, label=points_total, size=points_total)) +
   scale_size_continuous(range = c(3,15)) +
@@ -264,9 +264,9 @@ p <- ggplot(forecast_done) +
   annotate("text", x=forecast_current$category, y=forecast_current$date, label=forecast_current$count_pct_complete, size=10, family="mono", color="blue") +
   annotate("text", x=0.5, y=forecast_current$date, label="Now (% Complete)", size=8, family="mono", color="blue") +
   geom_hline(aes(yintercept=as.numeric(now)), color="blue") +
-  geom_point(aes(x=category, y=resolved_date), size=8, shape=18) +
+  geom_point(aes(x=category, y=resolved_date), size=6, shape=18) +
   geom_errorbar(data = forecast_current, aes(x=category, y=nom_count_date, ymax=pes_count_date, ymin=opt_count_date, color=weeks_old), width=.3, size=2, alpha=.3) +
-  geom_point(data = forecast_current, aes(x=category, y=nom_count_date), size=7, shape=5, color="Black") +
+  geom_point(data = forecast_current, aes(x=category, y=nom_count_date), size=5, shape=5, color="Black") +
   geom_text(data = forecast_current, aes(x=category, y=nom_count_date, label=format(nom_count_date, format="%b %d\n%Y")), size=8, color="DarkSlateGray") +
   geom_text(data = forecast_done, aes(x=category, y=forecast_start, label=count_total, size=count_total)) +
   scale_size_continuous(range = c(5,9)) +
