@@ -248,7 +248,7 @@ if(nrow(done_during_chart) > 0) {
 }
 
 if(nrow(forecast_no_data_points) > 0) {
-  p = p + geom_text(data = forecast_no_data_points, aes(x=category, y=next_quarter_start, label='Not enough data'), size=8, color="SlateGray")
+  p = p + geom_text(data = forecast_no_data_points, aes(x=category, y=next_quarter_start, label='Not enough velocity data'), size=8, color="SlateGray")
 }
 
 if(nrow(forecast_never_points) > 0) {
@@ -292,7 +292,7 @@ if(nrow(done_during_chart) > 0) {
 }
 
 if(nrow(forecast_no_data_count) > 0) {
-  p = p + geom_text(data = forecast_no_data_count, aes(x=category, y=next_quarter_start, label='Insufficient velocity data'), size=8, color="SlateGray")
+  p = p + geom_text(data = forecast_no_data_count, aes(x=category, y=next_quarter_start, label='Not enough velocity data'), size=8, color="SlateGray")
 }
 
 if(nrow(forecast_never_count) > 0) {
