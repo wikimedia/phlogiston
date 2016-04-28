@@ -295,7 +295,7 @@ if(nrow(done_during_chart) > 0) {
 }
 
 if(nrow(forecast_no_data_count) > 0) {
-  p = p + geom_text(data = forecast_no_data_count, aes(x=category, y=next_quarter_start, label='Not enough\nvelocity data'), size=8, color="SlateGray")
+  p = p + geom_text(data = forecast_no_data_count, aes(x=category, y=forecast_end_plus, label='Not enough\nvelocity data'), size=8, color="SlateGray")
 }
 
 if(nrow(forecast_never_count) > 0) {
