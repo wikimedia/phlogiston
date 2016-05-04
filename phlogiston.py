@@ -115,10 +115,10 @@ def main(argv):
         else:
             backlog_resolved_cutoff = None
 
+        retroactive_categories = False
         if config.has_option('vars', 'retroactive_categories'):
-            retroactive_categories = config['vars']['retroactive_categories']
-        else:
-            retroactive_categories = False
+            if config.getboolean('vars','retroactive_categories'):
+                retroactive_categories = True
 
         if not start_date:
             try:
@@ -536,13 +536,13 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
             pretty_column = ''
             cur.execute(transaction_values_query,
                         {'working_date': working_date,
-                         'transaction_type': 'projectcolumn',
+                         'transaction_type': 'core:columns',
                          'task_id': task_id})
             pc_trans_list = cur.fetchall()
             for pc_trans in pc_trans_list:
-                jblob = json.loads(pc_trans[0])
-                if project_phid in jblob['projectPHID']:
-                    column_phid = jblob['columnPHIDs'][0]
+                jblob = json.loads(pc_trans[0])[0]
+                if project_phid in jblob['boardPHID']:
+                    column_phid = jblob['columnPHID']
                     pretty_column = column_dict[column_phid]
                     break
 
