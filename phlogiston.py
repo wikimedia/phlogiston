@@ -256,13 +256,11 @@ def load(conn, end_date, VERBOSE, DEBUG):
             task_phid = task['info'][1]
             status_at_load = task['info'][4]
             title = task['info'][6]
+            story_points = task['info'][10]
         else:
             task_phid = ''
             status_at_load = ''
             title = ''
-        if task['storypoints']:
-            story_points = task['storypoints'][2]
-        else:
             story_points = None
         cur.execute(task_insert, {'task_id': task_id,
                                   'phid': task_phid,
