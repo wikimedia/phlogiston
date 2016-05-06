@@ -108,7 +108,7 @@ def main(argv):
         if config.has_option('vars', 'default_points'):
             default_points = config['vars']['default_points']
         else:
-            default_points = ''
+            default_points = None
 
         if config.has_option('vars', 'backlog_resolved_cutoff'):
             backlog_resolved_cutoff = config['vars']['backlog_resolved_cutoff']
@@ -261,7 +261,7 @@ def load(conn, end_date, VERBOSE, DEBUG):
             task_phid = ''
             status_at_load = ''
             title = ''
-            story_points = None
+            story_points = ''
         cur.execute(task_insert, {'task_id': task_id,
                                   'phid': task_phid,
                                   'title': title,
@@ -443,10 +443,11 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
             task_id = row[0]
 
             # ----------------------------------------------------------------------
-            # Title and Points.  Currently points are a separate field
-            # not in transaction data.  This means historical points
-            # charts are actually retroactive.  Title could be tracked
-            # retroactively but this code doesn't make that effort.
+            # Data from as-is task record.  Points data prior to Feb 2016 was not
+            # recorded transactionally and is only available at the task record, so 
+            # we need both sources to cover all scenarios.
+            # Title could be tracked through transactions but this code doesn't 
+            # make that effort.
             # ----------------------------------------------------------------------
             task_query = """SELECT title, story_points
                               FROM maniphest_task
@@ -458,9 +459,9 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
             task_info = cur.fetchone()
             pretty_title = task_info[0]
             try:
-                pretty_points = int(task_info[1])
+                points_from_info = int(task_info[1])
             except:
-                pretty_points = default_points
+                points_from_info = None
 
             # for each relevant variable of the task, use the most
             # recent value that is no later than that day.  (So, if
@@ -491,6 +492,24 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
             pretty_priority = ""
             if priority_raw:
                 pretty_priority = priority_raw[0]
+
+            # ----------------------------------------------------------------------
+            # Story Points
+            # ----------------------------------------------------------------------
+            cur.execute(transaction_values_query,
+                        {'working_date': working_date,
+                         'transaction_type': 'points',
+                         'task_id': task_id})
+            points_raw = cur.fetchone()
+            pretty_points = default_points 
+            if points_raw:
+                try:
+                    pretty_points = int(points_raw[0])
+                except:
+                    if DEBUG:
+                        print('Bad points value {0} in {1}'.format(points_raw[0],task_id))
+            elif points_from_info:
+                pretty_points = points_from_info
 
             # ----------------------------------------------------------------------
             # Project & Maintenance Type
