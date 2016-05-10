@@ -15,6 +15,7 @@ import time
 
 from jinja2 import Template
 
+
 def main(argv):
     try:
         opts, args = getopt.getopt(
@@ -89,7 +90,7 @@ def main(argv):
 
         try:
             scope_title = config['vars']['scope_title']
-            project_name_list =  [x.strip() for x in config['vars']['project_list'].split(',')]
+            project_name_list = [x.strip() for x in config['vars']['project_list'].split(',')]  # noqa
         except KeyError as e:
             print('Config file {0} is missing required parameter(s): {1}'.
                   format(scope_prefix, e))
@@ -97,12 +98,12 @@ def main(argv):
 
         show_points = True
         if config.has_option('vars', 'show_points'):
-            if not config.getboolean('vars','show_points'):
+            if not config.getboolean('vars', 'show_points'):
                 show_points = False
 
         show_count = True
         if config.has_option('vars', 'show_count'):
-            if not config.getboolean('vars','show_count'):
+            if not config.getboolean('vars', 'show_count'):
                 show_count = False
 
         if config.has_option('vars', 'default_points'):
@@ -117,7 +118,7 @@ def main(argv):
 
         retroactive_categories = False
         if config.has_option('vars', 'retroactive_categories'):
-            if config.getboolean('vars','retroactive_categories'):
+            if config.getboolean('vars', 'retroactive_categories'):
                 retroactive_categories = True
 
         if not start_date:
@@ -173,7 +174,7 @@ Optionally:
                  this scope_prefix.  Faster.\n
   --scope_prefix Unique prefix, six letters or fewer, labeling the scope of
                  Phabricator projects to be included in the report.  There must
-                 be a configuration file named [prefix]_scope.py.  This is 
+                 be a configuration file named [prefix]_scope.py.  This is
                  required for reconstruct and report.\n
   --startdate    The date reconstruction should start, as YYYY-MM-DD.\n
   --verbose      Show progress messages.\n""")
@@ -226,7 +227,8 @@ def load(conn, end_date, VERBOSE, DEBUG):
                         {'id': row[0], 'phid': phid,
                          'name': row[2], 'project_phid': project_phid})
         else:
-            print("Data error for column {0}: project {1} doesn't exist.Skipping.".format(phid, project_phid))
+            print("Data error for column {0}: project {1} doesn't exist.Skipping.".
+                  format(phid, project_phid))
 
     ######################################################################
     # Load transactions and edges
@@ -248,7 +250,7 @@ def load(conn, end_date, VERBOSE, DEBUG):
 
     if VERBOSE:
         print("{0} Load tasks, transactions, and edges for {1} tasks".
-              format(datetime.datetime.now(),len(data['task'].keys())))
+              format(datetime.datetime.now(), len(data['task'].keys())))
 
     for task_id in data['task'].keys():
         task = data['task'][task_id]
@@ -301,7 +303,7 @@ def load(conn, end_date, VERBOSE, DEBUG):
                                         proj_id = project_phid_to_id_dict[key]
                                         active_proj.append(proj_id)
                                     else:
-                                        print("Data error for transaction {0}: project {1} doesn't exist. Skipping.".format(trans[1], key))
+                                        print("Data error for transaction {0}: project {1} doesn't exist. Skipping.".format(trans[1], key))  # noqa
                     cur.execute(transaction_insert,
                                 {'id': trans[0],
                                  'phid': trans[1],
@@ -381,7 +383,7 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
         try:
             start_date = cur.fetchone()[0].date()
         except AttributeError:
-            print("No data available for incremental run.\nProbably this reconstruction should be run without --incremental.")
+            print("No data available for incremental run.\nProbably this reconstruction should be run without --incremental.")  # noqa
             sys.exit(1)
     else:
         cur.execute('SELECT wipe_reconstruction(%(scope_prefix)s)',
@@ -444,15 +446,15 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
 
             # ----------------------------------------------------------------------
             # Data from as-is task record.  Points data prior to Feb 2016 was not
-            # recorded transactionally and is only available at the task record, so 
+            # recorded transactionally and is only available at the task record, so
             # we need both sources to cover all scenarios.
-            # Title could be tracked through transactions but this code doesn't 
+            # Title could be tracked through transactions but this code doesn't
             # make that effort.
             # ----------------------------------------------------------------------
-            task_query = """SELECT title, story_points
+            task_info_query = """SELECT title, story_points
                               FROM maniphest_task
                              WHERE id = %(task_id)s"""
-            cur.execute(task_query,
+            cur.execute(task_info_query,
                         {'task_id': task_id,
                          'working_date': working_date,
                          'transaction_type': 'status'})
@@ -501,15 +503,19 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
                          'transaction_type': 'points',
                          'task_id': task_id})
             points_raw = cur.fetchone()
-            pretty_points = default_points 
-            if points_raw:
-                try:
-                    pretty_points = int(points_raw[0])
-                except:
-                    if DEBUG:
-                        print('Bad points value {0} in {1}'.format(points_raw[0],task_id))
+            try:
+                points_from_trans = int(points_raw[0])
+            except:
+                points_from_trans = None
+                if DEBUG:
+                    print('Bad points value {0} in {1}'.format(points_raw[0], task_id))
+
+            if points_from_trans:
+                pretty_points = points_from_trans
             elif points_from_info:
                 pretty_points = points_from_info
+            else:
+                pretty_points = default_points
 
             # ----------------------------------------------------------------------
             # Project & Maintenance Type
@@ -615,7 +621,7 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
     categories_sql = """
         UPDATE task_history th
            SET category_title = (
-               SELECT string_agg(title, ' ') 
+               SELECT string_agg(title, ' ')
                  FROM (
                        SELECT th_foo.id, mt.title
                          FROM maniphest_task mt,
@@ -650,9 +656,9 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
     if VERBOSE:
         print('{0} {1} Updating Category Titles'.
               format(scope_prefix, datetime.datetime.now()))
-    cur.execute(categories_sql,{'scope_prefix': scope_prefix, 'start_date': start_date})
-    cur.execute(category_self_sql,{'scope_prefix': scope_prefix,
-                                   'category_id': PHAB_TAGS['category'] })
+    cur.execute(categories_sql, {'scope_prefix': scope_prefix, 'start_date': start_date})
+    cur.execute(category_self_sql, {'scope_prefix': scope_prefix,
+                                    'category_id': PHAB_TAGS['category']})
 
     correct_status_sql = """
         UPDATE task_history th
@@ -675,10 +681,10 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
 
     if VERBOSE:
         print('{0} {1}: Correcting corrupted task status info'.
-                  format(scope_prefix, datetime.datetime.now()))
-    cur.execute(correct_status_sql,{'scope_prefix': scope_prefix})
+              format(scope_prefix, datetime.datetime.now()))
+    cur.execute(correct_status_sql, {'scope_prefix': scope_prefix})
     cur.close()
-    
+
 
 def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
            scope_title, default_points, project_name_list,
@@ -686,7 +692,7 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
            show_points, show_count):
     # note that all the COPY commands in the psql scripts run
     # server-side as user postgres
-  
+
     ######################################################################
     # Prepare the data
     ######################################################################
@@ -712,16 +718,16 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
                     format(dbname, report_tables_script, scope_prefix), shell=True)
 
     if backlog_resolved_cutoff:
-        cur.execute('SELECT no_resolved_before_start(%(scope_prefix)s, %(backlog_resolved_cutoff)s)',
-                    {'scope_prefix': scope_prefix, 'backlog_resolved_cutoff': backlog_resolved_cutoff})
-
+        cur.execute('SELECT no_resolved_before_start(%(scope_prefix)s, %(backlog_resolved_cutoff)s)',    # noqa
+                    {'scope_prefix': scope_prefix, 'backlog_resolved_cutoff': backlog_resolved_cutoff})  # noqa
 
     # Reload the Recategorization mapping
     recat_data = '{0}_recategorization.csv'.format(scope_prefix)
     if os.path.isfile(recat_data):
         category_save = """
         INSERT INTO category_list
-        VALUES (%(scope_prefix)s, %(sort_order)s, %(category)s, %(t1)s, %(t2)s, %(matchstring)s, %(zoom)s)"""
+        VALUES (%(scope_prefix)s, %(sort_order)s, %(category)s,
+                %(t1)s, %(t2)s, %(matchstring)s, %(zoom)s)"""
         recat_cases = ''
         recat_else = ''
         with open(recat_data, 'rt') as f:
@@ -777,9 +783,9 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
                                                 ELSE '{1}'
                                                 END
                                WHERE scope =  '{2}'"""
-            unsafe_recat_update = recat_update.format(recat_cases, recat_else, scope_prefix)
+            unsafe_recat_update = recat_update.format(recat_cases, recat_else, scope_prefix)  # noqa
         else:
-            recat_update = """UPDATE task_history_recat 
+            recat_update = """UPDATE task_history_recat
                                         SET category = \'{0}\'
                                WHERE scope = '{1}'"""
             unsafe_recat_update = recat_update.format(recat_else, scope_prefix)
@@ -824,8 +830,10 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
                               GROUP BY status, category, maint_type, date, scope)"""
 
     cur.execute(tall_backlog_insert, {'scope_prefix': scope_prefix})
-    cur.execute('SELECT find_recently_closed(%(scope_prefix)s)', {'scope_prefix': scope_prefix})
-    cur.execute('SELECT find_recently_closed_task(%(scope_prefix)s)', {'scope_prefix': scope_prefix})
+    cur.execute('SELECT find_recently_closed(%(scope_prefix)s)',
+                {'scope_prefix': scope_prefix})
+    cur.execute('SELECT find_recently_closed_task(%(scope_prefix)s)',
+                {'scope_prefix': scope_prefix})
 
     ######################################################################
     # Prepare all the csv files and working directories
@@ -848,11 +856,10 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
     subprocess.call('rm ~/html/{0}_*'.format(scope_prefix), shell=True)
 
     script_dir = os.path.dirname(__file__)
-    
-    subprocess.call('cp /tmp/{0}/maintenance_fraction_total_by_points.csv ~/html/{0}_maintenance_fraction_total_by_points.csv'.format(scope_prefix), shell=True)
-    subprocess.call('cp /tmp/{0}/maintenance_fraction_total_by_count.csv ~/html/{0}_maintenance_fraction_total_by_count.csv'.format(scope_prefix), shell=True)
-    subprocess.call('cp /tmp/{0}/category_possibilities.txt ~/html/{0}_category_possibilities.txt'.format(scope_prefix), shell=True)
 
+    subprocess.call('cp /tmp/{0}/maintenance_fraction_total_by_points.csv ~/html/{0}_maintenance_fraction_total_by_points.csv'.format(scope_prefix), shell=True)  # noqa
+    subprocess.call('cp /tmp/{0}/maintenance_fraction_total_by_count.csv ~/html/{0}_maintenance_fraction_total_by_count.csv'.format(scope_prefix), shell=True)  # noqa
+    subprocess.call('cp /tmp/{0}/category_possibilities.txt ~/html/{0}_category_possibilities.txt'.format(scope_prefix), shell=True)  # noqa
 
     ######################################################################
     # for each category, generate burnup charts
@@ -884,7 +891,7 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
     i = 0
     for cat_entry in reversed(cat_list):
         category = cat_entry[0]
-        try:          
+        try:
             color = colors[i]
         except:
             color = '#DDDDDD'
@@ -912,12 +919,19 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
                             AND count_total IS NOT NULL)
          ORDER BY sort_order"""
 
-    html_string = """<p><table border="1px solid lightgray" cellpadding="2" cellspacing="0"><tr><th rowspan="3">Category</th><th colspan="6">Weeks until completion</th></tr>
-                               <tr><th colspan="3">By Points</th><th colspan="3">By Count</th></tr>
-                               <tr><th>Pess.</th><th>Nominal</th><th>Opt.</th><th>Pess.</th><th>Nominal</th><th>Opt.</th></tr>"""
+    html_string = """
+        <p><table border="1px solid lightgray" cellpadding="2" cellspacing="0">
+          <tr>
+            <th rowspan="3">Category</th>
+            <th colspan="6">Weeks until completion</th>
+          </tr>
+          <tr><th colspan="3">By Points</th><th colspan="3">By Count</th></tr>
+          <tr>
+            <th>Pess.</th><th>Nominal</th><th>Opt.</th><th>Pess.</th><th>Nominal</th><th>Opt.</th>
+          </tr>"""
     cur.execute(forecast_query, {'scope_prefix': scope_prefix})
     for row in cur.fetchall():
-        html_string += "<tr><td>{0}</td><td>{1}</td><td><b>{2}</b></td><td>{3}</td><td>{4}</td><td><b>{5}</b></td><td>{6}</td>".format(row[0],row[1],row[2],row[3],row[4],row[5],row[6])
+        html_string += "<tr><td>{0}</td><td>{1}</td><td><b>{2}</b></td><td>{3}</td><td>{4}</td><td><b>{5}</b></td><td>{6}</td>".format(row[0], row[1], row[2], row[3], row[4], row[5], row[6])  # noqa
 
     html_string += "</table></p>"
 
@@ -940,14 +954,14 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
     html_string = """<p><table border="1px solid lightgray" cellpadding="2" cellspacing="0"><tr><th>ID</th><th>Task</th><th>Category</th></tr>"""  # noqa
     cur.execute(open_task_category_query, {'scope_prefix': scope_prefix})
     for row in cur.fetchall():
-        html_string += "<tr><td><a href=\"https://phabricator.wikimedia.org/T{0}\">{0}</a></td><td>{1}</td><td>{2}</td></tr>".format(row[0],html.escape(row[1]),html.escape(row[2]))
+        html_string += "<tr><td><a href=\"https://phabricator.wikimedia.org/T{0}\">{0}</a></td><td>{1}</td><td>{2}</td></tr>".format(row[0], html.escape(row[1]), html.escape(row[2]))  # noqa
 
     html_string += "</table></p>"
     file = '{0}_open_by_category.html'.format(scope_prefix)
     f = open(os.path.join(script_dir, '../html/', file), 'w')
     f.write(html_string)
     f.close()
-    
+
     unpointed_task_query = """SELECT thr.id,
                                      thr.title,
                                      thr.category,
@@ -958,8 +972,8 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
                                  AND thr.date = (SELECT MAX(date)
                                                    FROM task_history_recat
                                                   WHERE scope = %(scope_prefix)s)
-                                 AND thr.id IN (SELECT id 
-                                              FROM maniphest_task 
+                                 AND thr.id IN (SELECT id
+                                              FROM maniphest_task
                                              WHERE story_points IS NULL)
                                  AND z.scope = %(scope_prefix)s
                                  AND thr.category = z.category
@@ -968,13 +982,12 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
     cur.execute(unpointed_task_query, {'scope_prefix': scope_prefix})
     unpointed_results = cur.fetchall()
     unpointed_html = Template(open('html/unpointed.html').read())
-    unpointed_output = open(os.path.join(script_dir, '../html/{0}_unpointed.html'.format(scope_prefix)), 'w')
+    unpointed_output = open(os.path.join(script_dir, '../html/{0}_unpointed.html'.format(scope_prefix)), 'w')  # noqa
     unpointed_output.write(unpointed_html.render(
-        { 'unpointed_results': unpointed_results,
-          'title': scope_title,
-        }))
+        {'unpointed_results': unpointed_results,
+         'title': scope_title,
+         }))
     unpointed_output.close()
-
 
     recently_closed_query = """SELECT id,
                                       title,
@@ -987,7 +1000,7 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
     html_string = """<p><table border="1px solid lightgray" cellpadding="2" cellspacing="0"><tr><th>Date</th><th>Category</th><th>Task</th></tr>"""  # noqa
     cur.execute(recently_closed_query, {'scope_prefix': scope_prefix})
     for row in cur.fetchall():
-        html_string += "<tr><td>{2}</td><td>{3}</td><td><b><a href=\"https://phabricator.wikimedia.org/T{0}\">{0}: {1}</a></td></tr>".format(row[0],row[1],row[2],row[3])
+        html_string += "<tr><td>{2}</td><td>{3}</td><td><b><a href=\"https://phabricator.wikimedia.org/T{0}\">{0}: {1}</a></td></tr>".format(row[0], row[1], row[2], row[3])  # noqa
 
     html_string += "</table></p>"
     file = '{0}_recently_closed.html'.format(scope_prefix)
@@ -1020,21 +1033,21 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
     now_db = result[1]
     utc = pytz.utc
     pt = pytz.timezone('America/Los_Angeles')
-    max_date_utc = max_date.astimezone(utc).strftime('%a %Y-%b-%d %I:%M %p') 
-    max_date_pt =  max_date.astimezone(pt).strftime('%a %Y-%b-%d %I:%M %p')
+    max_date_utc = max_date.astimezone(utc).strftime('%a %Y-%b-%d %I:%M %p')
+    max_date_pt = max_date.astimezone(pt).strftime('%a %Y-%b-%d %I:%M %p')
     now_utc = now_db.astimezone(utc).strftime('%a %Y-%b-%d %I:%M %p')
-    now_pt = now_db.astimezone(pt).strftime('%a %Y-%b-%d %I:%M %p') 
+    now_pt = now_db.astimezone(pt).strftime('%a %Y-%b-%d %I:%M %p')
 
     date_row_html = Template(open('html/date_row.html').read())
-    date_row_output = open(os.path.join(script_dir, '../html/{0}_date_row.html'.format(scope_prefix)), 'w')
+    date_row_output = open(os.path.join(script_dir, '../html/{0}_date_row.html'.format(scope_prefix)), 'w')  # noqa
     date_row_output.write(date_row_html.render(
-        { 'max_date_pt': max_date_pt,
-          'now_pt': now_pt
-        }))
+        {'max_date_pt': max_date_pt,
+         'now_pt': now_pt
+         }))
     date_row_output.close()
 
     report_html = Template(open('html/report.html').read())
-    report_output = open(os.path.join(script_dir, '../html/{0}_report.html'.format(scope_prefix)), 'w')
+    report_output = open(os.path.join(script_dir, '../html/{0}_report.html'.format(scope_prefix)), 'w')  # noqa
     report_output.write(report_html.render(
         {'title': scope_title,
          'scope_prefix': scope_prefix,
@@ -1049,10 +1062,10 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
          'category_count': len(cat_list),
          'category_list': cat_list,
          'rev_category_list': reversed(cat_list)
-        }))
+         }))
     report_output.close()
 
     cur.close()
-    
+
 if __name__ == "__main__":
     main(sys.argv[1:])
