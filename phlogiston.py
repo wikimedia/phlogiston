@@ -121,6 +121,11 @@ def main(argv):
             if config.getboolean('vars', 'retroactive_categories'):
                 retroactive_categories = True
 
+        retroactive_points = False
+        if config.has_option('vars', 'retroactive_points'):
+            if config.getboolean('vars', 'retroactive_points'):
+                retroactive_points = True
+
         if not start_date:
             try:
                 start_date = datetime.datetime.strptime(
@@ -140,8 +145,8 @@ def main(argv):
         if scope_prefix:
             report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
                    scope_title, default_points, project_name_list,
-                   retroactive_categories, backlog_resolved_cutoff,
-                   show_points, show_count)
+                   retroactive_categories, retroactive_points,
+                   backlog_resolved_cutoff, show_points, show_count)
         else:
             print("Report specified without a scope_prefix.\nPlease specify a scope_prefix with --scope_prefix.")  # noqa
     conn.close()
@@ -688,8 +693,8 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
 
 def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
            scope_title, default_points, project_name_list,
-           retroactive_categories, backlog_resolved_cutoff,
-           show_points, show_count):
+           retroactive_categories, retroactive_points,
+           backlog_resolved_cutoff, show_points, show_count):
     # note that all the COPY commands in the psql scripts run
     # server-side as user postgres
 
@@ -815,6 +820,10 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
 
     if retroactive_categories:
         cur.execute('SELECT set_category_retroactive(%(scope_prefix)s)',
+                    {'scope_prefix': scope_prefix})
+
+    if retroactive_points:
+        cur.execute('SELECT set_points_retroactive(%(scope_prefix)s)',
                     {'scope_prefix': scope_prefix})
 
     tall_backlog_insert = """INSERT INTO tall_backlog(

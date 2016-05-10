@@ -635,3 +635,23 @@ BEGIN
     RETURN;
 END;
 $$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE FUNCTION set_points_retroactive(
+    scope_prefix varchar(6)
+    ) RETURNS void AS $$
+BEGIN
+
+    UPDATE task_history_recat t
+       SET points = t0.points
+      FROM task_history_recat t0
+     WHERE t0.date = (SELECT MAX(date)
+                        FROM task_history_recat
+                       WHERE scope = scope_prefix)
+       AND t0.scope = scope_prefix
+       AND t.scope = scope_prefix
+       AND t0.id = t.id;
+
+    RETURN;
+END;
+$$ LANGUAGE plpgsql;
