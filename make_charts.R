@@ -326,7 +326,7 @@ ggplot(done, aes(x=date, y=points, fill=factor(category))) +
   theme(axis.title.x=element_blank()) +
   scale_x_date(limits=c(three_months_ago, now), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   theme(legend.direction='vertical', axis.title.x=element_blank()) +
-  labs(title=sprintf("%s Completed work by points", args$scope_title), y="Points", x="Month", aesthetic="Category")
+  labs(title=sprintf("%s Recently Closed work by points", args$scope_title), y="Points", x="Month", aesthetic="Category")
 dev.off()
 
 png(filename = sprintf("~/html/%s_done_count.png", args$scope_prefix), width=2000, height=1125, units="px", pointsize=30)
@@ -336,7 +336,7 @@ ggplot(done, aes(x=date, y=count, fill=factor(category))) +
   theme_fivethirtynine() +
   scale_x_date(limits=c(three_months_ago, now), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   theme(legend.direction='vertical', axis.title.x=element_blank()) +
-  labs(title=sprintf("%s Completed work by count", args$scope_title), y="Count", x="Month", aesthetic="Category")
+  labs(title=sprintf("%s Recently Closed work by count", args$scope_title), y="Count", x="Month", aesthetic="Category")
 dev.off()
 
 ######################################################################
