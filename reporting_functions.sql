@@ -63,28 +63,28 @@ BEGIN
 
     FOR weekrow IN SELECT DISTINCT date
                      FROM task_history_recat
-                    WHERE EXTRACT(epoch FROM age(date - INTERVAL '1 day'))/604800 = ROUND(
-                          EXTRACT(epoch FROM age(date - INTERVAL '1 day'))/604800)
+                    WHERE EXTRACT(epoch FROM age(date))/604800 = ROUND(
+                          EXTRACT(epoch FROM age(date))/604800)
                       AND scope = scope_prefix
                     ORDER BY date
     LOOP
 
         INSERT INTO recently_closed (
-            SELECT scope_prefix as scope,
-                   date,
-                   category,
-                   sum(points) AS points,
-                   count(title) as count
-              FROM task_history_recat
-             WHERE status = '"resolved"'
-               AND date = weekrow.date
-               AND scope = scope_prefix
-               AND id NOT IN (SELECT id
-                                FROM task_history
-                               WHERE status = '"resolved"'
-                                 AND scope = scope_prefix
-                                 AND date = weekrow.date - interval '1 week' )
-             GROUP BY date, category
+             SELECT scope_prefix as scope,
+                    date,
+                    category,
+                    sum(points) AS points,
+                    count(title) as count
+               FROM task_history_recat
+              WHERE status = '"resolved"'
+                AND date = weekrow.date
+                AND scope = scope_prefix
+                AND id NOT IN (SELECT id
+                                 FROM task_history
+                                WHERE status = '"resolved"'
+                                  AND scope = scope_prefix
+                                  AND date = weekrow.date - interval '1 week' )
+              GROUP BY date, category
              );
     END LOOP;
 
