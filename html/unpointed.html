@@ -12,7 +12,7 @@
 	<th>Category</th>
 	<th>Status</th>
       </tr>
-      {% for row in unpointed_results %}
+      {% for row in unpointed_tasks_rows %}
       <tr>
 	<td><a href="https://phabricator.wikimedia.org/T{{ row.0 }}">{{ row.0 }}</a></td>
 	<td>{{ row.1|e }}</td>

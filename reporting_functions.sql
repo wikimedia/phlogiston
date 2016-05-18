@@ -50,7 +50,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-
 CREATE OR REPLACE FUNCTION find_recently_closed(
     scope_prefix varchar(6)
     ) RETURNS void AS $$
@@ -131,7 +130,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-
 CREATE OR REPLACE FUNCTION backlog_query (
        scope_prefix varchar(6),
        status_input text,
@@ -155,7 +153,6 @@ BEGIN
          ORDER BY t.date, sort_order;
 END;
 $$ LANGUAGE plpgsql;
-
 
 CREATE OR REPLACE FUNCTION calculate_velocities(
     scope_prefix varchar(6)
@@ -616,6 +613,135 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION get_categories(
+    scope_prefix varchar(6)
+    ) RETURNS TABLE (
+    category text,
+    zoom boolean)
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT foo.category,
+           foo.zoom
+      FROM (SELECT z.category,
+                   bool_or(z.zoom) as zoom,
+                   max(z.sort_order) as sort_order,
+                   sum(t.count) as xcount
+              FROM category_list z, tall_backlog t
+             WHERE z.scope = scope_prefix
+               AND z.scope = t.scope
+               AND z.category = t.category
+             GROUP BY z.category) as foo
+     WHERE xcount > 0
+    ORDER BY sort_order;
+
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION get_forecast_weeks(
+    scope_prefix varchar(6)
+    ) RETURNS TABLE (
+    category text,
+    pp int, np int, op int, 
+    pc int, nc int, oc int)
+AS $$
+BEGIN
+	RETURN QUERY
+        SELECT v.category,
+               pes_points_fore,
+               nom_points_fore,
+               opt_points_fore,
+               pes_count_fore,
+               nom_count_fore,
+               opt_count_fore
+          FROM velocity v, category_list z
+         WHERE v.scope = scope_prefix
+           AND v.scope = z.scope
+           AND v.category = z.category
+           AND v.count_total IS NOT NULL
+           AND v.date = (SELECT MAX(date)
+                           FROM velocity
+                          WHERE scope = scope_prefix
+                            AND count_total IS NOT NULL)
+         ORDER BY sort_order;
+
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION get_open_task_list(
+    scope_prefix varchar(6)
+    ) RETURNS TABLE (
+    id int,
+    title text,
+    category text)
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT thr.id,
+           thr.title,
+           thr.category
+      FROM task_history_recat thr
+     WHERE scope = scope_prefix
+       AND status = '"open"'
+       AND date = (SELECT MAX(date)
+                     FROM task_history_recat
+                    WHERE scope = scope_prefix)
+        ORDER BY category, title;
+
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION get_recently_closed_tasks(
+    scope_prefix varchar(6)
+    ) RETURNS TABLE (
+    id int,
+    title text,
+    date date, 
+    category text)
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT rct.id,
+           rct.title,
+           rct.date,
+           rct.category
+      FROM recently_closed_task rct
+     WHERE scope = scope_prefix
+  ORDER BY category, date, id;
+
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE FUNCTION get_unpointed_tasks(
+    scope_prefix varchar(6)
+    ) RETURNS TABLE (
+    id int,
+    title text,
+    category text,
+    status text)
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT thr.id,
+           thr.title,
+           thr.category,
+           thr.status
+      FROM task_history_recat thr,
+           category_list z
+     WHERE thr.scope = scope_prefix
+       AND thr.date = (SELECT MAX(date)
+                         FROM task_history_recat
+                        WHERE scope = scope_prefix)
+       AND thr.id IN (SELECT mt.id
+                        FROM maniphest_task mt
+                       WHERE story_points IS NULL)
+       AND z.scope = scope_prefix
+       AND thr.category = z.category
+     ORDER BY z.sort_order, thr.status, thr.id;
+
+END;
+$$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION set_category_retroactive(
     scope_prefix varchar(6)
@@ -635,7 +761,6 @@ BEGIN
     RETURN;
 END;
 $$ LANGUAGE plpgsql;
-
 
 CREATE OR REPLACE FUNCTION set_points_retroactive(
     scope_prefix varchar(6)

@@ -1,0 +1,51 @@
+<html>
+  <head>
+    <title>{{ title }} Forecast Details</title>
+  </head>
+  <link rel="stylesheet" type="text/css" href="style.css">
+  <link href='https://fonts.googleapis.com/css?family=Lato' rel='stylesheet' type='text/css'>
+  <body>
+    <h1>{{ title }} Forecast Details</h1>
+    <table class="bord">
+      <tr>
+        <th rowspan="3">Category</th>
+        <th colspan="{% if show_points and show_count %}6{% elif show_points or show_count %}3{% else %}0{% endif %}">Weeks until completion</th>
+      </tr>
+      <tr>
+	{% if show_points %}
+	<th colspan="3">By Points</th>
+	{% endif %}
+	{% if show_count %}
+	<th colspan="3">By Count</th>
+	{% endif %}
+      </tr>
+      <tr>
+	{% if show_points %}
+        <th>Pess.</th>
+	<th>Nominal</th>
+	<th>Opt.</th>
+	{% endif %}
+	{% if show_count %}
+	<th>Pess.</th>
+	<th>Nominal</th>
+	<th>Opt.</th>
+	{% endif %}
+      </tr>
+      {% for row in forecast_rows %}
+      <tr>
+	<td>{{row.0}}</td>
+	{% if show_points %}
+	<td>{{row.1}}</td>
+	<td>{{row.2}}</td>
+	<td>{{row.3}}</td>
+	{% endif %}
+	{% if show_count %}
+	<td>{{row.4}}</td>
+	<td>{{row.5}}</td>
+	<td>{{row.6}}</td>
+	{% endif %}
+      </tr>
+      {% endfor %}
+    </table>
+  </body>
+</html>

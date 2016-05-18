@@ -3,7 +3,6 @@
 import configparser
 import csv
 import datetime
-import html
 import json
 import os.path
 import psycopg2
@@ -873,21 +872,9 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
     ######################################################################
     # for each category, generate burnup charts
     ######################################################################
-    cat_query = """SELECT category,
-                          zoom
-                     FROM (SELECT z.category,
-                                  bool_or(z.zoom) as zoom,
-                                  max(z.sort_order) as sort_order,
-                                  sum(t.count) as xcount
-                             FROM category_list z, tall_backlog t
-                            WHERE z.scope = %(scope_prefix)s
-                              AND z.scope = t.scope
-                              AND z.category = t.category
-                            GROUP BY z.category) as foo
-                    WHERE xcount > 0
-                   ORDER BY sort_order"""
 
-    cur.execute(cat_query, {'scope_prefix': scope_prefix})
+    cur.execute('SELECT * FROM get_categories(%(scope_prefix)s)',
+                {'scope_prefix': scope_prefix})
     cat_list = cur.fetchall()
     colors = []
     proc = subprocess.check_output("Rscript get_palette.R {0}".
@@ -909,113 +896,51 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
             format(scope_prefix, i, color, category), shell=True)
         i += 1
 
-    forecast_query = """
-        SELECT v.category,
-               pes_points_fore,
-               nom_points_fore,
-               opt_points_fore,
-               pes_count_fore,
-               nom_count_fore,
-               opt_count_fore
-          FROM velocity v, category_list z
-         WHERE v.scope = %(scope_prefix)s
-           AND v.scope = z.scope
-           AND v.category = z.category
-           AND v.count_total IS NOT NULL
-           AND v.date = (SELECT MAX(date)
-                           FROM velocity
-                          WHERE scope = %(scope_prefix)s
-                            AND count_total IS NOT NULL)
-         ORDER BY sort_order"""
+    cur.execute('SELECT * FROM get_forecast_weeks(%(scope_prefix)s)',
+                {'scope_prefix': scope_prefix})
+    forecast_rows = cur.fetchall()
+    forecast_html = Template(open('html/forecast.html').read())
+    file_path = '../html/{0}_current_forecasts.html'.format(scope_prefix)
+    forecast_output = open(os.path.join(script_dir, file_path), 'w')
+    forecast_output.write(forecast_html.render(
+        {'forecast_rows': forecast_rows,
+         'show_points': show_points,
+         'show_count': show_count}))
+    forecast_output.close()
 
-    html_string = """
-        <p><table border="1px solid lightgray" cellpadding="2" cellspacing="0">
-          <tr>
-            <th rowspan="3">Category</th>
-            <th colspan="6">Weeks until completion</th>
-          </tr>
-          <tr><th colspan="3">By Points</th><th colspan="3">By Count</th></tr>
-          <tr>
-            <th>Pess.</th><th>Nominal</th><th>Opt.</th><th>Pess.</th><th>Nominal</th><th>Opt.</th>
-          </tr>"""
-    cur.execute(forecast_query, {'scope_prefix': scope_prefix})
-    for row in cur.fetchall():
-        html_string += "<tr><td>{0}</td><td>{1}</td><td><b>{2}</b></td><td>{3}</td><td>{4}</td><td><b>{5}</b></td><td>{6}</td>".format(row[0], row[1], row[2], row[3], row[4], row[5], row[6])  # noqa
+    cur.execute('SELECT * FROM get_open_task_list(%(scope_prefix)s)',
+                {'scope_prefix': scope_prefix})
+    open_tasks_rows = cur.fetchall()
+    open_tasks_html = Template(open('html/open_tasks.html').read())
+    file_path = '../html/{0}_open_by_category.html'.format(scope_prefix)
+    open_tasks_output = open(os.path.join(script_dir, file_path), 'w')
+    open_tasks_output.write(open_tasks_html.render(
+        {'open_tasks_rows': open_tasks_rows}))
+    open_tasks_output.close()
 
-    html_string += "</table></p>"
-
-    file = '{0}_current_forecasts.html'.format(scope_prefix)
-    f = open(os.path.join(script_dir, '../html/', file), 'w')
-    f.write(html_string)
-    f.close()
-
-    open_task_category_query = """SELECT id,
-                                         title,
-                                         category
-                                    FROM task_history_recat
-                                   WHERE scope = %(scope_prefix)s
-                                     AND status = '"open"'
-                                     AND date = (SELECT MAX(date)
-                                                   FROM task_history_recat
-                                                  WHERE scope = %(scope_prefix)s)
-                                ORDER BY category, title"""
-
-    html_string = """<p><table border="1px solid lightgray" cellpadding="2" cellspacing="0"><tr><th>ID</th><th>Task</th><th>Category</th></tr>"""  # noqa
-    cur.execute(open_task_category_query, {'scope_prefix': scope_prefix})
-    for row in cur.fetchall():
-        html_string += "<tr><td><a href=\"https://phabricator.wikimedia.org/T{0}\">{0}</a></td><td>{1}</td><td>{2}</td></tr>".format(row[0], html.escape(row[1]), html.escape(row[2]))  # noqa
-
-    html_string += "</table></p>"
-    file = '{0}_open_by_category.html'.format(scope_prefix)
-    f = open(os.path.join(script_dir, '../html/', file), 'w')
-    f.write(html_string)
-    f.close()
-
-    unpointed_task_query = """SELECT thr.id,
-                                     thr.title,
-                                     thr.category,
-                                     thr.status
-                                FROM task_history_recat thr,
-                                     category_list z
-                               WHERE thr.scope = %(scope_prefix)s
-                                 AND thr.date = (SELECT MAX(date)
-                                                   FROM task_history_recat
-                                                  WHERE scope = %(scope_prefix)s)
-                                 AND thr.id IN (SELECT id
-                                              FROM maniphest_task
-                                             WHERE story_points IS NULL)
-                                 AND z.scope = %(scope_prefix)s
-                                 AND thr.category = z.category
-                               ORDER BY z.sort_order, thr.status, id"""
-
-    cur.execute(unpointed_task_query, {'scope_prefix': scope_prefix})
-    unpointed_results = cur.fetchall()
+    cur.execute('SELECT * FROM get_unpointed_tasks(%(scope_prefix)s)',
+                {'scope_prefix': scope_prefix})
+    unpointed_tasks_rows = cur.fetchall()
     unpointed_html = Template(open('html/unpointed.html').read())
-    unpointed_output = open(os.path.join(script_dir, '../html/{0}_unpointed.html'.format(scope_prefix)), 'w')  # noqa
+    file_path = '../html/{0}_unpointed.html'.format(scope_prefix)
+    unpointed_output = open(os.path.join(script_dir, file_path), 'w')
     unpointed_output.write(unpointed_html.render(
-        {'unpointed_results': unpointed_results,
+        {'unpointed_tasks_rows': unpointed_tasks_rows,
          'title': scope_title,
          }))
     unpointed_output.close()
 
-    recently_closed_query = """SELECT id,
-                                      title,
-                                      date,
-                                      category
-                                 FROM recently_closed_task
-                                WHERE scope = %(scope_prefix)s
-                             ORDER BY category, date, id"""
-
-    html_string = """<p><table border="1px solid lightgray" cellpadding="2" cellspacing="0"><tr><th>Date</th><th>Category</th><th>Task</th></tr>"""  # noqa
-    cur.execute(recently_closed_query, {'scope_prefix': scope_prefix})
-    for row in cur.fetchall():
-        html_string += "<tr><td>{2}</td><td>{3}</td><td><b><a href=\"https://phabricator.wikimedia.org/T{0}\">{0}: {1}</a></td></tr>".format(row[0], row[1], row[2], row[3])  # noqa
-
-    html_string += "</table></p>"
-    file = '{0}_recently_closed.html'.format(scope_prefix)
-    f = open(os.path.join(script_dir, '../html/', file), 'w')
-    f.write(html_string)
-    f.close()
+    cur.execute('SELECT * FROM get_recently_closed_tasks(%(scope_prefix)s)',
+                {'scope_prefix': scope_prefix})
+    recently_closed_tasks_rows = cur.fetchall()
+    recently_closed_html = Template(open('html/recently_closed.html').read())
+    file_path = '../html/{0}_recently_closed.html'.format(scope_prefix)
+    recently_closed_output = open(os.path.join(script_dir, file_path), 'w')
+    recently_closed_output.write(recently_closed_html.render(
+        {'recently_closed_tasks_rows': recently_closed_tasks_rows,
+         'title': scope_title,
+         }))
+    recently_closed_output.close()
 
     ######################################################################
     # Make the rest of the charts
