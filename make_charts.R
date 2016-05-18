@@ -29,6 +29,7 @@ velocity_recent_date <- read.csv(sprintf("/tmp/%s/velocity_recent_date.csv", arg
 velocity_recent_date$date <- as.Date(velocity_recent_date$date, "%Y-%m-%d")
 
 now <- velocity_recent_date$date
+nowplus <- now + 4  # Apply 1/2-week fudge factor to make charts show current week
 forecast_start <- as.Date(c("2016-01-01"))
 forecast_end   <- as.Date(c("2016-08-01"))
 forecast_end_plus <- forecast_end + 7
@@ -158,7 +159,7 @@ ggplot(velocity, aes(date, points)) +
   geom_bar(stat="identity") +
   theme_fivethirtynine() +
   theme(axis.title.x=element_blank()) +
-  scale_x_date(limits=c(three_months_ago, now), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
+  scale_x_date(limits=c(three_months_ago, nowplus), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   labs(title=sprintf("%s weekly velocity by points", args$scope_title), y="Story Points")
 dev.off()
 
@@ -168,7 +169,7 @@ ggplot(velocity, aes(date, count)) +
   geom_bar(stat="identity") +
   theme_fivethirtynine() +
   theme(axis.title.x=element_blank()) +
-  scale_x_date(limits=c(three_months_ago, now), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
+  scale_x_date(limits=c(three_months_ago, nowplus), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   labs(title=sprintf("%s weekly velocity by count", args$scope_title), y="Tasks")
 dev.off()
 
@@ -324,7 +325,7 @@ ggplot(done, aes(x=date, y=points, fill=factor(category))) +
   scale_fill_manual(values=getPalette(colorCount), name="Category") +
   theme_fivethirtynine() +
   theme(axis.title.x=element_blank()) +
-  scale_x_date(limits=c(three_months_ago, now), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
+  scale_x_date(limits=c(three_months_ago, nowplus), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   theme(legend.direction='vertical', axis.title.x=element_blank()) +
   labs(title=sprintf("%s Recently Closed work by points", args$scope_title), y="Points", x="Month", aesthetic="Category")
 dev.off()
@@ -334,7 +335,7 @@ ggplot(done, aes(x=date, y=count, fill=factor(category))) +
   geom_bar(stat="identity") +
   scale_fill_manual(values=getPalette(colorCount), name="Category") +
   theme_fivethirtynine() +
-  scale_x_date(limits=c(three_months_ago, now), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
+  scale_x_date(limits=c(three_months_ago, nowplus), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   theme(legend.direction='vertical', axis.title.x=element_blank()) +
   labs(title=sprintf("%s Recently Closed work by count", args$scope_title), y="Count", x="Month", aesthetic="Category")
 dev.off()
