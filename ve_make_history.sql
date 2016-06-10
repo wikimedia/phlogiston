@@ -12,7 +12,6 @@ INSERT INTO task_history_recat (
 SELECT scope,
        date,
        id,
-       title,
        project as category,
        status,
        points,
@@ -31,7 +30,6 @@ INSERT INTO task_history_recat(
 SELECT scope,
        date,
        id,
-       title,
        'Uncategorized',
        status,
        points,
@@ -51,7 +49,6 @@ INSERT INTO task_history_recat(
 SELECT scope,
        date,
        id,
-       title,
        COALESCE(project,'') || ' ' ||
        COALESCE(projectcolumn,'') || ' ' ||
        COALESCE(category_title,'') as category,

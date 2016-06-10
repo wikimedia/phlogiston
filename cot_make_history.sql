@@ -4,7 +4,6 @@ INSERT INTO task_history_recat(
 SELECT scope,
        date,
        id,
-       title,
        COALESCE(project,'') || ' ' ||
        COALESCE(projectcolumn,'') || ' ' ||
        COALESCE(category_title,'') as category,

@@ -5,7 +5,6 @@ CREATE TABLE task_history (
        scope varchar(6),
        date timestamp,
        id int,
-       title text,
        status text,
        project text,
        projectcolumn text,

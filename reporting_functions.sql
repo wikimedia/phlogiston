@@ -73,7 +73,7 @@ BEGIN
                     date,
                     category,
                     sum(points) AS points,
-                    count(title) as count
+                    count(id) as count
                FROM task_history_recat
               WHERE status = '"resolved"'
                 AND date = weekrow.date
@@ -110,19 +110,20 @@ BEGIN
 
         INSERT INTO recently_closed_task (
              SELECT scope_prefix as scope,
-                    date,
-                    id,
-                    title,
-                    category
-              FROM task_history_recat
-             WHERE status = '"resolved"'
-               AND date = daterow.date
-               AND scope = scope_prefix
-               AND id NOT IN (SELECT id
-                                FROM task_history
-                               WHERE status = '"resolved"'
-                                 AND scope = scope_prefix
-                                 AND date = daterow.date - interval '1 day' )
+                    thr.date,
+                    thr.id,
+                    mt.title,
+                    thr.category
+              FROM task_history_recat LEFT OUTER JOIN maniphest_task USING (id)
+             WHERE thr.status = '"resolved"'
+               AND thr.date = daterow.date
+               AND thr.scope = scope_prefix
+               AND thr.id NOT IN (SELECT id
+                                    FROM task_history
+                                   WHERE status = '"resolved"'
+                                     AND scope = scope_prefix
+                                     AND date = daterow.date - interval '1 day' )
+               
              );
     END LOOP;
 
@@ -678,15 +679,15 @@ AS $$
 BEGIN
     RETURN QUERY
     SELECT thr.id,
-           thr.title,
+           mt.title,
            thr.category
-      FROM task_history_recat thr
+      FROM task_history_recat thr LEFT OUTER JOIN maniphest_task mt USING (id)
      WHERE scope = scope_prefix
-       AND status = '"open"'
-       AND date = (SELECT MAX(date)
-                     FROM task_history_recat
-                    WHERE scope = scope_prefix)
-        ORDER BY category, title;
+       AND thr.status = '"open"'
+       AND thr.date = (SELECT MAX(date)
+                         FROM task_history_recat
+                        WHERE scope = scope_prefix)
+        ORDER BY thr.category, thr.title;
 
 END;
 $$ LANGUAGE plpgsql;
@@ -702,12 +703,12 @@ AS $$
 BEGIN
     RETURN QUERY
     SELECT rct.id,
-           rct.title,
+           mt.title,
            rct.date,
            rct.category
-      FROM recently_closed_task rct
-     WHERE scope = scope_prefix
-  ORDER BY category, date, id;
+      FROM recently_closed_task rct LEFT OUTER JOIN maniphest_task mt USING (id)
+     WHERE rct.scope = scope_prefix
+  ORDER BY rct.category, rct.date, rct.id;
 
 END;
 $$ LANGUAGE plpgsql;
@@ -724,11 +725,11 @@ AS $$
 BEGIN
     RETURN QUERY
     SELECT thr.id,
-           thr.title,
+           mt.title,
            thr.category,
            thr.status
-      FROM task_history_recat thr,
-           category_list z
+      FROM task_history_recat thr LEFT OUTER JOIN maniphest_task mt USING (id)
+                                  LEFT OUTER JOIN category_list z ON (z.category = thr.category)
      WHERE thr.scope = scope_prefix
        AND thr.date = (SELECT MAX(date)
                          FROM task_history_recat
@@ -736,8 +737,6 @@ BEGIN
        AND thr.id IN (SELECT mt.id
                         FROM maniphest_task mt
                        WHERE story_points IS NULL)
-       AND z.scope = scope_prefix
-       AND thr.category = z.category
      ORDER BY z.sort_order, thr.status, thr.id;
 
 END;
