@@ -112,9 +112,8 @@ BEGIN
              SELECT scope_prefix as scope,
                     thr.date,
                     thr.id,
-                    mt.title,
                     thr.category
-              FROM task_history_recat LEFT OUTER JOIN maniphest_task USING (id)
+              FROM task_history_recat thr LEFT OUTER JOIN maniphest_task mt USING (id)
              WHERE thr.status = '"resolved"'
                AND thr.date = daterow.date
                AND thr.scope = scope_prefix
@@ -687,7 +686,7 @@ BEGIN
        AND thr.date = (SELECT MAX(date)
                          FROM task_history_recat
                         WHERE scope = scope_prefix)
-        ORDER BY thr.category, thr.title;
+        ORDER BY thr.category, mt.title;
 
 END;
 $$ LANGUAGE plpgsql;
