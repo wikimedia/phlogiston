@@ -4,4 +4,6 @@ sort_order,zoom_list,title,matchstring
 3,True,Define a plan for measuring...,TPG-2016Q4-Measure-Light-Engagement
 4,True,Essential Functions,TPG-Essential-Functions
 5,False,TPG FY2016Q3 Quarterly Goals,TPG-2016Q3
-6,True,Uncategorized,PhlogOther
+6,False,Team radar,Team radar
+7,False,In-Progress Epics,In-Progress Epics
+8,True,Uncategorized,PhlogOther
