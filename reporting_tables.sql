@@ -28,7 +28,6 @@ CREATE TABLE task_history_recat (
        scope varchar(6),
        date timestamp,
        id int,
-       title text,
        category text,
        status text,
        points int,
@@ -57,7 +56,6 @@ CREATE TABLE recently_closed_task (
     scope varchar(6),
     date date,
     id int,
-    title text,
     category text
 );
 

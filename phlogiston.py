@@ -403,9 +403,12 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
         if VERBOSE:
             print('{0} {1}: Making maniphest_edge for {2}'.
                   format(scope_prefix, datetime.datetime.now(), working_date))
-        cur.execute('SELECT build_edges(%(date)s, %(project_id_list)s)',
-                    {'date': working_date,
-                     'project_id_list': id_list_with_worktypes})
+        if not DEBUG:
+            cur.execute('SELECT build_edges(%(date)s, %(project_id_list)s)',
+                        {'date': working_date,
+                         'project_id_list': id_list_with_worktypes})
+        else:
+            print("DEBUG: Skipping")
         working_date += datetime.timedelta(days=1)
 
     ######################################################################
@@ -578,7 +581,6 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
                 %(scope_prefix)s,
                 %(working_date)s,
                 %(id)s,
-                %(title)s,
                 %(status)s,
                 %(project)s,
                 %(projectcolumn)s,
@@ -586,7 +588,7 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
                 %(maint_type)s,
                 %(priority)s)"""
 
-            cur.execute(denorm_insert, {'scope_prefix': scope_prefix, 'working_date': working_date, 'id': task_id, 'title': pretty_title, 'status': pretty_status, 'priority': pretty_priority, 'project': pretty_project, 'projectcolumn': pretty_column, 'points': pretty_points, 'maint_type': maint_type})  # noqa
+            cur.execute(denorm_insert, {'scope_prefix': scope_prefix, 'working_date': working_date, 'id': task_id, 'status': pretty_status, 'priority': pretty_priority, 'project': pretty_project, 'projectcolumn': pretty_column, 'points': pretty_points, 'maint_type': maint_type})  # noqa
 
         # This takes the as-is blocked by relationships and
         # reconstructs them historically as if they existed every day;
@@ -831,7 +833,7 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
                                     category,
                                     status,
                                     SUM(points) as points,
-                                    COUNT(title) as count,
+                                    COUNT(id) as count,
                                     maint_type
                                FROM task_history_recat
                               WHERE scope = %(scope_prefix)s
