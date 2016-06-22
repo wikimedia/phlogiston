@@ -21,11 +21,11 @@ args <- parser$parse_args()
 velocity_recent_date <- read.csv(sprintf("/tmp/%s/velocity_recent_date.csv", args$scope_prefix))
 velocity_recent_date$date <- as.Date(velocity_recent_date$date, "%Y-%m-%d")
 
-now <- velocity_recent_date$date
-start_date <- now - 91
-end_date <- now + 92
-quarter_start  <- as.Date(c("2016-04-01"))
-next_quarter_start    <- as.Date(c("2016-07-01"))
+report_date <- as.Date(args$report_date)
+chart_start <- as.Date(args$chart_start)
+chart_end   <- as.Date(args$chart_end)
+quarter_start  <- as.Date(args$current_quarter_start)
+next_quarter_start    <- as.Date(args$next_quarter_last)
 
 # common theme from https://github.com/Ironholds/wmf/blob/master/R/dataviz.R
 theme_fivethirtynine <- function(base_size = 12, base_family = "sans"){
@@ -63,7 +63,7 @@ ggplot(velocity_cat_points) +
   geom_line(aes(x=date, y=nom_points_vel), size=2, color="gray") +
   geom_bar(data=velocity_cat_t, aes(x=date, y=points), fill="black", size=2, stat="identity") +
   labs(title=sprintf("%s velocity forecasts", args$tranche_name), y="Story Point Total") +
-  scale_x_date(limits=c(start_date, end_date), date_minor_breaks="1 week", label=date_format("%b %d\n%Y"))+
+  scale_x_date(limits=c(chart_start, chart_end), date_minor_breaks="1 week", label=date_format("%b %d\n%Y"))+
   theme_fivethirtynine() +
   theme(axis.title.x=element_blank())
 dev.off()
@@ -80,7 +80,7 @@ ggplot(velocity_cat_count) +
   geom_line(aes(x=date, y=nom_count_vel), size=2, color="gray") +
   geom_bar(data=velocity_cat_t, aes(x=date, y=count), fill="black", size=2, stat="identity") +
   labs(title=sprintf("%s velocity forecasts", args$tranche_name), y="Story Count") +
-  scale_x_date(limits=c(start_date, end_date), date_minor_breaks="1 week", label=date_format("%b %d\n%Y"))+
+  scale_x_date(limits=c(chart_start, chart_end), date_minor_breaks="1 week", label=date_format("%b %d\n%Y"))+
   theme_fivethirtynine() +
   theme(axis.title.x=element_blank())
 dev.off()
@@ -103,7 +103,7 @@ png(filename = sprintf("~/html/%s_tranche%s_forecast_points.png", args$scope_pre
 
 p <- ggplot(forecast) +
   labs(title=sprintf("%s completion forecast by points", args$tranche_name), y="weeks remaining") +
-  scale_x_date(limits=c(start_date, end_date), date_minor_breaks="1 week", label=date_format("%b %d\n%Y")) +
+  scale_x_date(limits=c(chart_start, chart_end), date_minor_breaks="1 week", label=date_format("%b %d\n%Y")) +
   scale_y_continuous(limits=c(0,14), breaks=pretty_breaks(n=7), oob=squish) +
   theme_fivethirtynine() +
   theme(legend.title=element_blank())
@@ -127,7 +127,7 @@ png(filename = sprintf("~/html/%s_tranche%s_forecast_count.png", args$scope_pref
 
 p <- ggplot(forecast) +
   labs(title=sprintf("%s completion forecast by count", args$tranche_name), y="weeks remaining") +
-  scale_x_date(limits=c(start_date, end_date), date_minor_breaks="1 week", label=date_format("%b %d\n%Y"))+
+  scale_x_date(limits=c(chart_start, chart_end), date_minor_breaks="1 week", label=date_format("%b %d\n%Y"))+
   scale_y_continuous(limits=c(0,14), breaks=pretty_breaks(n=7), oob=squish ) +
   theme_fivethirtynine() +
   theme(legend.title=element_blank())
@@ -158,7 +158,7 @@ burnup_cat <- read.csv(sprintf("/tmp/%s/burnup_categories.csv", args$scope_prefi
 burnup_cat <- burnup_cat[burnup_cat$category==args$tranche_name,]
 burnup_cat$date <- as.Date(burnup_cat$date, "%Y-%m-%d")
 
-forecast <- forecast[forecast$date >= now,]
+forecast <- forecast[forecast$date >= report_date,]
 forecast_current <- na.omit(forecast[ forecast$weeks_old < 1 & forecast$weeks_old >= 0 & forecast$count_resolved > 0,])
 forecast_current$opt_count_date <- as.Date(forecast_current$opt_count_date, "%Y-%m-%d")
 
@@ -167,7 +167,7 @@ ggplot(backlog) +
   labs(title=sprintf("%s burnup by points", args$tranche_name), y="Story Point Total") +
   theme_fivethirtynine() +
   theme(legend.title=element_blank(), axis.title.x=element_blank()) +
-  scale_x_date(limits=c(start_date, end_date), date_minor_breaks="1 week", label=date_format("%b %d\n%Y")) +
+  scale_x_date(limits=c(chart_start, chart_end), date_minor_breaks="1 week", label=date_format("%b %d\n%Y")) +
   annotate("rect", xmin=quarter_start, xmax=next_quarter_start, ymin=0, ymax=Inf, fill="white", alpha=0.5) +
   geom_area(position='stack', aes(x = date, y = points, ymin=0), fill=args$color) +
   geom_line(data=burnup_cat, aes(x=date, y=points), size=2) +
@@ -185,7 +185,7 @@ p <- ggplot(backlog) +
   labs(title=sprintf("%s burnup by count", args$tranche_name), y="Story Count") +
   theme_fivethirtynine() +
   theme(legend.title=element_blank(), axis.title.x=element_blank()) +
-  scale_x_date(limits=c(start_date, end_date), label=date_format("%b %d\n%Y")) +
+  scale_x_date(limits=c(chart_start, chart_end), label=date_format("%b %d\n%Y")) +
   annotate("rect", xmin=quarter_start, xmax=next_quarter_start, ymin=0, ymax=Inf, fill="white", alpha=0.5) +
   geom_area(position='stack', aes(x = date, y = count, ymin=0), fill=args$color) +
   geom_line(data=burnup_cat, aes(x=date, y=count), size=2) +

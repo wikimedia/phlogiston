@@ -1,8 +1,10 @@
 #!/usr/bin/python3
 
+import bisect
 import configparser
 import csv
 import datetime
+import dateutil
 import json
 import os.path
 import psycopg2
@@ -466,7 +468,6 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
                          'working_date': working_date,
                          'transaction_type': 'status'})
             task_info = cur.fetchone()
-            pretty_title = task_info[0]
             try:
                 points_from_info = int(task_info[1])
             except:
@@ -696,12 +697,18 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
            scope_title, default_points, project_name_list,
            retroactive_categories, retroactive_points,
            backlog_resolved_cutoff, show_points, show_count):
-    # note that all the COPY commands in the psql scripts run
-    # server-side as user postgres
 
     ######################################################################
     # Prepare the data
     ######################################################################
+
+    report_date = datetime.datetime.date()
+    current_quarter_start = start_of_quarter(datetime.datetime.date())
+    next_quarter_start = current_quarter_start + dateutil.relativedelta(months=+3)
+    previous_quarter_start = current_quarter_start + dateutil.relativedelta(months=-3)
+    chart_start = current_quarter_start + dateutil.relativedelta(months=-1)
+    chart_end = current_quarter_start + dateutil.relativedelta(months=+4)
+    three_months_ago = report_date + dateutil.relativedelta(months=-3)
 
     cur = conn.cursor()
     size_query = """SELECT count(*)
@@ -852,6 +859,8 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
     # psql rather than try to write the file /tmp/foo/report.csv,
     # write the file /tmp/phlog/report.csv and then move it to
     # /tmp/foo/report.csv
+    # note that all the COPY commands in the psql scripts run
+    # server-side as user postgres
 
     subprocess.call('rm -rf /tmp/{0}/'.format(scope_prefix), shell=True)
     subprocess.call('rm -rf /tmp/phlog/', shell=True)
@@ -893,10 +902,20 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
             color = colors[i]
         except:
             color = '#DDDDDD'
-        subprocess.call(
-            'Rscript make_tranche_chart.R {0} {1} \"{2}\" \"{3}\"'.
-            format(scope_prefix, i, color, category), shell=True)
-        i += 1
+            subprocess.call("""
+            Rscript make_charts.R {scope_prefix} {i} {color} {category}
+            {report_date} {chart_start} {chart_end}
+            {current_quarter_start} {next_quarter_start}""".
+                            format(scope_prefix=scope_prefix,
+                                   i=i,
+                                   color=color,
+                                   category=category,
+                                   report_date=report_date,
+                                   chart_start=chart_start,
+                                   current_quarter_start=current_quarter_start,
+                                   next_quarter_start=next_quarter_start), shell=True)
+
+            i += 1
 
     cur.execute('SELECT * FROM get_forecast_weeks(%(scope_prefix)s)',
                 {'scope_prefix': scope_prefix})
@@ -947,11 +966,17 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
     ######################################################################
     # Make the rest of the charts
     ######################################################################
-    subprocess.call("Rscript make_charts.R {0} {1} {2}".
-                    format(scope_prefix, scope_title, 'True'), shell=True)
+    subprocess.call("Rscript make_charts.R {0} {1} {2} {3} {4} {5} {6} {7} {8} {9}".
+                    format(scope_prefix, scope_title, 'True',
+                           report_date, current_quarter_start, next_quarter_start,
+                           previous_quarter_start, chart_start, chart_end,
+                           three_months_ago), shell=True)
 
-    subprocess.call("Rscript make_charts.R {0} {1} {2}".
-                    format(scope_prefix, scope_title, 'False'), shell=True)
+    subprocess.call("Rscript make_charts.R {0} {1} {2} {3} {4} {5} {6} {7} {8} {9}".
+                    format(scope_prefix, scope_title, 'True',
+                           report_date, current_quarter_start, next_quarter_start,
+                           previous_quarter_start, chart_start, chart_end,
+                           three_months_ago), shell=False)
 
     ######################################################################
     # Update dates
@@ -1002,6 +1027,14 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
     report_output.close()
 
     cur.close()
+
+
+def start_of_quarter(input_date):
+    quarter_start = [datetime.date(input_date.year, month, 1) for month in (1, 4, 7, 10)]
+
+    index = bisect.bisect(quarter_start, input_date)
+    return quarter_start[index - 1]
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])
