@@ -4,7 +4,7 @@ import bisect
 import configparser
 import csv
 import datetime
-import dateutil
+from dateutil import relativedelta as rd
 import json
 import os.path
 import psycopg2
@@ -702,13 +702,13 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
     # Prepare the data
     ######################################################################
 
-    report_date = datetime.datetime.date()
-    current_quarter_start = start_of_quarter(datetime.datetime.date())
-    next_quarter_start = current_quarter_start + dateutil.relativedelta(months=+3)
-    previous_quarter_start = current_quarter_start + dateutil.relativedelta(months=-3)
-    chart_start = current_quarter_start + dateutil.relativedelta(months=-1)
-    chart_end = current_quarter_start + dateutil.relativedelta(months=+4)
-    three_months_ago = report_date + dateutil.relativedelta(months=-3)
+    report_date = datetime.datetime.now().date()
+    current_quarter_start = start_of_quarter(report_date)
+    next_quarter_start = current_quarter_start + rd.relativedelta(months=+3)
+    previous_quarter_start = current_quarter_start + rd.relativedelta(months=-3)
+    chart_start = current_quarter_start + rd.relativedelta(months=-1)
+    chart_end = current_quarter_start + rd.relativedelta(months=+4)
+    three_months_ago = report_date + rd.relativedelta(months=-3)
 
     cur = conn.cursor()
     size_query = """SELECT count(*)
@@ -903,7 +903,8 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
         except:
             color = '#DDDDDD'
             subprocess.call("""
-            Rscript make_charts.R {scope_prefix} {i} {color} {category}
+            Rscript make_charts.R {scope_prefix} {i}
+            \"{color}\" \"{category}\"
             {report_date} {chart_start} {chart_end}
             {current_quarter_start} {next_quarter_start}""".
                             format(scope_prefix=scope_prefix,
@@ -966,17 +967,17 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
     ######################################################################
     # Make the rest of the charts
     ######################################################################
-    subprocess.call("Rscript make_charts.R {0} {1} {2} {3} {4} {5} {6} {7} {8} {9}".
+    subprocess.call("""Rscript make_charts.R {0} {1} {2} {3} {4} {5} {6} {7} {8} {9}""".
                     format(scope_prefix, scope_title, 'True',
                            report_date, current_quarter_start, next_quarter_start,
                            previous_quarter_start, chart_start, chart_end,
                            three_months_ago), shell=True)
 
-    subprocess.call("Rscript make_charts.R {0} {1} {2} {3} {4} {5} {6} {7} {8} {9}".
+    subprocess.call("""Rscript make_charts.R {0} {1} {2} {3} {4} {5} {6} {7} {8} {9}""".
                     format(scope_prefix, scope_title, 'True',
                            report_date, current_quarter_start, next_quarter_start,
                            previous_quarter_start, chart_start, chart_end,
-                           three_months_ago), shell=False)
+                           three_months_ago), shell=True)
 
     ######################################################################
     # Update dates

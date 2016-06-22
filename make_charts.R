@@ -42,7 +42,7 @@ chart_end   <- as.Date(args$chart_end)
 chart_end_plus <- chart_end + 7
 previous_quarter_start  <- as.Date(args$previous_quarter_start)
 quarter_start  <- as.Date(args$current_quarter_start)
-next_quarter_start    <- as.Date(args$next_quarter_last)
+next_quarter_start    <- as.Date(args$next_quarter_start)
 three_months_ago <- as.Date(args$three_months_ago)
 
 # common theme from https://github.com/Ironholds/wmf/blob/master/R/dataviz.R
