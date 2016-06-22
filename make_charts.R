@@ -14,6 +14,13 @@ parser <- ArgumentParser(formatter_class= 'argparse.RawTextHelpFormatter')
 parser$add_argument("scope_prefix", nargs=1, help="Scope prefix", default='phl')
 parser$add_argument("scope_title", nargs=1, help="Scope title")
 parser$add_argument("zoom", nargs=1, help="If true, show only zoomed categories")
+parser$add_argument("report_date", nargs=1, help="Date of report")
+parser$add_argument("current_quarter_start", nargs=1)
+parser$add_argument("next_quarter_start", nargs=1)
+parser$add_argument("previous_quarter_start", nargs=1)
+parser$add_argument("chart_start", nargs=1)
+parser$add_argument("chart_end", nargs=1)
+parser$add_argument("three_months_ago", nargs=1)
 
 args <- parser$parse_args()
 
@@ -28,15 +35,15 @@ if (args$zoom == 'True') {
 velocity_recent_date <- read.csv(sprintf("/tmp/%s/velocity_recent_date.csv", args$scope_prefix))
 velocity_recent_date$date <- as.Date(velocity_recent_date$date, "%Y-%m-%d")
 
-now <- velocity_recent_date$date
-nowplus <- now + 4  # Apply 1/2-week fudge factor to make charts show current week
-forecast_start <- as.Date(c("2016-01-01"))
-forecast_end   <- as.Date(c("2016-08-01"))
-forecast_end_plus <- forecast_end + 7
-last_quarter_start  <- as.Date(c("2016-01-01"))
-quarter_start  <- as.Date(c("2016-04-01"))
-next_quarter_start    <- as.Date(c("2016-07-01"))
-three_months_ago <- now - 91
+now <- as.Date(args$report_date)
+now_plus <- now + 4  # Apply 1/2-week fudge factor to make charts show current week
+chart_start <- as.Date(args$chart_start)
+chart_end   <- as.Date(args$chart_end)
+chart_end_plus <- chart_end + 7
+previous_quarter_start  <- as.Date(args$previous_quarter_start)
+quarter_start  <- as.Date(args$current_quarter_start)
+next_quarter_start    <- as.Date(args$next_quarter_start)
+three_months_ago <- as.Date(args$three_months_ago)
 
 # common theme from https://github.com/Ironholds/wmf/blob/master/R/dataviz.R
 theme_fivethirtynine <- function(base_size = 12, base_family = "sans"){
@@ -110,12 +117,12 @@ p <- ggplot(burn_done) +
   geom_area(data=burn_open, position='stack', aes(x = date, y = points, group=category, fill=category, order=-category)) +
   theme_fivethirtynine() +
   scale_fill_manual(values=getPalette(colorCount)) +
-  scale_x_date(limits=c(last_quarter_start, next_quarter_start), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
+  scale_x_date(limits=c(previous_quarter_start, next_quarter_start), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   theme(legend.position = "none", axis.title.x=element_blank()) +
   guides(col = guide_legend(reverse=TRUE)) +
   labs(title=sprintf("%s Backlog by points%s", args$scope_title, zoom_title), y="Story Point Total") +
-  annotate("text", x=last_quarter_start, y=bo_ylegend_points, label="Open Tasks", hjust=0, size=10) +
-  annotate("text", x=last_quarter_start, y=bd_ylegend_points, label="Complete Tasks", hjust=0, size=10) +
+  annotate("text", x=previous_quarter_start, y=bo_ylegend_points, label="Open Tasks", hjust=0, size=10) +
+  annotate("text", x=previous_quarter_start, y=bd_ylegend_points, label="Complete Tasks", hjust=0, size=10) +
   geom_hline(aes(yintercept=c(0)), color="black", size=2) +
   labs(fill="Category")
 
@@ -138,12 +145,12 @@ ggplot(burn_done) +
   geom_area(data=burn_open, position='stack', aes(x = date, y = count, group=category, fill=category, order=-category)) +
   theme_fivethirtynine() +
   scale_fill_manual(values=getPalette(colorCount)) +
-  scale_x_date(limits=c(last_quarter_start, next_quarter_start), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
+  scale_x_date(limits=c(previous_quarter_start, next_quarter_start), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   theme(legend.position = "none", axis.title.x=element_blank()) +
   guides(col = guide_legend(reverse=TRUE)) +
   labs(title=sprintf("%s Backlog by count%s", args$scope_title, zoom_title), y="Task Count Total") +
-  annotate("text", x=last_quarter_start, y=bo_ylegend_count, label="Open Tasks", hjust=0, size=10) +
-  annotate("text", x=last_quarter_start, y=bd_ylegend_count, label="Complete Tasks", hjust=0, size=10) +
+  annotate("text", x=previous_quarter_start, y=bo_ylegend_count, label="Open Tasks", hjust=0, size=10) +
+  annotate("text", x=previous_quarter_start, y=bd_ylegend_count, label="Complete Tasks", hjust=0, size=10) +
   geom_hline(aes(yintercept=c(0)), color="black", size=2) +
   labs(fill="Category") +
   geom_text(data=bd_labels_count, aes(x=max_date, y=label_count, label=category), size=9, hjust=0) +
@@ -164,7 +171,7 @@ ggplot(velocity, aes(date, points)) +
   geom_bar(stat="identity") +
   theme_fivethirtynine() +
   theme(axis.title.x=element_blank()) +
-  scale_x_date(limits=c(three_months_ago, nowplus), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
+  scale_x_date(limits=c(three_months_ago, now_plus), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   labs(title=sprintf("%s weekly velocity by points", args$scope_title), y="Story Points")
 dev.off()
 
@@ -174,7 +181,7 @@ ggplot(velocity, aes(date, count)) +
   geom_bar(stat="identity") +
   theme_fivethirtynine() +
   theme(axis.title.x=element_blank()) +
-  scale_x_date(limits=c(three_months_ago, nowplus), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
+  scale_x_date(limits=c(three_months_ago, now_plus), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   labs(title=sprintf("%s weekly velocity by count", args$scope_title), y="Tasks")
 dev.off()
 
@@ -197,8 +204,8 @@ forecast_done$resolved_date <- as.Date(forecast_done$resolved_date, "%Y-%m-%d")
 forecast_done$category <- paste(sprintf("%02d",forecast_done$sort_order), strtrim(forecast_done$category, 35))
 first_cat = forecast_done$category[1]
 last_cat = tail(forecast_done$category,1)
-done_before_chart <- na.omit(forecast_done[forecast_done$resolved_date <= forecast_start, ])
-done_during_chart <- na.omit(forecast_done[forecast_done$resolved_date > forecast_start, ])
+done_before_chart <- na.omit(forecast_done[forecast_done$resolved_date <= chart_start, ])
+done_during_chart <- na.omit(forecast_done[forecast_done$resolved_date > chart_start, ])
 forecast$category <- paste(sprintf("%02d",forecast$sort_order), strtrim(forecast$category, 35))
 forecast$pes_points_date <- as.Date(forecast$pes_points_date, "%Y-%m-%d")
 forecast$nom_points_date <- as.Date(forecast$nom_points_date, "%Y-%m-%d")
@@ -209,8 +216,8 @@ forecast$opt_count_date <- as.Date(forecast$opt_count_date, "%Y-%m-%d")
 
 forecast_current <- forecast[ forecast$weeks_old < 1 & forecast$weeks_old >= 0 & is.na(forecast$pes_points_growviz) ,]
 
-forecast_future_points <- forecast_current[forecast_current$nom_points_date > forecast_end,]
-forecast_future_count <- forecast_current[forecast_current$nom_count_date > forecast_end,]
+forecast_future_points <- forecast_current[forecast_current$nom_points_date > chart_end,]
+forecast_future_count <- forecast_current[forecast_current$nom_count_date > chart_end,]
 
 forecast_never_points <- forecast_current[!is.na(forecast_current$opt_points_date) & is.na(forecast_current$nom_points_date),]
 forecast_never_count <- forecast_current[!is.na(forecast_current$opt_count_date) & is.na(forecast_current$nom_count_date),]
@@ -232,10 +239,10 @@ p <- ggplot(forecast_done) +
   geom_text(data = forecast_current, aes(x=category, y=opt_points_date, label=format(opt_points_date, format="optimistic:\n%b %d %Y")), size=8, color="gray") +
   geom_text(data = forecast_current, aes(x=category, y=pes_points_date, label=format(pes_points_date, format="pessimistic:\n%b %d %Y")), size=8, color="gray") +
   geom_text(data = forecast_current, aes(x=category, y=nom_points_date, label=format(nom_points_date, format="%b %d\n%Y")), size=8, color="DarkSlateGray") +
-  geom_point(data = forecast_done, aes(x=category, y=forecast_start, label=points_total, size=points_total)) +
+  geom_point(data = forecast_done, aes(x=category, y=chart_start, label=points_total, size=points_total)) +
   scale_size_continuous(range = c(3,15)) +
   scale_x_discrete(limits = rev(forecast_done$category)) +
-  scale_y_date(limits=c(forecast_start, forecast_end_plus), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
+  scale_y_date(limits=c(chart_start, chart_end_plus), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   coord_flip() +
   theme_fivethirtynine() +
   labs(title=sprintf("%s forecast completion dates based on points velocity%s", args$scope_title, zoom_title), x="Category") +
@@ -244,7 +251,7 @@ p <- ggplot(forecast_done) +
         axis.title.x = element_blank())
 
 if(nrow(forecast_future_points) > 0) {
-   p = p + geom_text(data = forecast_future_points, aes(x=category, y=forecast_end_plus, label=format(nom_points_date, format="nominal:\n%b %Y")), size=8, color="SlateGray")
+   p = p + geom_text(data = forecast_future_points, aes(x=category, y=chart_end_plus, label=format(nom_points_date, format="nominal:\n%b %Y")), size=8, color="SlateGray")
 }
 
 if(nrow(done_before_chart) > 0) {
@@ -256,11 +263,11 @@ if(nrow(done_during_chart) > 0) {
 }
 
 if(nrow(forecast_no_data_points) > 0) {
-  p = p + geom_text(data = forecast_no_data_points, aes(x=category, y=forecast_end_plus, label='Not enough\nvelocity data'), size=8, color="SlateGray")
+  p = p + geom_text(data = forecast_no_data_points, aes(x=category, y=chart_end_plus, label='Not enough\nvelocity data'), size=8, color="SlateGray")
 }
 
 if(nrow(forecast_never_points) > 0) {
-  p = p + geom_text(data = forecast_never_points, aes(x=category, y=forecast_end_plus, label='nominal:\nNever'), size=8, color="SlateGray")
+  p = p + geom_text(data = forecast_never_points, aes(x=category, y=chart_end_plus, label='nominal:\nNever'), size=8, color="SlateGray")
 }
 
 p
@@ -277,10 +284,10 @@ p <- ggplot(forecast_done) +
   geom_text(data = forecast_current, aes(x=category, y=opt_count_date, label=format(opt_count_date, format="optimistic:\n%b %d %Y")), size=8, color="gray") +
   geom_text(data = forecast_current, aes(x=category, y=pes_count_date, label=format(pes_count_date, format="pessimistic:\n%b %d %Y")), size=8, color="gray") +
   geom_text(data = forecast_current, aes(x=category, y=nom_count_date, label=format(nom_count_date, format="%b %d\n%Y")), size=8, color="DarkSlateGray") +
-  geom_text(data = forecast_done, aes(x=category, y=forecast_start, label=count_total, size=count_total)) +
+  geom_text(data = forecast_done, aes(x=category, y=chart_start, label=count_total, size=count_total)) +
   scale_size_continuous(range = c(5,9)) +
   scale_x_discrete(limits = rev(forecast_done$category)) +
-  scale_y_date(limits=c(forecast_start, forecast_end_plus), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
+  scale_y_date(limits=c(chart_start, chart_end_plus), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   coord_flip() +
   theme_fivethirtynine() +
   labs(title=sprintf("%s forecast completion dates based on count velocity%s", args$scope_title, zoom_title), x="Category") +
@@ -289,7 +296,7 @@ p <- ggplot(forecast_done) +
         axis.title.x = element_blank())
 
 if(nrow(forecast_future_count) > 0) {
-   p = p + geom_text(data = forecast_future_count, aes(x=category, y=forecast_end_plus, label=format(nom_count_date, format="nominal:\n%b %Y")), size=8, color="SlateGray")
+   p = p + geom_text(data = forecast_future_count, aes(x=category, y=chart_end_plus, label=format(nom_count_date, format="nominal:\n%b %Y")), size=8, color="SlateGray")
 }
 
 if(nrow(done_before_chart) > 0) {
@@ -301,11 +308,11 @@ if(nrow(done_during_chart) > 0) {
 }
 
 if(nrow(forecast_no_data_count) > 0) {
-  p = p + geom_text(data = forecast_no_data_count, aes(x=category, y=forecast_end_plus, label='Not enough\nvelocity data'), size=8, color="SlateGray")
+  p = p + geom_text(data = forecast_no_data_count, aes(x=category, y=chart_end_plus, label='Not enough\nvelocity data'), size=8, color="SlateGray")
 }
 
 if(nrow(forecast_never_count) > 0) {
-  p = p + geom_text(data = forecast_never_count, aes(x=category, y=forecast_end_plus, label='nominal:\nNever'), size=8, color="SlateGray")
+  p = p + geom_text(data = forecast_never_count, aes(x=category, y=chart_end_plus, label='nominal:\nNever'), size=8, color="SlateGray")
 }
 
 p
@@ -330,7 +337,7 @@ ggplot(done, aes(x=date, y=points, fill=factor(category))) +
   scale_fill_manual(values=getPalette(colorCount), name="Category") +
   theme_fivethirtynine() +
   theme(axis.title.x=element_blank()) +
-  scale_x_date(limits=c(three_months_ago, nowplus), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
+  scale_x_date(limits=c(three_months_ago, now_plus), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   theme(legend.direction='vertical', axis.title.x=element_blank()) +
   labs(title=sprintf("%s Recently Closed work by points", args$scope_title), y="Points", x="Month", aesthetic="Category")
 dev.off()
@@ -340,7 +347,7 @@ ggplot(done, aes(x=date, y=count, fill=factor(category))) +
   geom_bar(stat="identity") +
   scale_fill_manual(values=getPalette(colorCount), name="Category") +
   theme_fivethirtynine() +
-  scale_x_date(limits=c(three_months_ago, nowplus), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
+  scale_x_date(limits=c(three_months_ago, now_plus), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   theme(legend.direction='vertical', axis.title.x=element_blank()) +
   labs(title=sprintf("%s Recently Closed work by count", args$scope_title), y="Count", x="Month", aesthetic="Category")
 dev.off()
