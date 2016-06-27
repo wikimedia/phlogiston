@@ -48,7 +48,7 @@ Postgresql database named "phab"   <- data goes here
      * `gpg -a --export E084DAB9 | sudo apt-key add - `
      * `apt-get update`
   3. Install ubuntu packages
-     * `apt-get install nginx postgresql-9.4 python3-pip python3-psycopg2 python3-dev postgresql-contrib r-base r-base-dev`
+     * `apt-get install nginx postgresql python3-pip python3-psycopg2 python3-dev postgresql-contrib r-base r-base-dev python-dateutil`
   4. Install R packages.
      * `R`
      * `install.packages(c("ggplot2", "ggthemes", "argparse", "reshape"))`
