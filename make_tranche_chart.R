@@ -15,17 +15,23 @@ parser$add_argument("scope_prefix", nargs=1, help="Scope prefix")
 parser$add_argument("tranche_num", nargs=1, help="Tranche Number")
 parser$add_argument("color", nargs=1, help="Color")
 parser$add_argument("tranche_name", nargs=1, help="Tranche Name")
+parser$add_argument("report_date", nargs=1, help="Date of report")
+parser$add_argument("chart_start", nargs=1)
+parser$add_argument("chart_end", nargs=1)
+parser$add_argument("current_quarter_start", nargs=1)
+parser$add_argument("next_quarter_start", nargs=1)
 
 args <- parser$parse_args()
 
-velocity_recent_date <- read.csv(sprintf("/tmp/%s/velocity_recent_date.csv", args$scope_prefix))
-velocity_recent_date$date <- as.Date(velocity_recent_date$date, "%Y-%m-%d")
+# TODO: confirm this isn't used and remove it from here and upstream
+#velocity_recent_date <- read.csv(sprintf("/tmp/%s/velocity_recent_date.csv", args$scope_prefix))
+#velocity_recent_date$date <- as.Date(velocity_recent_date$date, "%Y-%m-%d")
 
 report_date <- as.Date(args$report_date)
 chart_start <- as.Date(args$chart_start)
 chart_end   <- as.Date(args$chart_end)
-quarter_start  <- as.Date(args$current_quarter_start)
-next_quarter_start    <- as.Date(args$next_quarter_last)
+current_quarter_start  <- as.Date(args$current_quarter_start)
+next_quarter_start    <- as.Date(args$next_quarter_start)
 
 # common theme from https://github.com/Ironholds/wmf/blob/master/R/dataviz.R
 theme_fivethirtynine <- function(base_size = 12, base_family = "sans"){
@@ -168,7 +174,7 @@ ggplot(backlog) +
   theme_fivethirtynine() +
   theme(legend.title=element_blank(), axis.title.x=element_blank()) +
   scale_x_date(limits=c(chart_start, chart_end), date_minor_breaks="1 week", label=date_format("%b %d\n%Y")) +
-  annotate("rect", xmin=quarter_start, xmax=next_quarter_start, ymin=0, ymax=Inf, fill="white", alpha=0.5) +
+  annotate("rect", xmin=current_quarter_start, xmax=next_quarter_start, ymin=0, ymax=Inf, fill="white", alpha=0.5) +
   geom_area(position='stack', aes(x = date, y = points, ymin=0), fill=args$color) +
   geom_line(data=burnup_cat, aes(x=date, y=points), size=2) +
   geom_line(data=forecast, aes(x=date, y=pes_points_velviz), color="black", linetype=3, size=1) +
@@ -186,7 +192,7 @@ p <- ggplot(backlog) +
   theme_fivethirtynine() +
   theme(legend.title=element_blank(), axis.title.x=element_blank()) +
   scale_x_date(limits=c(chart_start, chart_end), label=date_format("%b %d\n%Y")) +
-  annotate("rect", xmin=quarter_start, xmax=next_quarter_start, ymin=0, ymax=Inf, fill="white", alpha=0.5) +
+  annotate("rect", xmin=current_quarter_start, xmax=next_quarter_start, ymin=0, ymax=Inf, fill="white", alpha=0.5) +
   geom_area(position='stack', aes(x = date, y = count, ymin=0), fill=args$color) +
   geom_line(data=burnup_cat, aes(x=date, y=count), size=2) +
   geom_line(data=forecast, aes(x=date, y=pes_count_velviz), color="black", linetype=3, size=1) +

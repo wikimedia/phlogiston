@@ -902,21 +902,21 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
             color = colors[i]
         except:
             color = '#DDDDDD'
-            subprocess.call("""
-            Rscript make_charts.R {scope_prefix} {i}
-            \"{color}\" \"{category}\"
-            {report_date} {chart_start} {chart_end}
-            {current_quarter_start} {next_quarter_start}""".
-                            format(scope_prefix=scope_prefix,
-                                   i=i,
-                                   color=color,
-                                   category=category,
-                                   report_date=report_date,
-                                   chart_start=chart_start,
-                                   current_quarter_start=current_quarter_start,
-                                   next_quarter_start=next_quarter_start), shell=True)
 
-            i += 1
+        tranche_args = {'scope_prefix': scope_prefix,
+                        'i': i,
+                        'color': color,
+                        'category': category,
+                        'report_date': report_date,
+                        'chart_start': chart_start,
+                        'chart_end': chart_end,
+                        'current_quarter_start': current_quarter_start,
+                        'next_quarter_start': next_quarter_start}
+
+        tranche_command = "Rscript make_tranche_chart.R {scope_prefix} {i} {color} \"{category}\" {report_date} {chart_start} {chart_end} {current_quarter_start} {next_quarter_start}"  # noqa
+        subprocess.call(tranche_command.format(**tranche_args), shell=True)
+
+        i += 1
 
     cur.execute('SELECT * FROM get_forecast_weeks(%(scope_prefix)s)',
                 {'scope_prefix': scope_prefix})
@@ -965,19 +965,15 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
     recently_closed_output.close()
 
     ######################################################################
-    # Make the rest of the charts
+    # Make the summary charts
     ######################################################################
-    subprocess.call("""Rscript make_charts.R {0} {1} {2} {3} {4} {5} {6} {7} {8} {9}""".
-                    format(scope_prefix, scope_title, 'True',
-                           report_date, current_quarter_start, next_quarter_start,
-                           previous_quarter_start, chart_start, chart_end,
-                           three_months_ago), shell=True)
 
-    subprocess.call("""Rscript make_charts.R {0} {1} {2} {3} {4} {5} {6} {7} {8} {9}""".
-                    format(scope_prefix, scope_title, 'False',
-                           report_date, current_quarter_start, next_quarter_start,
-                           previous_quarter_start, chart_start, chart_end,
-                           three_months_ago), shell=True)
+    for i in [True, False]:
+        subprocess.call("""Rscript make_charts.R {0} {1} {2} {3} {4} {5}\
+        {6} {7} {8} {9}""".format(scope_prefix, scope_title, i,
+                                  report_date, current_quarter_start, next_quarter_start,
+                                  previous_quarter_start, chart_start, chart_end,
+                                  three_months_ago), shell=True)
 
     ######################################################################
     # Update dates
