@@ -974,7 +974,7 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
                            three_months_ago), shell=True)
 
     subprocess.call("""Rscript make_charts.R {0} {1} {2} {3} {4} {5} {6} {7} {8} {9}""".
-                    format(scope_prefix, scope_title, 'True',
+                    format(scope_prefix, scope_title, 'False',
                            report_date, current_quarter_start, next_quarter_start,
                            previous_quarter_start, chart_start, chart_end,
                            three_months_ago), shell=True)
