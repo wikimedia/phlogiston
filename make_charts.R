@@ -44,6 +44,7 @@ previous_quarter_start  <- as.Date(args$previous_quarter_start)
 quarter_start  <- as.Date(args$current_quarter_start)
 next_quarter_start    <- as.Date(args$next_quarter_start)
 three_months_ago <- as.Date(args$three_months_ago)
+burn_done_chart_end <- now + 30  # add room for labels
 
 # common theme from https://github.com/Ironholds/wmf/blob/master/R/dataviz.R
 theme_fivethirtynine <- function(base_size = 12, base_family = "sans"){
@@ -117,7 +118,7 @@ p <- ggplot(burn_done) +
   geom_area(data=burn_open, position='stack', aes(x = date, y = points, group=category, fill=category, order=-category)) +
   theme_fivethirtynine() +
   scale_fill_manual(values=getPalette(colorCount)) +
-  scale_x_date(limits=c(previous_quarter_start, next_quarter_start), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
+  scale_x_date(limits=c(previous_quarter_start, burn_done_chart_end), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   theme(legend.position = "none", axis.title.x=element_blank()) +
   guides(col = guide_legend(reverse=TRUE)) +
   labs(title=sprintf("%s Backlog by points%s", args$scope_title, zoom_title), y="Story Point Total") +
@@ -145,7 +146,7 @@ ggplot(burn_done) +
   geom_area(data=burn_open, position='stack', aes(x = date, y = count, group=category, fill=category, order=-category)) +
   theme_fivethirtynine() +
   scale_fill_manual(values=getPalette(colorCount)) +
-  scale_x_date(limits=c(previous_quarter_start, next_quarter_start), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
+  scale_x_date(limits=c(previous_quarter_start, burn_done_chart_end), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   theme(legend.position = "none", axis.title.x=element_blank()) +
   guides(col = guide_legend(reverse=TRUE)) +
   labs(title=sprintf("%s Backlog by count%s", args$scope_title, zoom_title), y="Task Count Total") +
