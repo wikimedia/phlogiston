@@ -1,6 +1,6 @@
 sort_order,zoom_list,title,matchstring
-1,True,Feeds Implementation,Android-app-feature-Feeds-MVP
+1,True,Feeds Implementation MVP,Android-app-feature-Feeds-MVP
 2,True,Feeds Implementation,Android-app-feature-Feeds
-3,True,Navigation,Android-app-feature-Navigation-MVP
+3,True,Navigation MVP,Android-app-feature-Navigation-MVP
 4,True,Navigation,Android-app-feature-Navigation
 5,False,Other,PhlogOther
