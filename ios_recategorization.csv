@@ -18,6 +18,11 @@ sort_order,zoom_list,title,matchstring
 17,True,Language Search Cleanup,ios-app-feature-multilingual
 18,True,5.0 Text Changes,"EPIC: Text Changes"
 19,True,Core Data,ios-app-feature-database
-20,True,Uncategorized (No Tracking Project Tagged),iOS-app-v5.0.5-Fever
+19,True,Core Data,ios-app-feature-ipad
+19,True,Core Data,ios-app-feature-links
+19,True,Core Data,ios-app-feature-notifications
+19,True,Core Data,ios-app-feature-nearby
+20,True,Uncategorized (Fever),iOS-app-v5.0.5-Fever
+21,True,Uncategorized (Saturn),iOS-app-v5.1.0-Saturn
 21,False,Other,PhlogOther
 
