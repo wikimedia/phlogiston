@@ -22,7 +22,8 @@ sort_order,zoom_list,title,matchstring
 21,True,Links,ios-app-feature-links
 22,True,Notifications,ios-app-feature-notifications
 23,True,Nearby,ios-app-feature-nearby
-24,True,Uncategorized (Fever),iOS-app-v5.0.5-Fever
-25,True,Uncategorized (Saturn),iOS-app-v5.1.0-Saturn
-26,False,Other,PhlogOther
+24,True,iOS 10,ios-app-feature-database-ios10
+25,True,Uncategorized (Fever),iOS-app-v5.0.5-Fever
+26,True,Uncategorized (Saturn),iOS-app-v5.1.0-Saturn
+27,False,Other,PhlogOther
 
