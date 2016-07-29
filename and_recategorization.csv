@@ -3,4 +3,5 @@ sort_order,zoom_list,title,matchstring
 2,True,Feeds Implementation,Android-app-feature-Feeds
 3,True,Navigation MVP,Android-app-feature-Navigation-MVP
 4,True,Navigation,Android-app-feature-Navigation
-5,False,Other,PhlogOther
+5,True,2016-17 Q1 Goals,Android-app-goals-2016-17-Q1
+6,False,Other,PhlogOther
