@@ -3,7 +3,7 @@ sort_order,zoom_list,title,matchstring
 1,TRUE,Interrupt,TR0
 2,TRUE,Enwiki IP A/B test,experiment defaulting anonymous editors to the visual editor on
 3,TRUE,Enwiki on for IPs,Re-enable VisualEditor by default for all logged-out users of the English Wikipedia
-4,TRUE,Wikivoyages on for all,Enable VisualEditor by default for all users of all Wikivoyages
+4,FALSE,Wikivoyages on for all,Enable VisualEditor by default for all users of all Wikivoyages
 5,TRUE,Wikimedia wikis on for all,TR1
 6,FALSE,jQueryIME,Make ULS input methods work in content editable divs of VisualEditor
 7,FALSE,Japanese,Make VisualEditor good enough to use with all common IMEs for Japanese
