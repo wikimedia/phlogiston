@@ -901,7 +901,7 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
         try:
             color = colors[i]
         except:
-            color = '#DDDDDD'
+            color = '"#DDDDDD"'
 
         tranche_args = {'scope_prefix': scope_prefix,
                         'i': i,
@@ -914,6 +914,8 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
                         'next_quarter_start': next_quarter_start}
 
         tranche_command = "Rscript make_tranche_chart.R {scope_prefix} {i} {color} \"{category}\" {report_date} {chart_start} {chart_end} {current_quarter_start} {next_quarter_start}"  # noqa
+        if DEBUG:
+            print(tranche_command.format(**tranche_args))
         subprocess.call(tranche_command.format(**tranche_args), shell=True)
 
         i += 1
