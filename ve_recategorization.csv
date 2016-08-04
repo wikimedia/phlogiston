@@ -17,3 +17,4 @@ sort_order,zoom_list,title,matchstring
 15,TRUE,Charts,easier to create and edit charts from within VisualEditor
 16,TRUE,Rich media,TR5
 17,FALSE,Mobile,TR2
+17,TRUE,NewWikitextEditor,Provide a Beta Feature of a modern wikitext editor integrated into the visual editor
