@@ -12,7 +12,7 @@ sort_order,zoom_list,title,matchstring
 11,True,TOC UX,ios-app-feature-toc
 12,False,Visual Polish,Visual design improvements to the Explore feed
 13,True,HockeyApp Bugs,ios-app-feature-bugs (hockeyapp)
-14,True,Bugs,ios-app-feature-bugs
+14,True,Bugs,ios-app-bugs
 15,True,Namespace,ios-app-feature-namespaces
 16,True,Offline and Error Handling,ios-app-feature-offline
 17,True,Language Search Cleanup,ios-app-feature-multilingual
