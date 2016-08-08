@@ -673,20 +673,22 @@ CREATE OR REPLACE FUNCTION get_open_task_list(
     ) RETURNS TABLE (
     id int,
     title text,
-    category text)
+    category text,
+    date_added timestamp)
 AS $$
 BEGIN
     RETURN QUERY
     SELECT thr.id,
            mt.title,
-           thr.category
+           thr.category,
+	   (SELECT min(date) from task_history_recat thr1 where thr1.id = thr.id) as date_added
       FROM task_history_recat thr LEFT OUTER JOIN maniphest_task mt USING (id)
      WHERE scope = scope_prefix
        AND thr.status = '"open"'
        AND thr.date = (SELECT MAX(date)
                          FROM task_history_recat
                         WHERE scope = scope_prefix)
-        ORDER BY thr.category, mt.title;
+        ORDER BY thr.category, date_added, mt.title;
 
 END;
 $$ LANGUAGE plpgsql;
