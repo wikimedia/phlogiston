@@ -1021,7 +1021,10 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
          'now_utc': now_utc,
          'category_count': len(cat_list),
          'category_list': cat_list,
-         'rev_category_list': reversed(cat_list)
+         'rev_category_list': reversed(cat_list),
+         'retroactive_categories': retroactive_categories,
+         'retroactive_points': retroactive_points,
+         'backlog_resolved_cutoff': backlog_resolved_cutoff,
          }))
     report_output.close()
 

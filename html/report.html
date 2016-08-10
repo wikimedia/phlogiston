@@ -27,19 +27,36 @@
           </pre>
         </td>
         <td>
+	  <h3>Details and diagnostic reports</h3>
           <ul>
             <li><a href="{{ scope_prefix }}_category_possibilities.txt">Full list of possible categories.</a></li>
-            <li><a href="https://github.com/wikimedia/phlogiston/blob/master/{{ scope_prefix }}_recategorization.csv">Rules for recategorizing tasks</a></li>
+
             <li><a href="{{ scope_prefix }}_recently_closed.html">Recently closed tasks</a></li>
             <li><a href="{{ scope_prefix }}_open_by_category.html">All open tasks, sorted by category</a></li>
             <li><a href="{{ scope_prefix }}_points_histogram.png">Histogram of stories by points</a>.</li>
-	    <li><a href="{{ scope_prefix }}_unpointed.html">Unpointed stories</a> are defaulted to <b>{{ default_points }}</b> points.</li></ul>
-          {% if show_points and not show_count %}
-          This report shows charts by task points and not task count.  This can be changed in configuration.
-          {% endif %}
-          {% if show_count and not show_points %}
-          This report shows charts by task count and not task points.  This can be changed in configuration.
-          {% endif %}
+</ul>
+	  <h3>Configuration</h3>
+	  
+	  <ul>
+	    <li><a href="{{ scope_prefix }}_unpointed.html">Unpointed stories</a> are defaulted to <b>{{ default_points }}</b> points.</li>
+            <li><a href="https://github.com/wikimedia/phlogiston/blob/master/{{ scope_prefix }}_recategorization.csv">Rules for recategorizing tasks</a></li>
+            {% if show_points and not show_count %}
+            <li>This report shows charts by task points and not task count.</li>
+            {% endif %}
+            {% if show_count and not show_points %}
+            <li>This report shows charts by task count and not task points.</li>
+            {% endif %}
+	    {% if retroactive_categories %}
+	    <li>This report has retroactively adjusted categories.</li>
+	    {% endif %}
+	    {% if retroactive_points %}
+	    <li>This report has retroactively adjusted points.</li>
+	    {% endif %}
+	    {% if backlog_resolved_cutoff %}
+	    <li>This report resets the Resolved count on the burnup chart to zero before {{ backlog_resolved_cutoff }}.</li>
+	    {% endif %}
+	    <li><a href="https://www.mediawiki.org/wiki/Phlogiston/Configuring">Configuration Help</a></li>
+	  </ul>
         </td>
       </tr>
     </table>
@@ -97,9 +114,11 @@
     <table>
       <tr>
 	{% for row in rev_category_list %}
+	{% if row.1 %}
 	<td>
 	  <a href="#tab{{ loop.index0 }}">{{ row.0 }}</a>
 	</td>
+	{% endif %}
 	{% endfor %}
       </tr>
     </table>
