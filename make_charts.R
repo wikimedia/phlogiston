@@ -256,7 +256,7 @@ if(nrow(forecast_future_points) > 0) {
 }
 
 if(nrow(done_before_chart) > 0) {
-  p = p + geom_text(data = done_before_chart, aes(x=category, y=quarter_start, label=format(resolved_date, format="%b %d\n%Y")), size=8)
+  p = p + geom_text(data = done_before_chart, aes(x=category, y=chart_start, label=format(resolved_date, format="%b %d\n%Y")), size=8)
 }
 
 if(nrow(done_during_chart) > 0) {
@@ -301,7 +301,7 @@ if(nrow(forecast_future_count) > 0) {
 }
 
 if(nrow(done_before_chart) > 0) {
-  p = p + geom_text(data = done_before_chart, aes(x=category, y=quarter_start, label=format(resolved_date, format="%b %d\n%Y")), size=8)
+  p = p + geom_text(data = done_before_chart, aes(x=category, y=chart_start, label=format(resolved_date, format="%b %d\n%Y")), size=8)
 }
 
 if(nrow(done_during_chart) > 0) {
