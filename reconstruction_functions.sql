@@ -30,6 +30,7 @@ BEGIN
                           AND task_id = taskrow.id
                           AND has_edge_data IS TRUE
                      ORDER BY date_modified DESC
+		       LIMIT 1
         LOOP
             FOREACH project_id IN ARRAY projrow.active_projects & project_id_list
             LOOP
