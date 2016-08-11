@@ -1,6 +1,6 @@
 sort_order,zoom_list,title,matchstring
-1,False,Feeds Implementation MVP,Android-app-feature-Feeds-MVP
-2,True,Feeds Implementation 2.0,Android-app-feature-Feeds-MVP-2.0
+1,False,Feeds MVP 2.0,Android-app-feature-Feeds-MVP-2.0
+2,True,Feeds Implementation MVP,Android-app-feature-Feeds-MVP
 3,True,Feeds Overall Tag,Android-app-feature-Feeds
 4,True,Navigation MVP,Android-app-feature-Navigation-MVP
 5,True,Navigation Overall Tag,Android-app-feature-Navigation
