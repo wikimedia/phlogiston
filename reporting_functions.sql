@@ -601,13 +601,14 @@ BEGIN
     LOOP
         UPDATE task_history_recat t
            SET category = categoryrow.category
-         WHERE t.id IN (SELECT task
-                          FROM maniphest_edge
-                         WHERE project = categoryrow.t1)
-           AND t.id IN (SELECT task
-                          FROM maniphest_edge
-                         WHERE project = categoryrow.t2)
-           AND t.scope = scope_prefix;
+          FROM maniphest_edge me1, maniphest_edge me2
+         WHERE t.scope = scope_prefix
+           AND me1.project = categoryrow.t1
+           AND me1.task = t.id
+           AND me1.edge_date = t.date
+           AND me2.project = categoryrow.t2
+           AND me2.task = t.id
+           AND me2.edge_date = t.date;
     END LOOP;			 
     RETURN;
 END;

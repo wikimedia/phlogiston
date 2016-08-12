@@ -52,6 +52,7 @@ CREATE TABLE maniphest_edge (
 CREATE INDEX ON maniphest_edge (task, project, edge_date);
 CREATE INDEX ON maniphest_edge (task);
 CREATE INDEX ON maniphest_edge (project);
+CREATE INDEX ON maniphest_edge (edge_date);
 
 
 -- No RI for this table because otherwise we would have to load all
