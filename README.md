@@ -14,7 +14,7 @@ Generate burnup, cycle time, and other charts from Phabricator.  Intended for ex
  * Uses R to graph the data as PNG files
 
 ## TODOs
- * See https://phabricator.wikimedia.org/tag/phlogiston%E2%86%9Dtechnical_debt/
+ * https://phabricator.wikimedia.org/project/board/1962/
  
 ## Typical usage:
 ```
