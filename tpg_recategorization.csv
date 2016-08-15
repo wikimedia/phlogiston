@@ -1,9 +1,12 @@
 sort_order,zoom_list,title,matchstring
-1,True,Assess skills within TPG...,TPG-2016Q4-Assess-Skills
-2,True,Support Quarterly Planning...,TPG-2016Q4-Support-Quarterly
-3,True,Define a plan for measuring...,TPG-2016Q4-Measure-Light-Engagement
-4,True,Essential Functions,TPG-Essential-Functions
-5,False,TPG FY2016Q3 Quarterly Goals,TPG-2016Q3
-6,False,Team radar,Team radar
-7,False,In-Progress Epics,In-Progress Epics
-8,True,Uncategorized,PhlogOther
+1,True,Q1 Improve Annual Planning,TPG-2017Q1-Improve-Annual-Planning
+2,True,Q1 Identify Common Pain Point,TPG-2017Q1-Identify-Common-Pain
+3,True,Q1 Roll out Engagement SurveyTPG-2017Q1-Roll-Out-Engagement-Survey
+4,True,Assess skills within TPG...,TPG-2016Q4-Assess-Skills
+5,True,Support Quarterly Planning...,TPG-2016Q4-Support-Quarterly
+6,True,Define a plan for measuring...,TPG-2016Q4-Measure-Light-Engagement
+8,True,Essential Functions,TPG-Essential-Functions
+8,False,TPG FY2016Q3 Quarterly Goals,TPG-2016Q3
+9,False,Team radar,Team radar
+10,False,In-Progress Epics,In-Progress Epics
+11,True,Uncategorized,PhlogOther
