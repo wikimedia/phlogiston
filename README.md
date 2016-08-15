@@ -20,7 +20,7 @@ Generate burnup, cycle time, and other charts from Phabricator.  Intended for ex
 ```
 wget http://dumps.wikimedia.org/other/misc/phabricator_public.dump
 cd phlogiston
-python3 phlogiston.py --load --reconstruct --report --project ve_source.py
+python3 phlogiston.py --load --reconstruct --report --scope ve_source.py
 ```
 
 ## Environment:
