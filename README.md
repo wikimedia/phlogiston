@@ -48,7 +48,7 @@ Postgresql database named "phab"   <- data goes here
      * `gpg -a --export E084DAB9 | sudo apt-key add - `
      * `apt-get update`
   3. Install ubuntu packages
-     * `apt-get install nginx postgresql python3-pip python3-psycopg2 python3-dev postgresql-contrib r-base r-base-dev python-dateutil`
+     * `apt-get install nginx postgresql python3-pip python3-psycopg2 python3-dev postgresql-contrib r-base r-base-dev python3-dateutil`
   4. Install R packages.
      * `R`
      * `install.packages(c("ggplot2", "ggthemes", "argparse", "reshape"))`
@@ -64,7 +64,7 @@ Postgresql database named "phab"   <- data goes here
      * `usermod -a -G phlogiston postgres`
      * restart postgres so that this takes effect
   7. Add Python packages
-     * `pip3 install pyscopg2 pytz`
+     * `pip3 install pyscopg2 pytz jinja2`
 3. Set up database. As user postgres,
    * `createuser -s phlogiston`
    * `createdb -O phlogiston phab`
