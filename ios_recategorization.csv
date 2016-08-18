@@ -25,5 +25,6 @@ sort_order,zoom_list,title,matchstring
 24,True,iOS 10,iOS-app-feature-iOS10
 25,False,Uncategorized (Fever),iOS-app-v5.0.5-Fever
 26,True,Uncategorized (Saturn),iOS-app-v5.1.0-Saturn
-27,False,Other,PhlogOther
+27,True,Uncategorized (Honey),iOS-app-v5.2.0-Honey
+28,False,Other,PhlogOther
 
