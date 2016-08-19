@@ -40,6 +40,9 @@ git pull
 function load_dump {
     echo "$(date): Downloading new Phabricator dump"
     cd ${HOMEDIR}
+    # TODO: should test to see if there's a new file.  Command to get date of
+    # dump on server is
+    # (cat get_dump_head.txt; sleep 2) | openssl s_client s.wikimedia.org:443 | grep Last-Modified -connect dump | grep 
     rm phabricator_public.dump
     wget -nv http://dumps.wikimedia.org/other/misc/phabricator_public.dump
     echo "$(date): Loading loading new Phabricator dump"

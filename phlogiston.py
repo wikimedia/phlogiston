@@ -35,9 +35,10 @@ def main(argv):
     incremental = False
     DEBUG = False
     VERBOSE = False
-    start_date = ''
     scope_prefix = ''
+    start_date = ''
     dbname = 'phab'
+    scope_info = {}
 
     # Wikimedia Phabricator constants
     # https://phabricator.wikimedia.org/T119473
@@ -85,47 +86,55 @@ def main(argv):
         load(conn, end_date, VERBOSE, DEBUG)
 
     if scope_prefix:
+        scope_info['scope_prefix'] = scope_prefix
         config = configparser.ConfigParser()
-        config_filename = '{0}_scope.py'.format(scope_prefix)
-        config.read(config_filename)
+        # TODO: should sanitize scope prefix, allow only 6 alpha
+        unsafe_config_filename = '{0}_scope.py'.format(scope_prefix)
+        config.read(unsafe_config_filename)
 
-        try:
-            scope_title = config['vars']['scope_title']
-            project_name_list = [x.strip() for x in config['vars']['project_list'].split(',')]  # noqa
-        except KeyError as e:
-            print('Config file {0} is missing required parameter(s): {1}'.
-                  format(scope_prefix, e))
+        unsafe_recat_file = '{0}_recategorization.csv'.format(scope_prefix)
+        if os.path.isfile(unsafe_recat_file):
+            with open(unsafe_recat_file, 'rt') as f:
+                category_map = csv.DictReader(f)
+
+        id_list = build_id_list(category_map)
+
+        if id_list:
+            scope_info['project_id_list'] = id_list
+        else:
+            print('Could not identify any projects from recategorization file for {0}'.
+                  format(scope_info['scope_prefix']))
             sys.exit(1)
 
-        show_points = True
+        scope_info['show_points'] = True
         if config.has_option('vars', 'show_points'):
             if not config.getboolean('vars', 'show_points'):
-                show_points = False
+                scope_info['show_points'] = False
 
-        show_count = True
+        scope_info['show_count'] = True
         if config.has_option('vars', 'show_count'):
             if not config.getboolean('vars', 'show_count'):
-                show_count = False
+                scope_info['show_count'] = False
 
         if config.has_option('vars', 'default_points'):
-            default_points = config['vars']['default_points']
+            scope_info['default_points'] = config['vars']['default_points']
         else:
-            default_points = None
+            scope_info['default_points'] = None
 
         if config.has_option('vars', 'backlog_resolved_cutoff'):
-            backlog_resolved_cutoff = config['vars']['backlog_resolved_cutoff']
+            scope_info['backlog_resolved_cutoff'] = config['vars']['backlog_resolved_cutoff']  # noqa
         else:
-            backlog_resolved_cutoff = None
+            scope_info['backlog_resolved_cutoff'] = None
 
-        retroactive_categories = False
+        scope_info['retroactive_categories'] = False
         if config.has_option('vars', 'retroactive_categories'):
             if config.getboolean('vars', 'retroactive_categories'):
-                retroactive_categories = True
+                scope_info['retroactive_categories'] = True
 
-        retroactive_points = False
+        scope_info['retroactive_points'] = False
         if config.has_option('vars', 'retroactive_points'):
             if config.getboolean('vars', 'retroactive_points'):
-                retroactive_points = True
+                scope_info['retroactive_points'] = True
 
         if not start_date:
             try:
@@ -137,17 +146,14 @@ def main(argv):
 
     if reconstruct_data:
         if scope_prefix:
-            reconstruct(conn, VERBOSE, DEBUG, default_points,
-                        project_name_list, start_date, end_date,
-                        scope_prefix, incremental)
+            reconstruct(conn=conn, VERBOSE=VERBOSE, DEBUG=DEBUG, incremental=incremental,
+                        start_date=start_date, end_date=end_date, **scope_info)
         else:
             print("Reconstruct specified without a scope_prefix.\n Please specify a scope_prefix with --scope_prefix.")  # noqa
     if run_report:
         if scope_prefix:
-            report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
-                   scope_title, default_points, project_name_list,
-                   retroactive_categories, retroactive_points,
-                   backlog_resolved_cutoff, show_points, show_count)
+            report(conn=conn, dbname=dbname, VERBOSE=VERBOSE, DEBUG=DEBUG, **scope_info)
+
         else:
             print("Report specified without a scope_prefix.\nPlease specify a scope_prefix with --scope_prefix.")  # noqa
     conn.close()
@@ -189,6 +195,7 @@ Optionally:
 def do_initialize(conn, VERBOSE, DEBUG):
     cur = conn.cursor()
     cur.execute(open("loading_tables.sql", "r").read())
+    cur.execute(open("loading_functions.sql", "r").read())
     cur.execute(open("reconstruction_tables.sql", "r").read())
     cur.execute(open("reconstruction_functions.sql", "r").read())
     cur.execute(open("reporting_tables.sql", "r").read())
@@ -201,6 +208,7 @@ def load(conn, end_date, VERBOSE, DEBUG):
 
     if VERBOSE:
         print('{0} Loading dump file'.format(datetime.datetime.now()))
+
     with open('../phabricator_public.dump') as dump_file:
         data = json.load(dump_file)
 
@@ -321,20 +329,11 @@ def load(conn, end_date, VERBOSE, DEBUG):
                                  'has_edge_data': has_edge_data,
                                  'active_projects': active_proj})
 
-    convert_blocked_phid_to_id_sql = """
-        INSERT INTO maniphest_blocked
-        SELECT mb.blocked_date, mt1.id, mt2.id
-          FROM maniphest_blocked_phid mb,
-               maniphest_task mt1,
-               maniphest_task mt2
-         WHERE mb.blocks_phid = mt1.phid
-           AND mb.blocked_by_phid = mt2.phid"""
-
-    cur.execute(convert_blocked_phid_to_id_sql)
+    cur.execute("""SELECT convert_blocked_phid_to_id()""")
     cur.close()
 
 
-def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
+def reconstruct(conn, VERBOSE, DEBUG, default_points, project_id_list,
                 start_date, end_date, scope_prefix, incremental):
     cur = conn.cursor()
 
@@ -694,7 +693,7 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
 
 
 def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
-           scope_title, default_points, project_name_list,
+           scope_title, default_points, project_id_list,
            retroactive_categories, retroactive_points,
            backlog_resolved_cutoff, show_points, show_count):
 
@@ -734,97 +733,6 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
         cur.execute('SELECT no_resolved_before_start(%(scope_prefix)s, %(backlog_resolved_cutoff)s)',    # noqa
                     {'scope_prefix': scope_prefix, 'backlog_resolved_cutoff': backlog_resolved_cutoff})  # noqa
 
-    # Reload the Recategorization mapping
-    recat_data = '{0}_recategorization.csv'.format(scope_prefix)
-    if os.path.isfile(recat_data):
-        category_save = """
-        INSERT INTO category_list
-        VALUES (%(scope_prefix)s, %(sort_order)s, %(category)s,
-                %(t1)s, %(t2)s, %(matchstring)s, %(zoom)s)"""
-        recat_cases = ''
-        recat_else = ''
-        with open(recat_data, 'rt') as f:
-            reader = csv.DictReader(f)
-            for line in reader:
-                try:
-                    matchstring = '%' + line['matchstring'] + '%'
-                except (KeyError,  TypeError):
-                    matchstring = ''
-
-                t1 = None
-                try:
-                    if line['t1']:
-                        t1 = line['t1']
-                except KeyError:
-                    pass
-
-                t2 = None
-                try:
-                    if line['t2']:
-                        t2 = line['t2']
-                except KeyError:
-                    pass
-
-                if line['zoom_list'].lower() in ['true', 't', '1', 'yes', 'y']:
-                    zoom = True
-                else:
-                    zoom = False
-                cur.execute(category_save,
-                            {'scope_prefix': scope_prefix,
-                             'sort_order': line['sort_order'],
-                             'category': line['title'],
-                             't1': t1,
-                             't2': t2,
-                             'matchstring': matchstring,
-                             'zoom': zoom})
-
-                # build up the recategorization query
-                if line['matchstring'] == 'PhlogOther':
-                    recat_else = line['title']
-                elif t1:
-                    # if a tag is specified, handle this later
-                    pass
-                elif matchstring:
-                    recat_cases += ' WHEN category LIKE \'{0}\' THEN \'{1}\''.format(  # noqa
-                        matchstring, line['title'])
-                else:
-                    print('Bad line in recat file: {0}'.format(line))
-
-        if recat_cases:
-            recat_update = """UPDATE task_history_recat
-                                 SET category = CASE {0}
-                                                ELSE '{1}'
-                                                END
-                               WHERE scope =  '{2}'"""
-            unsafe_recat_update = recat_update.format(recat_cases, recat_else, scope_prefix)  # noqa
-        else:
-            recat_update = """UPDATE task_history_recat
-                                        SET category = \'{0}\'
-                               WHERE scope = '{1}'"""
-            unsafe_recat_update = recat_update.format(recat_else, scope_prefix)
-
-        if VERBOSE:
-            print('{0} {1}: Applying recategorization'.
-                  format(scope_prefix, datetime.datetime.now()))
-        cur.execute(unsafe_recat_update)
-        cur.execute('SELECT apply_tag_based_recategorization(%(scope_prefix)s)',
-                    {'scope_prefix': scope_prefix})
-
-    else:
-        # Build a category list from the data
-        category_insert = """INSERT INTO category_list (
-                         SELECT %(scope_prefix)s,
-                                row_number() OVER(ORDER BY category asc),
-                                category,
-                                NULL,
-                                NULL,
-                                NULL,
-                                TRUE
-                           FROM (SELECT DISTINCT category
-                                   FROM task_history_recat
-                                  WHERE scope = %(scope_prefix)s
-                                  ORDER BY category) as foo)"""
-        cur.execute(category_insert, {'scope_prefix': scope_prefix})
 
     if retroactive_categories:
         cur.execute('SELECT set_category_retroactive(%(scope_prefix)s)',
@@ -1029,6 +937,102 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
     report_output.close()
 
     cur.close()
+
+
+def build_id_list(category_map):
+    """ Extract an ordered list of Phabricator projects by ID from
+    the recategorization file """
+
+
+
+def load_categories(category_map):
+    pass
+    # Load the Recategorization mapping
+    #     category_save = """
+    #     INSERT INTO category_list
+    #     VALUES (%(scope_prefix)s, %(sort_order)s, %(category)s,
+    #             %(t1)s, %(t2)s, %(matchstring)s, %(zoom)s)"""
+    #     recat_cases = ''
+    #     recat_else = ''
+    #             try:
+    #                 matchstring = '%' + line['matchstring'] + '%'
+    #             except (KeyError,  TypeError):
+    #                 matchstring = ''
+
+    #             t1 = None
+    #             try:
+    #                 if line['t1']:
+    #                     t1 = line['t1']
+    #             except KeyError:
+    #                 pass
+
+    #             t2 = None
+    #             try:
+    #                 if line['t2']:
+    #                     t2 = line['t2']
+    #             except KeyError:
+    #                 pass
+
+    #             if line['zoom_list'].lower() in ['true', 't', '1', 'yes', 'y']:
+    #                 zoom = True
+    #             else:
+    #                 zoom = False
+    #             cur.execute(category_save,
+    #                         {'scope_prefix': scope_prefix,
+    #                          'sort_order': line['sort_order'],
+    #                          'category': line['title'],
+    #                          't1': t1,
+    #                          't2': t2,
+    #                          'matchstring': matchstring,
+    #                          'zoom': zoom})
+
+    #             # build up the recategorization query
+    #             if line['matchstring'] == 'PhlogOther':
+    #                 recat_else = line['title']
+    #             elif t1:
+    #                 # if a tag is specified, handle this later
+    #                 pass
+    #             elif matchstring:
+    #                 recat_cases += ' WHEN category LIKE \'{0}\' THEN \'{1}\''.format(  # noqa
+    #                     matchstring, line['title'])
+    #             else:
+    #                 print('Bad line in recat file: {0}'.format(line))
+
+    #     if recat_cases:
+    #         recat_update = """UPDATE task_history_recat
+    #                              SET category = CASE {0}
+    #                                             ELSE '{1}'
+    #                                             END
+    #                            WHERE scope =  '{2}'"""
+    #         unsafe_recat_update = recat_update.format(recat_cases, recat_else, scope_prefix)  # noqa
+    #     else:
+    #         recat_update = """UPDATE task_history_recat
+    #                                     SET category = \'{0}\'
+    #                            WHERE scope = '{1}'"""
+    #         unsafe_recat_update = recat_update.format(recat_else, scope_prefix)
+
+    #     if VERBOSE:
+    #         print('{0} {1}: Applying recategorization'.
+    #               format(scope_prefix, datetime.datetime.now()))
+    #     cur.execute(unsafe_recat_update)
+    #     cur.execute('SELECT apply_tag_based_recategorization(%(scope_prefix)s)',
+    #                 {'scope_prefix': scope_prefix})
+
+    # else:
+    #     # Build a category list from the data
+    #     category_insert = """INSERT INTO category_list (
+    #                      SELECT %(scope_prefix)s,
+    #                             row_number() OVER(ORDER BY category asc),
+    #                             category,
+    #                             NULL,
+    #                             NULL,
+    #                             NULL,
+    #                             TRUE
+    #                        FROM (SELECT DISTINCT category
+    #                                FROM task_history_recat
+    #                               WHERE scope = %(scope_prefix)s
+    #                               ORDER BY category) as foo)"""
+    #     cur.execute(category_insert, {'scope_prefix': scope_prefix})
 
 
 def start_of_quarter(input_date):
