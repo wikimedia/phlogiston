@@ -5,22 +5,35 @@
   <link rel="stylesheet" type="text/css" href="style.css">
   <link href='https://fonts.googleapis.com/css?family=Lato' rel='stylesheet' type='text/css'>
   <body>
+    <div id="sorttable">
     <h1>{{ title }} Open Tasks</h1>
     <table class="bord">
       <tr>
-        <th>ID</th>
-	<th>Task</th>
-	<th>Category</th>
-	<th>Date Added</th>
+        <th><button class="sort" data-sort="id">ID</button></th>
+	<th><button class="sort" data-sort="name">Task Title</button>
+	    <input class="search" placeholder="Filter by Title" /></th>
+	<th><button class="sort" data-sort="category">Category</button></th>
+	<th><button class="sort" data-sort="dateadded">Date Added</button></th>
       </tr>
+      <tbody class="list">
       {% for row in open_tasks_rows %}
       <tr>
-        <td><a href="https://phabricator.wikimedia.org/T{{row.0}}">{{row.0}}</a></td>
-	<td>{{ row.1|escape }}</td>
-	<td>{{ row.2 }}</td>
-	<td>{{ row.3.strftime('%Y-%m-%d') }}</td>
+        <td class="id"><a href="https://phabricator.wikimedia.org/T{{row.0}}">{{row.0}}</a></td>
+	<td class="name">{{ row.1|escape }}</td>
+	<td class="category">{{ row.2 }}</td>
+	<td class="dateadded">{{ row.3.strftime('%Y-%m-%d') }}</td>
       </tr>
       {% endfor %}
+      </tbody>
     </table>
+    </div>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/list.js/1.2.0/list.min.js"></script>
+    <script>
+      var options = {
+        valueNames: [ 'name', 'id', 'category', 'dateadded' ]
+      };
+
+      var userList = new List('sorttable', options);
+    </script>
   </body>
 </html>

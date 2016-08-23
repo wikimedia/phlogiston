@@ -939,7 +939,8 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
     file_path = '../html/{0}_open_by_category.html'.format(scope_prefix)
     open_tasks_output = open(os.path.join(script_dir, file_path), 'w')
     open_tasks_output.write(open_tasks_html.render(
-        {'open_tasks_rows': open_tasks_rows}))
+        {'open_tasks_rows': open_tasks_rows,
+         'title': scope_title}))
     open_tasks_output.close()
 
     cur.execute('SELECT * FROM get_unpointed_tasks(%(scope_prefix)s)',
