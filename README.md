@@ -74,8 +74,8 @@ Postgresql database named "phab"   <- data goes here
      * `cp ~/phlogiston/html/*css ~/html`
      * Set up the script to run via cron
        * `crontab -e`
-       * put `15 4    *   *   *    bash ~/phlogiston/batch_phlog.bash -m incremental -p phl -p tpg -p ve -p and -p ios -p col -p cot -p discir -p dismap -p dis -p diswik -p fr -p ja -p red -p rel -p ana >>~/phlog.log 2>&1` at the end of the crontab and save and exit
+       * put `15 4    *   *   *    bash ~/phlogiston/batch_phlog.bash -m incremental -s phl -s tpg -s ve -s and -s ios -s col -s cot -s discir -s dismap -s dis -s diswik -s fr -s ja -s red -s rel -s ana >>~/phlog.log 2>&1` at the end of the crontab and save and exit
 5. Do the initial run of Phlogiston.  As phlogiston:
   * `cd ~/phlogiston`
   * `~/phlogiston/phlogiston.py --initialize`
-  * `bash ~/phlogiston/batch_phlog.bash -m complete -p phl -p tpg -p ve -p and -p ios -p col -p cot -p discir -p dismap -p dis -p diswik -p fr -p ja -p red -p rel -p ana >>~/phlog.log 2>&1`
+  * `bash ~/phlogiston/batch_phlog.bash -m incremental -s phl -s tpg -s ve -s and -s ios -s col -s cot -s discir -s dismap -s dis -s diswik -s fr -s ja -s red -s rel -s ana >>~/phlog.log 2>&1`
