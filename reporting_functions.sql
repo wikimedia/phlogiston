@@ -50,7 +50,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION find_recently_closed(
+CREATE OR REPLACE FUNCTION get_recently_closed(
     scope_prefix varchar(6)
     ) RETURNS void AS $$
 DECLARE
@@ -91,7 +91,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION find_recently_closed_task(
+CREATE OR REPLACE FUNCTION get_recently_closed_task(
     scope_prefix varchar(6)
     ) RETURNS void AS $$
 DECLARE
@@ -669,20 +669,26 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP FUNCTION IF EXISTS get_open_task_list(varchar(6));
 CREATE OR REPLACE FUNCTION get_open_task_list(
     scope_prefix varchar(6)
     ) RETURNS TABLE (
     id int,
     title text,
     category text,
-    date_added timestamp)
+    date_added timestamp,
+    date_last_changed timestamp with time zone)
 AS $$
 BEGIN
     RETURN QUERY
     SELECT thr.id,
            mt.title,
            thr.category,
-	   (SELECT min(date) from task_history_recat thr1 where thr1.id = thr.id) as date_added
+	   date_trunc('day', (SELECT MIN(date) FROM task_history_recat thr1 WHERE thr1.id = thr.id)) AS date_added,
+	   date_trunc('day', (SELECT MAX(date_modified)
+              FROM maniphest_transaction
+             WHERE task_id = thr.id
+               AND transaction_type IN ('core:columns', 'status', 'core:edge'))) AS date_last_changed
       FROM task_history_recat thr LEFT OUTER JOIN maniphest_task mt USING (id)
      WHERE scope = scope_prefix
        AND thr.status = '"open"'

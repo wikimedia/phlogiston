@@ -618,7 +618,7 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
                    id,
                    %(category_id)s
               FROM (SELECT *
-                      FROM find_descendents(%(category_id)s,
+                      FROM get_descendents(%(category_id)s,
                                             %(working_date)s)) as x)"""
             cur.execute(task_category_insert,
                         {'scope_prefix': scope_prefix,
@@ -847,9 +847,9 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
                               GROUP BY status, category, maint_type, date, scope)"""
 
     cur.execute(tall_backlog_insert, {'scope_prefix': scope_prefix})
-    cur.execute('SELECT find_recently_closed(%(scope_prefix)s)',
+    cur.execute('SELECT get_recently_closed(%(scope_prefix)s)',
                 {'scope_prefix': scope_prefix})
-    cur.execute('SELECT find_recently_closed_task(%(scope_prefix)s)',
+    cur.execute('SELECT get_recently_closed_task(%(scope_prefix)s)',
                 {'scope_prefix': scope_prefix})
 
     ######################################################################

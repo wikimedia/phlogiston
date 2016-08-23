@@ -50,7 +50,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION find_descendents(
+CREATE OR REPLACE FUNCTION get_descendents(
        root_id int,
        run_date date
 ) RETURNS TABLE(id int) AS $$
