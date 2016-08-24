@@ -50,7 +50,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION get_recently_closed(
+CREATE OR REPLACE FUNCTION populate_recently_closed(
     scope_prefix varchar(6)
     ) RETURNS void AS $$
 DECLARE
@@ -91,7 +91,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION get_recently_closed_task(
+CREATE OR REPLACE FUNCTION populate_recently_closed_task(
     scope_prefix varchar(6)
     ) RETURNS void AS $$
 DECLARE

@@ -847,9 +847,9 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
                               GROUP BY status, category, maint_type, date, scope)"""
 
     cur.execute(tall_backlog_insert, {'scope_prefix': scope_prefix})
-    cur.execute('SELECT get_recently_closed(%(scope_prefix)s)',
+    cur.execute('SELECT populate_recently_closed(%(scope_prefix)s)',
                 {'scope_prefix': scope_prefix})
-    cur.execute('SELECT get_recently_closed_task(%(scope_prefix)s)',
+    cur.execute('SELECT populate_recently_closed_task(%(scope_prefix)s)',
                 {'scope_prefix': scope_prefix})
 
     ######################################################################
