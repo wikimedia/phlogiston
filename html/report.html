@@ -29,17 +29,15 @@
         <td>
 	  <h3>Details and diagnostic reports</h3>
           <ul>
-            <li><a href="{{ scope_prefix }}_category_possibilities.txt">Full list of possible categories.</a></li>
-
+            <li><a href="{{ scope_prefix }}_open_by_category.html">All open tasks</a></li>
             <li><a href="{{ scope_prefix }}_recently_closed.html">Recently closed tasks</a></li>
-            <li><a href="{{ scope_prefix }}_open_by_category.html">All open tasks, sorted by category</a></li>
+	    <li><a href="{{ scope_prefix }}_unpointed.html">Unpointed tasks</a> are defaulted to <b>{{ default_points }}</b> points.</li>
             <li><a href="{{ scope_prefix }}_points_histogram.png">Histogram of stories by points</a>.</li>
-</ul>
-	  <h3>Configuration</h3>
-	  
-	  <ul>
-	    <li><a href="{{ scope_prefix }}_unpointed.html">Unpointed stories</a> are defaulted to <b>{{ default_points }}</b> points.</li>
+            <li><a href="{{ scope_prefix }}_category_possibilities.txt">List of all possible categories.</a></li>
             <li><a href="https://github.com/wikimedia/phlogiston/blob/master/{{ scope_prefix }}_recategorization.csv">Rules for recategorizing tasks</a></li>
+          </ul>
+          <h3>Configuration</h3>
+          <ul>
             {% if show_points and not show_count %}
             <li>This report shows charts by task points and not task count.</li>
             {% endif %}
@@ -88,7 +86,7 @@
 	</tr>
       </table>
     </p>
-    <p><a href="https://www.mediawiki.org/wiki/Guide_to_Phlogiston_Reports#Forecast">Explanation</a>. See also <a href="{{ scope_prefix }}_current_forecasts.html">Complete forecast dates</a> for the raw data behind this chart.</p>
+    <p><a href="https://www.mediawiki.org/wiki/Guide_to_Phlogiston_Reports#Forecast">Help</a>. See also <a href="{{ scope_prefix }}_current_forecasts.html">Complete forecast dates</a> for the raw data behind this chart.</p>
     <a name="burnups"><h2>Project Burnup</h2></a>
     <p>History of completed work (above the line) and open work (below the line) for all categories of work over time.</p>
     <p>
@@ -109,7 +107,7 @@
 	</tr>
       </table>
     </p>
-    <p><a href="https://www.mediawiki.org/wiki/Guide_to_Phlogiston_Reports#Combined_Burnup">Explanation</a>.</p>
+    <p><a href="https://www.mediawiki.org/wiki/Guide_to_Phlogiston_Reports#Combined_Burnup">Help</a>.</p>
     <h2><a name="category_burnups">Per-Category Burnups</a></h2>
     <table>
       <tr>
@@ -157,7 +155,7 @@
     </div>
 
 
-    <p><a href="https://www.mediawiki.org/wiki/Guide_to_Phlogiston_Reports#Per-category_charts">Explanation</a>.</p>
+    <p><a href="https://www.mediawiki.org/wiki/Guide_to_Phlogiston_Reports#Per-category_charts">Help</a>.</p>
     <a name="velocity"><h2>Velocity</h2></a>
     <p>Change in resolved tasks week to week.</p>
     <p>
@@ -176,7 +174,7 @@
 	</tr>
       </table>
     </p>
-    <p><a href="https://www.mediawiki.org/wiki/Guide_to_Phlogiston_Reports#Combined_Velocity">Explanation</a>.</p>
+    <p><a href="https://www.mediawiki.org/wiki/Guide_to_Phlogiston_Reports#Combined_Velocity">Help</a>.</p>
     <a name="recentlyclosed"><h2>Recently Closed</h2></a>
     <p>Completed work per week, broken out by category, with highest-priority work on the bottom, in darkest green.</p>
     <table>
@@ -193,6 +191,6 @@
         {% endif %}
       </tr>
     </table>
-    <p><a href="https://www.mediawiki.org/wiki/Guide_to_Phlogiston_Reports#Completed_Work">Explanation</a>.  <a href="{{ scope_prefix }}_recently_closed.html">Full list of tasks resolved in last two weeks.</a></p>
+    <p><a href="https://www.mediawiki.org/wiki/Guide_to_Phlogiston_Reports#Completed_Work">Help</a>.  <a href="{{ scope_prefix }}_recently_closed.html">Full list of tasks resolved in last two weeks.</a></p>
   </body>
 </html>
