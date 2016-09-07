@@ -18,3 +18,4 @@ sort_order,zoom_list,title,matchstring
 16,TRUE,Rich media,TR5
 17,FALSE,Mobile,TR2
 18,FALSE,Wikivoyages on for all,Enable VisualEditor by default for all users of all Wikivoyages
+19,FALSE,External,External and Administrivia
