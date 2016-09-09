@@ -1,5 +1,6 @@
 rule,title,display,id,matchstring
 ProjectColumn,Interrupt,TRUE,483,TR0
+ProjectColumn,External,FALSE,483,External
 ParentTask,NewWikitextEditor,TRUE,483,Provide a Beta Feature of a modern wikitext editor integrated into the visual editor
 ParentTask,Enwiki IP A/B test,TRUE,483,experiment defaulting anonymous editors to the visual editor on
 ParentTask,Enwiki on for IPs,TRUE,483,Re-enable VisualEditor by default for all logged-out users of the English Wikipedia
