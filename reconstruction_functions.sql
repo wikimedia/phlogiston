@@ -76,7 +76,7 @@ CREATE OR REPLACE FUNCTION create_phab_parent_category_edges(
 
   INSERT INTO phab_parent_category_edge (
   SELECT $1,
-         $2
+         $2,
          id,
          $3
     FROM (SELECT *
@@ -111,7 +111,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 
-CREATE OR REPLACE FUNCTION get_categories_by_day(
+CREATE OR REPLACE FUNCTION get_phab_parent_categories_by_day(
        scope_prefix varchar(6),
        working_date date,
        category_tag_id int

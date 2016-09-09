@@ -426,7 +426,7 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points,
 
         # Use as-is data to reconstruct certain relationships for working data
         # see https://phabricator.wikimedia.org/T115936#1847188
-        cur.execute('SELECT * from get_categories_by_day(%(scope_prefix)s, %(working_date)s, %(category_tag_id)s)',  # noqa
+        cur.execute('SELECT * from get_phab_parent_categories_by_day(%(scope_prefix)s, %(working_date)s, %(category_tag_id)s)',  # noqa
                     {'scope_prefix': scope_prefix,
                      'working_date': working_date,
                      'category_tag_id': PHAB_TAGS['category']})
