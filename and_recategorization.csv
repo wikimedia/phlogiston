@@ -1,8 +1,4 @@
-sort_order,zoom_list,title,matchstring
-1,True,Feeds MVP 2.0,Android-app-feature-Feeds-MVP-2.0
-2,False,Feeds Implementation MVP,Android-app-feature-Feeds-MVP
-3,True,Feeds Overall Tag,Android-app-feature-Feeds
-4,True,Navigation MVP,Android-app-feature-Navigation-MVP
-5,True,Navigation Overall Tag,Android-app-feature-Navigation
-6,True,2016-17 Q1 Goals,Android-app-goals-2016-17-Q1
-7,False,Other,PhlogOther
+rule,title,display,id,matchstring
+ProjectsByWildcard,,true,,Android-app-feature
+ProjectByName,2016-17 Q1 Goals,,,Android-app-goals-2016-17-Q1
+

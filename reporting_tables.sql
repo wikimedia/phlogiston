@@ -1,15 +1,3 @@
-DROP TABLE IF EXISTS category_list;
-
-CREATE TABLE category_list (
-       scope varchar(6),
-       sort_order int,
-       category text,
-       t1 int,
-       t2 int,
-       matchstring text,
-       zoom boolean
-);
-
 DROP TABLE IF EXISTS tall_backlog;
 
 CREATE TABLE tall_backlog (
@@ -22,23 +10,26 @@ CREATE TABLE tall_backlog (
        maint_type text
 );
 
-DROP TABLE IF EXISTS task_history_recat;
+DROP TABLE IF EXISTS task_on_date_recategorized;
 
-CREATE TABLE task_history_recat (
+CREATE TABLE task_on_date_recategorized (
        scope varchar(6),
        date timestamp,
        id int,
        category text,
+       project_id int,
+       projectcolumn text,
+       phab_category_title text,
        status text,
        points int,
        maint_type text,
        priority text
        );
 
-CREATE INDEX ON task_history_recat (scope);
-CREATE INDEX ON task_history_recat (status);
-CREATE INDEX ON task_history_recat (date);
-CREATE INDEX ON task_history_recat (id);
+CREATE INDEX ON task_on_date_recategorized (scope);
+CREATE INDEX ON task_on_date_recategorized (status);
+CREATE INDEX ON task_on_date_recategorized (date);
+CREATE INDEX ON task_on_date_recategorized (id);
 
 DROP TABLE IF EXISTS recently_closed;
 

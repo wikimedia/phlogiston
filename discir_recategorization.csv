@@ -1,3 +1,2 @@
-sort_order,zoom_list,title,matchstring
-1,True,Discover-Cirrus,Discovery-Cirrus-Sprint%
-2,True,Other,PhlogOther
+rule,title,display,id,matchstring
+ProjectsByWildcard,,true,,Discover-Cirrus

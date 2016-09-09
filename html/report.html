@@ -19,12 +19,6 @@
             <tr><th>Most Recent Data</th><th>{{ max_date_utc }}</th><th>{{ max_date_pt }}</th></tr>
             <tr><th>Report Date</th><th>{{ now_utc }}</th><th>{{ now_pt }}</th></tr>
           </table>
-          <p>These charts include data from the following Phabricator projects, in this order:</p>
-          <pre>
-	      {% for project in project_name_list %}
-	      <b>{{ project }}</b>
-	  {% endfor %}
-          </pre>
         </td>
         <td>
 	  <h3>Details and diagnostic reports</h3>
@@ -34,11 +28,10 @@
 	    <li><a href="{{ scope_prefix }}_unpointed.html">Unpointed tasks</a> are defaulted to <b>{{ default_points }}</b> points.</li>
             <li><a href="{{ scope_prefix }}_points_histogram.png">Histogram of stories by points</a>.</li>
             <li><a href="{{ scope_prefix }}_category_possibilities.txt">List of all possible categories.</a></li>
-            <li><a href="https://github.com/wikimedia/phlogiston/blob/master/{{ scope_prefix }}_recategorization.csv">Rules for recategorizing tasks</a></li>
           </ul>
           <h3>Configuration</h3>
           <ul>
-            {% if show_points and not show_count %}
+            <li><a href="{{ scope_prefix }}_rules.html">Rules for including and categorizing tasks</a> (<a href="https://github.com/wikimedia/phlogiston/blob/master/{{ scope_prefix }}_recategorization.csv">Edit</a>)</li>            {% if show_points and not show_count %}
             <li>This report shows charts by task points and not task count.</li>
             {% endif %}
             {% if show_count and not show_points %}
@@ -65,7 +58,7 @@
 	<tr>
           {% if show_points %}
 	  <td>
-	    <a href="{{ scope_prefix }}_forecast_points_zoom.png"><img src="{{ scope_prefix }}_forecast_points_zoom.png"/></a><br/><a href="{{ scope_prefix }}_forecast_points.png">Unzoomed.</a>
+	    <a href="{{ scope_prefix }}_forecast_points.png"><img src="{{ scope_prefix }}_forecast_points.png"/></a><br/><a href="{{ scope_prefix }}_forecast_points_showhidden.png">Show hidden.</a>
 	  </td>
           {% endif %}
           <td>
@@ -80,7 +73,7 @@
           </td>
           {% if show_count %}
 	  <td>
-	    <a href="{{ scope_prefix }}_forecast_count_zoom.png"><img src="{{ scope_prefix }}_forecast_count_zoom.png"/></a><br/><a href="{{ scope_prefix }}_forecast_count.png">Unzoomed.</a>
+	    <a href="{{ scope_prefix }}_forecast_count.png"><img src="{{ scope_prefix }}_forecast_count.png"/></a><br/><a href="{{ scope_prefix }}_forecast_count_showhidden.png">Show hidden.</a>
 	  </td>
           {% endif %}
 	</tr>
@@ -94,14 +87,14 @@
 	<tr>
           {% if show_points %}
 	  <td>
-	    <a href="{{ scope_prefix }}_backlog_burnup_points_zoom.png"><img src="{{ scope_prefix }}_backlog_burnup_points_zoom.png"/></a><br/>
-            <a href="{{ scope_prefix }}_backlog_burnup_points.png">Unzoomed.</a><br/>
+	    <a href="{{ scope_prefix }}_backlog_burnup_points.png"><img src="{{ scope_prefix }}_backlog_burnup_points.png"/></a><br/>
+            <a href="{{ scope_prefix }}_backlog_burnup_points_showhidden.png">Show hidden.</a><br/>
 	  </td>
           {% endif %}
           {% if show_count %}
 	  <td>
-	    <a href="{{ scope_prefix }}_backlog_burnup_count_zoom.png"><img src="{{ scope_prefix }}_backlog_burnup_count_zoom.png"/></a><br/>
-            <a href="{{ scope_prefix }}_backlog_burnup_count.png">Unzoomed.</a>
+	    <a href="{{ scope_prefix }}_backlog_burnup_count.png"><img src="{{ scope_prefix }}_backlog_burnup_count.png"/></a><br/>
+            <a href="{{ scope_prefix }}_backlog_burnup_count_showhidden.png">Show hidden.</a>
 	  </td>
           {% endif %}
 	</tr>

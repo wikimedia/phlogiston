@@ -1,159 +1,3 @@
-CREATE OR REPLACE FUNCTION wipe_reporting(
-       scope_prefix varchar(6)
-) RETURNS void AS $$
-BEGIN
-    DELETE FROM task_history_recat
-     WHERE scope = scope_prefix;
-
-    DELETE FROM tall_backlog
-     WHERE scope = scope_prefix;
-
-    DELETE FROM category_list
-     WHERE scope = scope_prefix;
-
-    DELETE FROM recently_closed
-     WHERE scope = scope_prefix;
-
-    DELETE FROM recently_closed_task
-     WHERE scope = scope_prefix;
-
-    DELETE FROM maintenance_week
-     WHERE scope = scope_prefix;
-
-    DELETE FROM maintenance_delta
-     WHERE scope = scope_prefix;
-
-    DELETE FROM velocity
-     WHERE scope = scope_prefix;
-
-    DELETE FROM open_backlog_size
-     WHERE scope = scope_prefix;
-
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE OR REPLACE FUNCTION no_resolved_before_start(
-    scope_prefix varchar(6),
-    backlog_resolved_cutoff date
-    ) RETURNS void AS $$
-BEGIN
-
-    DELETE FROM task_history_recat thr
-     WHERE thr.scope = scope_prefix
-       AND thr.id IN (SELECT id
-                        FROM task_history th
-                       WHERE date = backlog_resolved_cutoff
-                         AND scope = scope_prefix
-                         AND status = '"resolved"');
-    RETURN;
-
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE OR REPLACE FUNCTION populate_recently_closed(
-    scope_prefix varchar(6)
-    ) RETURNS void AS $$
-DECLARE
-  weekrow record;
-BEGIN
-
-    DELETE FROM recently_closed
-     WHERE scope = scope_prefix;
-
-    FOR weekrow IN SELECT DISTINCT date
-                     FROM task_history_recat
-                    WHERE EXTRACT(epoch FROM age(date))/604800 = ROUND(
-                          EXTRACT(epoch FROM age(date))/604800)
-                      AND scope = scope_prefix
-                    ORDER BY date
-    LOOP
-
-        INSERT INTO recently_closed (
-             SELECT scope_prefix as scope,
-                    date,
-                    category,
-                    sum(points) AS points,
-                    count(id) as count
-               FROM task_history_recat
-              WHERE status = '"resolved"'
-                AND date = weekrow.date
-                AND scope = scope_prefix
-                AND id NOT IN (SELECT id
-                                 FROM task_history
-                                WHERE status = '"resolved"'
-                                  AND scope = scope_prefix
-                                  AND date = weekrow.date - interval '1 week' )
-              GROUP BY date, category
-             );
-    END LOOP;
-
-    RETURN;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE OR REPLACE FUNCTION populate_recently_closed_task(
-    scope_prefix varchar(6)
-    ) RETURNS void AS $$
-DECLARE
-  daterow record;
-BEGIN
-
-    DELETE FROM recently_closed_task
-     WHERE scope = scope_prefix;
-
-    FOR daterow IN SELECT DISTINCT date
-                     FROM task_history_recat
-                    WHERE scope = scope_prefix
-                      AND date > now() - interval '14 days'
-                    ORDER BY date
-    LOOP
-
-        INSERT INTO recently_closed_task (
-             SELECT scope_prefix as scope,
-                    thr.date,
-                    thr.id,
-                    thr.category
-              FROM task_history_recat thr LEFT OUTER JOIN maniphest_task mt USING (id)
-             WHERE thr.status = '"resolved"'
-               AND thr.date = daterow.date
-               AND thr.scope = scope_prefix
-               AND thr.id NOT IN (SELECT id
-                                    FROM task_history
-                                   WHERE status = '"resolved"'
-                                     AND scope = scope_prefix
-                                     AND date = daterow.date - interval '1 day' )
-               
-             );
-    END LOOP;
-
-    RETURN;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE OR REPLACE FUNCTION backlog_query (
-       scope_prefix varchar(6),
-       status_input text,
-       zoom_input boolean
-) RETURNS TABLE(date timestamp, category text, sort_order int, points numeric, count numeric) AS $$
-BEGIN
-        RETURN QUERY
-        SELECT t.date,
-               t.category,
-               MAX(z.sort_order) as sort_order,
-               SUM(t.points)::numeric as points,
-               SUM(t.count)::numeric as count
-          FROM tall_backlog t, category_list z
-         WHERE t.scope = scope_prefix
-           AND z.scope = scope_prefix
-           AND t.scope = z.scope
-           AND t.category = z.category
-           AND t.status = status_input
-           AND (z.zoom = True OR z.zoom = zoom_input)
-         GROUP BY t.date, t.category
-         ORDER BY t.date, sort_order;
-END;
-$$ LANGUAGE plpgsql;
-
 CREATE OR REPLACE FUNCTION calculate_velocities(
     scope_prefix varchar(6)
     ) RETURNS date AS $$
@@ -588,56 +432,89 @@ END;
 $$ LANGUAGE plpgsql;
 
 
-CREATE OR REPLACE FUNCTION apply_tag_based_recategorization(
+CREATE OR REPLACE FUNCTION load_tasks_to_recategorize(
     scope_prefix varchar(6)
-    ) RETURNS void AS $$
-DECLARE
-  categoryrow record;
-BEGIN
+) RETURNS void AS $$
 
-    FOR categoryrow IN SELECT category, t1, t2
-                         FROM category_list
-                        WHERE scope = scope_prefix
-    LOOP
-        UPDATE task_history_recat t
-           SET category = categoryrow.category
-          FROM maniphest_edge me1, maniphest_edge me2
+  INSERT INTO task_on_date_recategorized(
+    SELECT scope,
+           date,
+           id,
+	   NULL,
+           project_id,
+           projectcolumn,
+           category_title,
+           status,
+           points,
+           maint_type
+      FROM task_on_date
+     WHERE scope = $1
+  );
+
+  UPDATE task_on_date_recategorized
+     SET status = '"open"'
+   WHERE status = '"stalled"'
+     AND scope = $1;
+
+  DELETE FROM task_on_date_recategorized
+   WHERE (status = '"duplicate"'
+      OR status = '"invalid"'
+      OR status = '"declined"')
+     AND scope = $1;
+
+$$ LANGUAGE SQL VOLATILE;
+
+
+CREATE OR REPLACE FUNCTION get_backlog (
+       scope_prefix varchar(6),
+       status_input text,
+       show_hidden boolean
+) RETURNS TABLE(date timestamp, category text, sort_order int, points numeric, count numeric) AS $$
+BEGIN
+        RETURN QUERY
+        SELECT t.date,
+               t.category,
+               MAX(z.sort_order) as sort_order,
+               SUM(t.points)::numeric as points,
+               SUM(t.count)::numeric as count
+          FROM tall_backlog t, category z
          WHERE t.scope = scope_prefix
-           AND me1.project = categoryrow.t1
-           AND me1.task = t.id
-           AND me1.edge_date = t.date
-           AND me2.project = categoryrow.t2
-           AND me2.task = t.id
-           AND me2.edge_date = t.date;
-    END LOOP;			 
-    RETURN;
+           AND z.scope = scope_prefix
+           AND t.scope = z.scope
+           AND t.category = z.title
+           AND t.status = status_input
+           AND (show_hidden = True OR z.display = True)
+         GROUP BY t.date, t.category
+         ORDER BY t.date, sort_order;
 END;
 $$ LANGUAGE plpgsql;
+
 
 CREATE OR REPLACE FUNCTION get_categories(
     scope_prefix varchar(6)
     ) RETURNS TABLE (
-    category text,
-    zoom boolean)
+    title text,
+    display boolean)
 AS $$
 BEGIN
     RETURN QUERY
-    SELECT foo.category,
-           foo.zoom
-      FROM (SELECT z.category,
-                   bool_or(z.zoom) as zoom,
+    SELECT foo.title,
+           foo.display
+      FROM (SELECT z.title,
+                   bool_or(z.display) as display,
                    max(z.sort_order) as sort_order,
                    sum(t.count) as xcount
-              FROM category_list z, tall_backlog t
+              FROM category z, tall_backlog t
              WHERE z.scope = scope_prefix
                AND z.scope = t.scope
-               AND z.category = t.category
-             GROUP BY z.category) as foo
+               AND z.title = t.category
+             GROUP BY z.title) as foo
      WHERE xcount > 0
     ORDER BY sort_order;
 
 END;
 $$ LANGUAGE plpgsql;
+
 
 CREATE OR REPLACE FUNCTION get_forecast_weeks(
     scope_prefix varchar(6)
@@ -655,10 +532,10 @@ BEGIN
                pes_count_fore,
                nom_count_fore,
                opt_count_fore
-          FROM velocity v, category_list z
+          FROM velocity v, category z
          WHERE v.scope = scope_prefix
            AND v.scope = z.scope
-           AND v.category = z.category
+           AND v.category = z.title
            AND v.count_total IS NOT NULL
            AND v.date = (SELECT MAX(date)
                            FROM velocity
@@ -668,6 +545,7 @@ BEGIN
 
 END;
 $$ LANGUAGE plpgsql;
+
 
 DROP FUNCTION IF EXISTS get_open_task_list(varchar(6));
 CREATE OR REPLACE FUNCTION get_open_task_list(
@@ -684,21 +562,22 @@ BEGIN
     SELECT thr.id,
            mt.title,
            thr.category,
-	   date_trunc('day', (SELECT MIN(date) FROM task_history_recat thr1 WHERE thr1.id = thr.id)) AS date_added,
+	   date_trunc('day', (SELECT MIN(date) FROM task_on_date_recategorized thr1 WHERE thr1.id = thr.id)) AS date_added,
 	   date_trunc('day', (SELECT MAX(date_modified)
               FROM maniphest_transaction
              WHERE task_id = thr.id
                AND transaction_type IN ('core:columns', 'status', 'core:edge'))) AS date_last_changed
-      FROM task_history_recat thr LEFT OUTER JOIN maniphest_task mt USING (id)
+      FROM task_on_date_recategorized thr LEFT OUTER JOIN maniphest_task mt USING (id)
      WHERE scope = scope_prefix
        AND thr.status = '"open"'
        AND thr.date = (SELECT MAX(date)
-                         FROM task_history_recat
+                         FROM task_on_date_recategorized
                         WHERE scope = scope_prefix)
         ORDER BY thr.category, date_added, mt.title;
 
 END;
 $$ LANGUAGE plpgsql;
+
 
 CREATE OR REPLACE FUNCTION get_recently_closed_tasks(
     scope_prefix varchar(6)
@@ -736,11 +615,11 @@ BEGIN
            mt.title,
            thr.category,
            thr.status
-      FROM task_history_recat thr LEFT OUTER JOIN maniphest_task mt USING (id)
-                                  LEFT OUTER JOIN category_list z ON (z.category = thr.category)
+      FROM task_on_date_recategorized thr LEFT OUTER JOIN maniphest_task mt USING (id)
+                                  LEFT OUTER JOIN category z ON (z.title = thr.category)
      WHERE thr.scope = scope_prefix
        AND thr.date = (SELECT MAX(date)
-                         FROM task_history_recat
+                         FROM task_on_date_recategorized
                         WHERE scope = scope_prefix)
        AND thr.id IN (SELECT mt.id
                         FROM maniphest_task mt
@@ -750,16 +629,222 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+
+CREATE OR REPLACE FUNCTION no_resolved_before_start(
+    scope_prefix varchar(6),
+    backlog_resolved_cutoff date
+    ) RETURNS void AS $$
+BEGIN
+
+    DELETE FROM task_on_date_recategorized thr
+     WHERE thr.scope = scope_prefix
+       AND thr.id IN (SELECT id
+                        FROM task_on_date th
+                       WHERE date = backlog_resolved_cutoff
+                         AND scope = scope_prefix
+                         AND status = '"resolved"');
+    RETURN;
+
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION populate_recently_closed(
+    scope_prefix varchar(6)
+    ) RETURNS void AS $$
+DECLARE
+  weekrow record;
+BEGIN
+
+    DELETE FROM recently_closed
+     WHERE scope = scope_prefix;
+
+    FOR weekrow IN SELECT DISTINCT date
+                     FROM task_on_date_recategorized
+                    WHERE EXTRACT(epoch FROM age(date))/604800 = ROUND(
+                          EXTRACT(epoch FROM age(date))/604800)
+                      AND scope = scope_prefix
+                    ORDER BY date
+    LOOP
+
+        INSERT INTO recently_closed (
+             SELECT scope_prefix as scope,
+                    date,
+                    category,
+                    sum(points) AS points,
+                    count(id) as count
+               FROM task_on_date_recategorized
+              WHERE status = '"resolved"'
+                AND date = weekrow.date
+                AND scope = scope_prefix
+                AND id NOT IN (SELECT id
+                                 FROM task_on_date
+                                WHERE status = '"resolved"'
+                                  AND scope = scope_prefix
+                                  AND date = weekrow.date - interval '1 week' )
+              GROUP BY date, category
+             );
+    END LOOP;
+
+    RETURN;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION populate_recently_closed_task(
+    scope_prefix varchar(6)
+    ) RETURNS void AS $$
+DECLARE
+  daterow record;
+BEGIN
+
+    DELETE FROM recently_closed_task
+     WHERE scope = scope_prefix;
+
+    FOR daterow IN SELECT DISTINCT date
+                     FROM task_on_date_recategorized
+                    WHERE scope = scope_prefix
+                      AND date > now() - interval '14 days'
+                    ORDER BY date
+    LOOP
+
+        INSERT INTO recently_closed_task (
+             SELECT scope_prefix as scope,
+                    thr.date,
+                    thr.id,
+                    thr.category
+              FROM task_on_date_recategorized thr LEFT OUTER JOIN maniphest_task mt USING (id)
+             WHERE thr.status = '"resolved"'
+               AND thr.date = daterow.date
+               AND thr.scope = scope_prefix
+               AND thr.id NOT IN (SELECT id
+                                    FROM task_on_date
+                                   WHERE status = '"resolved"'
+                                     AND scope = scope_prefix
+                                     AND date = daterow.date - interval '1 day' )
+               
+             );
+    END LOOP;
+
+    RETURN;
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE FUNCTION purge_leftover_task_on_date(
+    scope_prefix varchar(6)
+    ) RETURNS void as $$
+BEGIN
+
+    DELETE FROM task_on_date_recategorized
+     WHERE scope = scope_prefix
+       AND category IS NULL;
+
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE FUNCTION reload_recat(
+    scope_prefix varchar(6)
+    ) RETURNS void as $$
+BEGIN
+    DELETE FROM task_on_date_recategorized WHERE scope = scope_prefix;
+
+    /* INCOMPLETE */
+
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE FUNCTION recategorize_by_column(
+    scope_prefix varchar(6),
+    project_id_input int[],
+    title text,
+    matchstring text
+) RETURNS void as $$
+BEGIN
+
+  UPDATE task_on_date_recategorized todr
+     SET category = title
+    FROM maniphest_edge me1
+   WHERE todr.scope = scope_prefix
+     AND me1.project = project_id_input[1]
+     AND me1.task = todr.id
+     AND me1.edge_date = todr.date
+     AND todr.category IS NULL
+     AND todr.projectcolumn LIKE '%' || matchstring || '%';
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE FUNCTION recategorize_by_parenttask(
+    scope_prefix varchar(6),
+    project_id_input int[],
+    title text,
+    matchstring text
+) RETURNS void as $$
+BEGIN
+
+  UPDATE task_on_date_recategorized todr
+     SET category = title
+    FROM maniphest_edge me1
+   WHERE todr.scope = scope_prefix
+     AND me1.project = project_id_input[1]
+     AND me1.task = todr.id
+     AND me1.edge_date = todr.date
+     AND todr.category IS NULL
+     AND todr.phab_category_title LIKE '%' || matchstring || '%';
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION recategorize_by_project(
+    scope_prefix varchar(6),
+    project_id_input int[],
+    title text
+) RETURNS void as $$
+BEGIN
+
+  UPDATE task_on_date_recategorized todr
+     SET category = title
+    FROM maniphest_edge me1
+   WHERE todr.scope = scope_prefix
+     AND me1.project = project_id_input[1]
+     AND me1.task = todr.id
+     AND me1.edge_date = todr.date
+     AND todr.category IS NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE FUNCTION recategorize_by_intersection(
+    scope_prefix varchar(6),
+    project_id int[],
+    title text
+) RETURNS void as $$
+
+  UPDATE task_on_date_recategorized todr
+     SET category = $3
+    FROM maniphest_edge me1, maniphest_edge me2
+   WHERE todr.scope = scope_prefix
+     AND me1.project = $2[1]
+     AND me1.task = todr.id
+     AND me1.edge_date = todr.date
+     AND me2.project = $2[2]
+     AND me2.task = todr.id
+     AND me2.edge_date = todr.date
+     AND todr.category IS NULL;
+
+$$ LANGUAGE SQL VOLATILE;
+
+
 CREATE OR REPLACE FUNCTION set_category_retroactive(
     scope_prefix varchar(6)
     ) RETURNS void AS $$
 BEGIN
 
-    UPDATE task_history_recat t
+    UPDATE task_on_date_recategorized t
        SET category = t0.category
-      FROM task_history_recat t0
+      FROM task_on_date_recategorized t0
      WHERE t0.date = (SELECT MAX(date)
-                        FROM task_history_recat
+                        FROM task_on_date_recategorized
                        WHERE scope = scope_prefix)
        AND t0.scope = scope_prefix
        AND t.scope = scope_prefix
@@ -769,21 +854,54 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+
 CREATE OR REPLACE FUNCTION set_points_retroactive(
     scope_prefix varchar(6)
     ) RETURNS void AS $$
 BEGIN
 
-    UPDATE task_history_recat t
+    UPDATE task_on_date_recategorized t
        SET points = t0.points
-      FROM task_history_recat t0
+      FROM task_on_date_recategorized t0
      WHERE t0.date = (SELECT MAX(date)
-                        FROM task_history_recat
+                        FROM task_on_date_recategorized
                        WHERE scope = scope_prefix)
        AND t0.scope = scope_prefix
        AND t.scope = scope_prefix
        AND t0.id = t.id;
 
     RETURN;
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE FUNCTION wipe_reporting(
+       scope_prefix varchar(6)
+) RETURNS void AS $$
+BEGIN
+    DELETE FROM task_on_date_recategorized
+     WHERE scope = scope_prefix;
+
+    DELETE FROM tall_backlog
+     WHERE scope = scope_prefix;
+
+    DELETE FROM recently_closed
+     WHERE scope = scope_prefix;
+
+    DELETE FROM recently_closed_task
+     WHERE scope = scope_prefix;
+
+    DELETE FROM maintenance_week
+     WHERE scope = scope_prefix;
+
+    DELETE FROM maintenance_delta
+     WHERE scope = scope_prefix;
+
+    DELETE FROM velocity
+     WHERE scope = scope_prefix;
+
+    DELETE FROM open_backlog_size
+     WHERE scope = scope_prefix;
+
 END;
 $$ LANGUAGE plpgsql;

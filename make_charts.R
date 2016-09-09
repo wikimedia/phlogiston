@@ -13,7 +13,7 @@ parser <- ArgumentParser(formatter_class= 'argparse.RawTextHelpFormatter')
 
 parser$add_argument("scope_prefix", nargs=1, help="Scope prefix", default='phl')
 parser$add_argument("scope_title", nargs=1, help="Scope title")
-parser$add_argument("zoom", nargs=1, help="If true, show only zoomed categories")
+parser$add_argument("showhidden", nargs=1, help="If true, show hidden categories")
 parser$add_argument("report_date", nargs=1, help="Date of report")
 parser$add_argument("current_quarter_start", nargs=1)
 parser$add_argument("next_quarter_start", nargs=1)
@@ -24,12 +24,12 @@ parser$add_argument("three_months_ago", nargs=1)
 
 args <- parser$parse_args()
 
-if (args$zoom == 'True') {
-  zoom_title = " (Zoomed)"
-  zoom_suffix = "_zoom"
+if (args$showhidden == 'True') {
+  showhidden_title = " (Showing Hidden)"
+  showhidden_suffix = "_showhidden"
 } else {
-  zoom_title = ""
-  zoom_suffix = ""
+  showhidden_title = ""
+  showhidden_suffix = ""
 }
 
 velocity_recent_date <- read.csv(sprintf("/tmp/%s/velocity_recent_date.csv", args$scope_prefix))
@@ -66,9 +66,9 @@ theme_fivethirtynine <- function(base_size = 12, base_family = "sans"){
 ## Backlog
 ######################################################################
 
-if (args$zoom == 'True') {
-  burn_done <- read.csv(sprintf("/tmp/%s/burn_done_zoom.csv", args$scope_prefix))
-  burn_open <- read.csv(sprintf("/tmp/%s/burn_open_zoom.csv", args$scope_prefix))
+if (args$showhidden == 'True') {
+  burn_done <- read.csv(sprintf("/tmp/%s/burn_done_showhidden.csv", args$scope_prefix))
+  burn_open <- read.csv(sprintf("/tmp/%s/burn_open_showhidden.csv", args$scope_prefix))
 } else {
   burn_done <- read.csv(sprintf("/tmp/%s/burn_done.csv", args$scope_prefix))
   burn_open <- read.csv(sprintf("/tmp/%s/burn_open.csv", args$scope_prefix))
@@ -110,7 +110,7 @@ bd_ylegend_points <- max(bd_labels_points$label_points, 10)
 bo_ylegend_count <- min(bo_labels_count$label_count, 10)
 bo_ylegend_points <- min(bo_labels_points$label_points, 10)
 
-png(filename = sprintf("~/html/%s_backlog_burnup_points%s.png", args$scope_prefix, zoom_suffix), width=2000, height=1125, units="px", pointsize=30)
+png(filename = sprintf("~/html/%s_backlog_burnup_points%s.png", args$scope_prefix, showhidden_suffix), width=2000, height=1125, units="px", pointsize=30)
 
 
 p <- ggplot(burn_done) +
@@ -121,7 +121,7 @@ p <- ggplot(burn_done) +
   scale_x_date(limits=c(previous_quarter_start, burn_done_chart_end), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   theme(legend.position = "none", axis.title.x=element_blank()) +
   guides(col = guide_legend(reverse=TRUE)) +
-  labs(title=sprintf("%s Backlog by points%s", args$scope_title, zoom_title), y="Story Point Total") +
+  labs(title=sprintf("%s Backlog by points%s", args$scope_title, showhidden_title), y="Story Point Total") +
   annotate("text", x=previous_quarter_start, y=bo_ylegend_points, label="Open Tasks", hjust=0, size=10) +
   annotate("text", x=previous_quarter_start, y=bd_ylegend_points, label="Complete Tasks", hjust=0, size=10) +
   geom_hline(aes(yintercept=c(0)), color="black", size=2) +
@@ -139,7 +139,7 @@ if (nrow(bo_labels_points) > 0 ) {
 p
 dev.off()
 
-png(filename = sprintf("~/html/%s_backlog_burnup_count%s.png", args$scope_prefix, zoom_suffix), width=2000, height=1125, units="px", pointsize=30)
+png(filename = sprintf("~/html/%s_backlog_burnup_count%s.png", args$scope_prefix, showhidden_suffix), width=2000, height=1125, units="px", pointsize=30)
 
 ggplot(burn_done) +
   geom_area(position='stack', aes(x = date, y = count, group=category, fill=category, order=-category)) +
@@ -149,7 +149,7 @@ ggplot(burn_done) +
   scale_x_date(limits=c(previous_quarter_start, burn_done_chart_end), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   theme(legend.position = "none", axis.title.x=element_blank()) +
   guides(col = guide_legend(reverse=TRUE)) +
-  labs(title=sprintf("%s Backlog by count%s", args$scope_title, zoom_title), y="Task Count Total") +
+  labs(title=sprintf("%s Backlog by count%s", args$scope_title, showhidden_title), y="Task Count Total") +
   annotate("text", x=previous_quarter_start, y=bo_ylegend_count, label="Open Tasks", hjust=0, size=10) +
   annotate("text", x=previous_quarter_start, y=bd_ylegend_count, label="Complete Tasks", hjust=0, size=10) +
   geom_hline(aes(yintercept=c(0)), color="black", size=2) +
@@ -196,13 +196,15 @@ forecast$date <- as.Date(forecast$date, "%Y-%m-%d")
 forecast <- forecast[forecast$weeks_old < 5,]
 
 
-if (args$zoom == 'True') {
-  forecast_done <- forecast_done[forecast_done$zoom == 't',]
-  forecast <- forecast[forecast$zoom == 't',]
+if (args$showhidden == 'False') {
+  forecast_done <- forecast_done[forecast_done$display == 't',]
+  forecast <- forecast[forecast$display == 't',]
 }
 
 forecast_done$resolved_date <- as.Date(forecast_done$resolved_date, "%Y-%m-%d")
 forecast_done$category <- paste(sprintf("%02d",forecast_done$sort_order), strtrim(forecast_done$category, 35))
+
+
 first_cat = forecast_done$category[1]
 last_cat = tail(forecast_done$category,1)
 done_before_chart <- na.omit(forecast_done[forecast_done$resolved_date <= chart_start, ])
@@ -226,9 +228,7 @@ forecast_never_count <- forecast_current[!is.na(forecast_current$opt_count_date)
 forecast_no_data_points <- forecast_current[!(forecast_current$points_resolved > 0) | is.na(forecast_current$points_resolved),]
 forecast_no_data_count <- forecast_current[!(forecast_current$count_resolved > 0) | is.na(forecast_current$count_resolved),]
 
-
-png(filename = sprintf("~/html/%s_forecast_points%s.png", args$scope_prefix, zoom_suffix), width=2000, height=1125, units="px", pointsize=30)
-
+png(filename = sprintf("~/html/%s_forecast_points%s.png", args$scope_prefix, showhidden_suffix), width=2000, height=1125, units="px", pointsize=30)
 
 p <- ggplot(forecast_done) +
   annotate("rect", xmin=first_cat, xmax=last_cat, ymin=quarter_start, ymax=next_quarter_start, fill="white", alpha=0.5) +
@@ -246,7 +246,7 @@ p <- ggplot(forecast_done) +
   scale_y_date(limits=c(chart_start, chart_end_plus), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   coord_flip() +
   theme_fivethirtynine() +
-  labs(title=sprintf("%s forecast completion dates based on points velocity%s", args$scope_title, zoom_title), x="Category") +
+  labs(title=sprintf("%s forecast completion dates based on points velocity%s", args$scope_title, showhidden_title), x="Category") +
   theme(legend.position = "none",
         axis.text.y = element_text(hjust=1),
         axis.title.x = element_blank())
@@ -273,7 +273,7 @@ if(nrow(forecast_never_points) > 0) {
 
 p
 
-png(filename = sprintf("~/html/%s_forecast_count%s.png", args$scope_prefix, zoom_suffix), width=2000, height=1125, units="px", pointsize=30)
+png(filename = sprintf("~/html/%s_forecast_count%s.png", args$scope_prefix, showhidden_suffix), width=2000, height=1125, units="px", pointsize=30)
 
 p <- ggplot(forecast_done) +
   annotate("rect", xmin=first_cat, xmax=last_cat, ymin=quarter_start, ymax=next_quarter_start, fill="white", alpha=0.5) +
@@ -291,7 +291,7 @@ p <- ggplot(forecast_done) +
   scale_y_date(limits=c(chart_start, chart_end_plus), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   coord_flip() +
   theme_fivethirtynine() +
-  labs(title=sprintf("%s forecast completion dates based on count velocity%s", args$scope_title, zoom_title), x="Category") +
+  labs(title=sprintf("%s forecast completion dates based on count velocity%s", args$scope_title, showhidden_title), x="Category") +
   theme(legend.position = "none",
         axis.text.y = element_text(hjust=1),
         axis.title.x = element_blank())

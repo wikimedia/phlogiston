@@ -1,13 +1,12 @@
-sort_order,zoom_list,title,t1,t2,matchstring
-1,False,Q4 Notifications Work,1903,182,
-2,False,Q4 Notifications-Page Work,1903,1922,
-3,False,Q4 Flow Work,1903,657,
-4,False,Q4 Other,,,Collab-Team-2016-Apr-Jun-Q4
-5,True,Q1 Notifications Work,2039,182,
-6,True,Q1 Notifications-Page Work,2039,1922,
-7,True,Q1 Flow Work,2039,657,
-8,True,Q1 Edit Review Improvements Work,2039,2040,
-9,True,Q1 Augmented Changes Feed,2039,2180,
-10,True,Q1 Other,,,Collab-Team-Q1-July-Sep-2016
-11,False,Edit Review Improvements Other,,,Edit-Review-Improvements
-12,False,Other,,,PhlogOther
+rule,title,display,id,matchstring
+Intersection,Q4 Notifications Work,False,1903 182,
+Intersection,Q4 Notifications-Page Work,False,1903 1922,
+Intersection,Q4 Flow Work,False,1903 657,
+Intersection,Q4 Other,False,1903,
+Intersection,Q1 Notifications Work,True,2039 182,
+Intersection,Q1 Notifications-Page Work,True,2039 1922,
+Intersection,Q1 Flow Work,True,2039 657,
+Intersection,Q1 Edit Review Improvements Work,True,2039 2040,
+Intersection,Q1 Augmented Changes Feed,True,2039 2180,
+ProjectByID,Q1 Other,True,2039,
+ProjectByID,Edit Review Improvements Other,False,2040,

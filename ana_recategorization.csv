@@ -1,5 +1,2 @@
-sort_order,zoom_list,title,matchstring
-1,True,Kanban,%Analytics-Kanban%
-2,True,Cluster,%Analytics-Cluster%
-3,True,Backlog,%Analytics-Backlog%
-4,True,Other,PhlogOther
+rule,title,display,id,matchstring
+ProjectsByWildcard,,true,,Analytics

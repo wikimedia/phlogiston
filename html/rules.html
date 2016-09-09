@@ -1,0 +1,36 @@
+<html>
+  <head>
+    <title>{{ title }} Rules for Recategorization</title>
+  </head>
+  <link rel="stylesheet" type="text/css" href="style.css">
+  <link href='https://fonts.googleapis.com/css?family=Lato' rel='stylesheet' type='text/css'>
+  <body>
+    <h1>How this Report is Generated</h1>
+    <ol>
+      <li>Include all tasks in the following Phabricator projects, since {{ start_date }}:
+	<ul>
+	  {% for project in project_name_list %}
+	    <li><code>{{ project }}</code></li>
+	  {% endfor %}
+        </ul>
+      </li>
+      {% for rule in category_rules_list %}
+        <li>Categorize as <b>{{ rule[4] }}</b> all tasks
+	  <ol>
+	    <li>In project <code>{{ rule[2][0] }}</code></li>
+        {% if rule[0] == 'ProjectByID' %}
+        {% elif rule[0] == 'Intersection' %}
+	    <li>and project <code>{{ rule[2][1] }}</code></li>
+        {% elif rule[0] == 'ProjectColumn' %}
+	    <li>and in a column whose title includes {{ rule[3] }}</li>
+        {% elif rule[0] == 'ParentTask' %}
+	    <li>and that are descendents of a task tagged 'Category' whose title includes {{ rule[3] }}</li>
+	{% endif %}
+	    {% if not loop.first %}<li>and not in any rules above</li>{% endif %}
+	  </ol>
+        </li>
+      {% endfor %}
+      <li>Delete any remaining tasks</li>
+    </ol>
+  </body>
+</html>

@@ -1,20 +1,20 @@
-sort_order,zoom_list,title,matchstring
-1000,FALSE,Backlog,PhlogOther
-1,TRUE,Interrupt,TR0
-2,TRUE,NewWikitextEditor,Provide a Beta Feature of a modern wikitext editor integrated into the visual editor
-3,TRUE,Enwiki IP A/B test,experiment defaulting anonymous editors to the visual editor on
-4,TRUE,Enwiki on for IPs,Re-enable VisualEditor by default for all logged-out users of the English Wikipedia
-5,TRUE,Wikimedia wikis on for all,TR1
-6,FALSE,jQueryIME,Make ULS input methods work in content editable divs of VisualEditor
-7,FALSE,Japanese,Make VisualEditor good enough to use with all common IMEs for Japanese
-8,FALSE,Korean,Make VisualEditor good enough to use with all common IMEs for Korean
-9,FALSE,Arabic,Make VisualEditor good enough to use with all common IMEs for Arabic script wikis
-10,FALSE,Indic,Make VisualEditor good enough to use with all common IMEs for Indic script wikis
-11,FALSE,Han,Make VisualEditor good enough to use with all common IMEs for Han script wikis
-12,TRUE,Language support,TR3
-13,FALSE,Links,TR4
-14,FALSE,Formulae,Improve support for math editing by improving the UX of the Math extension and researching its usability
-15,TRUE,Charts,easier to create and edit charts from within VisualEditor
-16,TRUE,Rich media,TR5
-17,FALSE,Mobile,TR2
-18,FALSE,Wikivoyages on for all,Enable VisualEditor by default for all users of all Wikivoyages
+rule,title,display,id,matchstring
+ProjectColumn,Interrupt,TRUE,483,TR0
+ParentTask,NewWikitextEditor,TRUE,483,Provide a Beta Feature of a modern wikitext editor integrated into the visual editor
+ParentTask,Enwiki IP A/B test,TRUE,483,experiment defaulting anonymous editors to the visual editor on
+ParentTask,Enwiki on for IPs,TRUE,483,Re-enable VisualEditor by default for all logged-out users of the English Wikipedia
+ProjectColumn,Wikimedia wikis on for all,TRUE,483,TR1
+ParentTask,jQueryIME,FALSE,483,Make ULS input methods work in content editable divs of VisualEditor
+ParentTask,Japanese,FALSE,483,Make VisualEditor good enough to use with all common IMEs for Japanese
+ParentTask,Korean,FALSE,483,Make VisualEditor good enough to use with all common IMEs for Korean
+ParentTask,Arabic,FALSE,483,Make VisualEditor good enough to use with all common IMEs for Arabic script wikis
+ParentTask,Indic,FALSE,483,Make VisualEditor good enough to use with all common IMEs for Indic script wikis
+ParentTask,Han,FALSE,483,Make VisualEditor good enough to use with all common IMEs for Han script wikis
+ProjectColumn,Language support,TRUE,483,TR3
+ProjectColumn,Links,FALSE,483,TR4
+ParentTask,Formulae,FALSE,483,Improve support for math editing by improving the UX of the Math extension and researching its usability
+ParentTask,Charts,TRUE,483,easier to create and edit charts from within VisualEditor
+ProjectColumn,Rich media,TRUE,483,TR5
+ProjectColumn,Mobile,FALSE,483,TR2
+ParentTask,Wikivoyages on for all,FALSE,483,Enable VisualEditor by default for all users of all Wikivoyages
+ProjectByID,VisualEditor Other,FALSE,483,
