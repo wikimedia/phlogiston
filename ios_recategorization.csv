@@ -23,8 +23,11 @@ sort_order,zoom_list,title,matchstring
 22,True,Notifications,iOS-app-feature-Notifications
 23,True,Nearby,iOS-app-feature-Nearby
 24,True,iOS 10,iOS-app-feature-iOS10
-25,False,Uncategorized (Fever),iOS-app-v5.0.5-Fever
-26,True,Uncategorized (Saturn),iOS-app-v5.1.0-Saturn
-27,True,Uncategorized (Honey),iOS-app-v5.2.0-Honey
-28,False,Other,PhlogOther
+25,True,Feed,iOS-app-feature-Feed
+26,True,Widgets,iOS-app-feature-Widgets
+27,True,Login,iOS-app-feature-Login
+28,False,Uncategorized (Fever),iOS-app-v5.0.5-Fever
+29,True,Uncategorized (Saturn),iOS-app-v5.1.0-Saturn
+30,True,Uncategorized (Honey),iOS-app-v5.2.0-Honey
+31,False,Other,PhlogOther
 
