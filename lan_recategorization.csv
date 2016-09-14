@@ -1,0 +1,12 @@
+rule,title,display,id,matchstring
+ProjectColumn,CX Infrastructure,True,2042,Infrastructure WMF requirements
+ParentTask,Template Adaptation,True,2042,Improved Content Translation template adaptation (tracking)
+ProjectColumn,Template Handling,True,2042,Template handling
+ProjectByID,CX Release 10 Other,True,2042,
+ProjectColumn,CX FY2016-17-Q1 Uncategorized,False,2041,CX10
+ProjectColumn,ULS,True,2041,ULS
+ProjectColumn,Translate,True,2041,Translate
+ProjectByID,FY2016-17-Q1 Quarterly Backlog/Other,True,2041,
+ProjectByID,MLEB,False,1464,
+
+
