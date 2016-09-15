@@ -1,12 +1,6 @@
-sort_order,zoom_list,title,matchstring
-1,True,Q1 Improve Annual Planning,TPG-2017Q1-Improve-Annual-Planning
-2,True,Q1 Identify Common Pain Point,TPG-2017Q1-Identify-Common-Pain
-3,True,Q1 Roll out Engagement Survey,TPG-2017Q1-Roll-Out-Engagement-Survey
-4,False,Q4 Assess skills within TPG...,TPG-2016Q4-Assess-Skills
-5,False,Q4 Support Quarterly Planning...,TPG-2016Q4-Support-Quarterly
-6,False,Q4 Define a plan for measuring...,TPG-2016Q4-Measure-Light-Engagement
-7,True,Essential Functions,TPG-Essential-Functions
-8,False,Q3 TPG FY2016Q3 Quarterly Goals,TPG-2016Q3
-9,False,Team radar,Team radar
-10,False,In-Progress Epics,In-Progress Epics
-11,True,Uncategorized,PhlogOther
+rule,title,display,id,matchstring
+ProjectsByWildcard,,true,,TPG-2017Q1
+ProjectsByWildcard,,false,,TPG-2017Q4
+ProjectByName,Essential Functions,true,,TPG-Essential-Functions
+ProjectByName,Other,true,,Team-Practices-This-Week
+ProjectByName,Other,true,,Team-Practices

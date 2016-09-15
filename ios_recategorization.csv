@@ -1,33 +1,12 @@
-sort_order,zoom_list,title,matchstring
-1,False,Navigation,Enable a/b testing of navigation options
-2,True,Performance,iOS-app-feature-Performance
-3,True,Most Read,iOS-app-feature-Topread
-4,False,Explore Refactor,Explore feed fixes
-5,True,Analytics,iOS-app-feature-Analytics
-6,True,Accessibility,iOS-app-feature-Accessibility
-7,True,Settings,"As a user I want to manage my language, log-in, and privacy settings in an organized and convenient screen"
-8,True,Saved Pages,iOS-app-feature-Saved
-9,False,RTL,"As a user, I can interact with the app in a way that matches the writing direction of my language."
-10,True,WP0,iOS-app-feature-WP0
-11,True,TOC UX,iOS-app-feature-TOC
-12,False,Visual Polish,Visual design improvements to the Explore feed
-13,True,HockeyApp Bugs,iOS-app-feature-Bugs (HockeyApp)
-14,True,Bugs,iOS-app-Bugs
-15,True,Namespace,iOS-app-feature-Namespaces
-16,True,Offline and Error Handling,iOS-app-feature-Offline
-17,True,Language Search Cleanup,iOS-app-feature-Multilingual
-18,True,5.0 Text Changes,"EPIC: Text Changes"
-19,True,Core Data,iOS-app-feature-Database
-20,True,iPad,iOS-app-feature-iPad
-21,True,Links,iOS-app-feature-Links
-22,True,Notifications,iOS-app-feature-Notifications
-23,True,Nearby,iOS-app-feature-Nearby
-24,True,iOS 10,iOS-app-feature-iOS10
-25,True,Feed,iOS-app-feature-Feed
-26,True,Widgets,iOS-app-feature-Widgets
-27,True,Login,iOS-app-feature-Login
-28,False,Uncategorized (Fever),iOS-app-v5.0.5-Fever
-29,True,Uncategorized (Saturn),iOS-app-v5.1.0-Saturn
-30,True,Uncategorized (Honey),iOS-app-v5.2.0-Honey
-31,False,Other,PhlogOther
-
+rule,title,display,id,matchstring
+ProjectsByWildcard,,true,,iOS-app-feature
+ProjectsByWildcard,,True,,iOS-app-Bugs
+ProjectByName,Uncategorized (Fever),False,,iOS-app-v5.0.5-Fever
+ProjectByName,Uncategorized (Saturn),True,,iOS-app-v5.1.0-Saturn
+ProjectByName,Uncategorized (Honey),True,,iOS-app-v5.2.0-Honey
+ProjectColumn,Navigation,False,782,Enable a/b testing of navigation options
+ProjectColumn,Explore Refactor,False,782,Explore feed fixes
+ProjectColumn,5.0 Text Changes,True,782,"EPIC: Text Changes"
+ProjectColumn,Settings,True,782,"As a user I want to manage my language, log-in, and privacy settings in an organized and convenient screen"
+ProjectColumn,RTL,False,782,"As a user, I can interact with the app in a way that matches the writing direction of my language."
+ProjectColumn,Visual Polish,False,782,Visual design improvements to the Explore feed

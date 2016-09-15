@@ -1,5 +1,4 @@
 [vars]
 scope_title = 'Discovery Cirrus'
 default_points = 0
-project_list = Discovery-Cirrus-Sprint
-start_date = 2015-10-01
+start_date = 2016-04-01

@@ -37,7 +37,7 @@ def main(argv):
     VERBOSE = False
     start_date = ''
     scope_prefix = ''
-    dbname = 'phab'
+    dbname = 'phlogiston'
 
     # Wikimedia Phabricator constants
     # https://phabricator.wikimedia.org/T119473
@@ -91,7 +91,6 @@ def main(argv):
 
         try:
             scope_title = config['vars']['scope_title']
-            project_name_list = [x.strip() for x in config['vars']['project_list'].split(',')]  # noqa
         except KeyError as e:
             print('Config file {0} is missing required parameter(s): {1}'.
                   format(scope_prefix, e))
@@ -138,16 +137,16 @@ def main(argv):
     if reconstruct_data:
         if scope_prefix:
             reconstruct(conn, VERBOSE, DEBUG, default_points,
-                        project_name_list, start_date, end_date,
+                        start_date, end_date,
                         scope_prefix, incremental)
         else:
             print("Reconstruct specified without a scope_prefix.\n Please specify a scope_prefix with --scope_prefix.")  # noqa
     if run_report:
         if scope_prefix:
             report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
-                   scope_title, default_points, project_name_list,
+                   scope_title, default_points,
                    retroactive_categories, retroactive_points,
-                   backlog_resolved_cutoff, show_points, show_count)
+                   backlog_resolved_cutoff, show_points, show_count, start_date)
         else:
             print("Report specified without a scope_prefix.\nPlease specify a scope_prefix with --scope_prefix.")  # noqa
     conn.close()
@@ -189,6 +188,7 @@ Optionally:
 def do_initialize(conn, VERBOSE, DEBUG):
     cur = conn.cursor()
     cur.execute(open("loading_tables.sql", "r").read())
+    cur.execute(open("loading_functions.sql", "r").read())
     cur.execute(open("reconstruction_tables.sql", "r").read())
     cur.execute(open("reconstruction_functions.sql", "r").read())
     cur.execute(open("reporting_tables.sql", "r").read())
@@ -321,22 +321,21 @@ def load(conn, end_date, VERBOSE, DEBUG):
                                  'has_edge_data': has_edge_data,
                                  'active_projects': active_proj})
 
-    convert_blocked_phid_to_id_sql = """
-        INSERT INTO maniphest_blocked
-        SELECT mb.blocked_date, mt1.id, mt2.id
-          FROM maniphest_blocked_phid mb,
-               maniphest_task mt1,
-               maniphest_task mt2
-         WHERE mb.blocks_phid = mt1.phid
-           AND mb.blocked_by_phid = mt2.phid"""
-
-    cur.execute(convert_blocked_phid_to_id_sql)
+    cur.execute('SELECT convert_blocked_phid_to_id_sql()')
     cur.close()
+    if VERBOSE:
+        print('{0} Done loading dump file'.format(datetime.datetime.now()))
 
 
-def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
+def reconstruct(conn, VERBOSE, DEBUG, default_points,
                 start_date, end_date, scope_prefix, incremental):
+
     cur = conn.cursor()
+
+    import_recategorization_file(conn, scope_prefix)
+    project_id_list = get_project_list_from_recategorization(conn, scope_prefix)[0]
+    lookups = {}
+    lookups['project_id_list'] = project_id_list
 
     ######################################################################
     # preload project and column for fast lookup
@@ -344,23 +343,16 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
 
     cur.execute("""SELECT name, phid
                    FROM phabricator_project
-                  WHERE name IN %(project_name_list)s""",
-                {'project_name_list': tuple(project_name_list)})
-    project_name_to_phid_dict = dict(cur.fetchall())
+                  WHERE id IN %(project_id_list)s""",
+                {'project_id_list': tuple(project_id_list)})
+    lookups['project_name_to_phid_dict'] = dict(cur.fetchall())
     cur.execute("""SELECT name, id
                      FROM phabricator_project
-                    WHERE name IN %(project_name_list)s""",
-                {'project_name_list': tuple(project_name_list)})
+                    WHERE id IN %(project_id_list)s""",
+                {'project_id_list': tuple(project_id_list)})
     project_name_to_id_dict = dict(cur.fetchall())
-    project_id_to_name_dict = {
+    lookups['project_id_to_name_dict'] = {
         value: key for key, value in project_name_to_id_dict.items()}
-
-    project_id_list = list()
-    for project_name in project_name_list:
-        try:
-            project_id_list.append(project_name_to_id_dict[project_name])
-        except KeyError:
-            pass
 
     cur.execute("""SELECT pc.phid, pc.name
                      FROM phabricator_column pc,
@@ -368,7 +360,7 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
                     WHERE pc.project_phid = pp.phid
                       AND pp.id = ANY(%(project_id_list)s)""",
                 {'project_id_list': project_id_list})
-    column_dict = dict(cur.fetchall())
+    lookups['column_dict'] = dict(cur.fetchall())
     # In addition to scope_prefix-specific projects, include special, global tags
     id_list_with_worktypes = list(project_id_list)
     for i in PHAB_TAGS.keys():
@@ -383,13 +375,13 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
 
     if incremental:
         max_date_query = """SELECT MAX(date)
-                              FROM task_history
+                              FROM task_on_date
                              WHERE scope like %(scope_prefix)s"""
         cur.execute(max_date_query, {'scope_prefix': scope_prefix})
         try:
             start_date = cur.fetchone()[0].date()
         except AttributeError:
-            print("No data available for incremental run.\nProbably this reconstruction should be run without --incremental.")  # noqa
+            print("No data available for incremental run.\nProbably this reconstruction should be run without --incremental.")
             sys.exit(1)
     else:
         cur.execute('SELECT wipe_reconstruction(%(scope_prefix)s)',
@@ -405,302 +397,82 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points, project_name_list,
         if VERBOSE:
             print('{0} {1}: Making maniphest_edge for {2}'.
                   format(scope_prefix, datetime.datetime.now(), working_date))
-        if not DEBUG:
-            cur.execute('SELECT build_edges(%(date)s, %(project_id_list)s)',
-                        {'date': working_date,
-                         'project_id_list': id_list_with_worktypes})
-        else:
-            print("DEBUG: Skipping")
+        cur.execute('SELECT build_edges(%(date)s, %(project_id_list)s)',
+                    {'date': working_date,
+                     'project_id_list': id_list_with_worktypes})
+
         working_date += datetime.timedelta(days=1)
 
     ######################################################################
     # Reconstruct historical state of tasks
     ######################################################################
-    transaction_values_query = """
-        SELECT mt.new_value
-          FROM maniphest_transaction mt
-         WHERE date(mt.date_modified) <= %(working_date)s
-           AND mt.transaction_type = %(transaction_type)s
-           AND mt.task_id = %(task_id)s
-         ORDER BY date_modified DESC """
-
-    edge_values_query = """
-        SELECT mt.active_projects
-          FROM maniphest_transaction mt
-         WHERE date(mt.date_modified) <= %(working_date)s
-           AND mt.task_id = %(task_id)s
-           AND mt.has_edge_data IS TRUE
-         ORDER BY date_modified DESC
-         LIMIT 1 """
 
     working_date = start_date
     while working_date <= end_date:
-        # because working_date is midnight at the beginning of the
-        # day, use a date at the midnight at the end of the day to
-        # make the queries line up with the date label
         if VERBOSE:
             print('{0} {1}: Reconstructing data for {2}'.
                   format(scope_prefix, datetime.datetime.now(), working_date))
 
+        # because working_date is midnight at the beginning of the
+        # day, increment the count before using it so that the
+        # effective date used is midnight at the end of the day
         working_date += datetime.timedelta(days=1)
-        task_on_day_query = """SELECT DISTINCT task
-                                 FROM maniphest_edge
-                                WHERE project = ANY(%(project_ids)s)
-                                  AND edge_date = %(working_date)s"""
-        cur.execute(task_on_day_query,
+
+        cur.execute('SELECT get_tasks(%(working_date)s, %(project_ids)s)',
                     {'working_date': working_date,
                      'project_ids': project_id_list})
         for row in cur.fetchall():
             task_id = row[0]
+            reconstruct_task_on_date(cur, task_id, working_date, scope_prefix, DEBUG, default_points, **lookups)  # noqa
 
-            # ----------------------------------------------------------------------
-            # Data from as-is task record.  Points data prior to Feb 2016 was not
-            # recorded transactionally and is only available at the task record, so
-            # we need both sources to cover all scenarios.
-            # Title could be tracked through transactions but this code doesn't
-            # make that effort.
-            # ----------------------------------------------------------------------
-            task_info_query = """SELECT title, story_points
-                              FROM maniphest_task
-                             WHERE id = %(task_id)s"""
-            cur.execute(task_info_query,
-                        {'task_id': task_id,
-                         'working_date': working_date,
-                         'transaction_type': 'status'})
-            task_info = cur.fetchone()
-            try:
-                points_from_info = int(task_info[1])
-            except:
-                points_from_info = None
-
-            # for each relevant variable of the task, use the most
-            # recent value that is no later than that day.  (So, if
-            # that variable didn't change that day, use the last time
-            # it was changed.  If it changed multiple times, use the
-            # final value)
-
-            # ----------------------------------------------------------------------
-            # Status
-            # ----------------------------------------------------------------------
-            cur.execute(transaction_values_query,
-                        {'working_date': working_date,
-                         'transaction_type': 'status',
-                         'task_id': task_id})
-            status_raw = cur.fetchone()
-            pretty_status = ""
-            if status_raw:
-                pretty_status = status_raw[0]
-
-            # ----------------------------------------------------------------------
-            # Priority
-            # ----------------------------------------------------------------------
-            cur.execute(transaction_values_query,
-                        {'working_date': working_date,
-                         'transaction_type': 'priority',
-                         'task_id': task_id})
-            priority_raw = cur.fetchone()
-            pretty_priority = ""
-            if priority_raw:
-                pretty_priority = priority_raw[0]
-
-            # ----------------------------------------------------------------------
-            # Story Points
-            # ----------------------------------------------------------------------
-            cur.execute(transaction_values_query,
-                        {'working_date': working_date,
-                         'transaction_type': 'points',
-                         'task_id': task_id})
-            points_raw = cur.fetchone()
-            try:
-                points_from_trans = int(points_raw[0])
-            except:
-                points_from_trans = None
-                if DEBUG:
-                    print('Bad points value {0} in {1}'.format(points_raw[0], task_id))
-
-            if points_from_trans:
-                pretty_points = points_from_trans
-            elif points_from_info:
-                pretty_points = points_from_info
-            else:
-                pretty_points = default_points
-
-            # ----------------------------------------------------------------------
-            # Project & Maintenance Type
-            # ----------------------------------------------------------------------
-            cur.execute(edge_values_query,
-                        {'task_id': task_id, 'working_date': working_date})
-            edges = cur.fetchall()[0][0]
-            pretty_project = ''
-
-            if PHAB_TAGS['new'] in edges:
-                maint_type = 'New Functionality'
-            elif PHAB_TAGS['maint'] in edges:
-                maint_type = 'Maintenance'
-            else:
-                maint_type = ''
-
-            best_edge = ''
-            # Reduce the list of edges to only the single best match,
-            # where best = earliest in the specified project list
-            for project in project_id_list:
-                if project in edges:
-                    best_edge = project
-                    break
-
-            if not best_edge:
-                # This should be impossible since by this point we
-                # only see tasks that have edges in the desired list.
-                # However, certain transactions (gerrit Conduit
-                # transactions) aren't properly parsed by Phlogiston.
-                # See https://phabricator.wikimedia.org/T114021.  Skipping
-                # these transactions should not affect the data for
-                # our purposes.
-                continue
-
-            pretty_project = project_id_to_name_dict[best_edge]
-            project_phid = project_name_to_phid_dict[pretty_project]
-
-            # ----------------------------------------------------------------------
-            # Column
-            # ----------------------------------------------------------------------
-            pretty_column = ''
-            cur.execute(transaction_values_query,
-                        {'working_date': working_date,
-                         'transaction_type': 'core:columns',
-                         'task_id': task_id})
-            pc_trans_list = cur.fetchall()
-            for pc_trans in pc_trans_list:
-                jblob = json.loads(pc_trans[0])[0]
-                if project_phid in jblob['boardPHID']:
-                    column_phid = jblob['columnPHID']
-                    pretty_column = column_dict[column_phid]
-                    break
-
-            denorm_insert = """
-                INSERT INTO task_history VALUES (
-                %(scope_prefix)s,
-                %(working_date)s,
-                %(id)s,
-                %(status)s,
-                %(project)s,
-                %(projectcolumn)s,
-                %(points)s,
-                %(maint_type)s,
-                %(priority)s)"""
-
-            cur.execute(denorm_insert, {'scope_prefix': scope_prefix, 'working_date': working_date, 'id': task_id, 'status': pretty_status, 'priority': pretty_priority, 'project': pretty_project, 'projectcolumn': pretty_column, 'points': pretty_points, 'maint_type': maint_type})  # noqa
-
-        # This takes the as-is blocked by relationships and
-        # reconstructs them historically as if they existed every day;
-        # this excess design is in case this is ever switched to do
-        # full reconstruction.  see
-        # https://phabricator.wikimedia.org/T115936#1847188
-
-        categories_on_day_query = """
-          SELECT DISTINCT task
-            FROM task_history t, maniphest_edge m
-           WHERE t.scope = %(scope_prefix)s
-             AND m.edge_date = %(working_date)s
-             AND t.id = m.task
-             AND m.project = %(category_tag_id)s"""
-
-        cur.execute(categories_on_day_query,
+        # Use as-is data to reconstruct certain relationships for working data
+        # see https://phabricator.wikimedia.org/T115936#1847188
+        cur.execute('SELECT * from get_phab_parent_categories_by_day(%(scope_prefix)s, %(working_date)s, %(category_tag_id)s)',  # noqa
                     {'scope_prefix': scope_prefix,
                      'working_date': working_date,
                      'category_tag_id': PHAB_TAGS['category']})
         for row in cur.fetchall():
             category_id = row[0]
-            task_category_insert = """
-            INSERT INTO task_category (
-            SELECT %(scope_prefix)s,
-                   %(working_date)s,
-                   id,
-                   %(category_id)s
-              FROM (SELECT *
-                      FROM get_descendents(%(category_id)s,
-                                            %(working_date)s)) as x)"""
-            cur.execute(task_category_insert,
+            cur.execute('SELECT create_phab_parent_category_edges(%(scope_prefix)s, %(working_date)s, %(category_id)s)',  # noqa
                         {'scope_prefix': scope_prefix,
                          'category_id': category_id,
                          'working_date': working_date})
 
-    categories_sql = """
-        UPDATE task_history th
-           SET category_title = (
-               SELECT string_agg(title, ' ')
-                 FROM (
-                       SELECT th_foo.id, mt.title
-                         FROM maniphest_task mt,
-                              task_category tm,
-                              task_history th_foo
-                        WHERE th_foo.id = tm.task_id
-                          AND th_foo.scope = tm.scope
-                          AND th_foo.date = tm.date
-                          AND tm.category_id = mt.id
-                          AND tm.scope = %(scope_prefix)s
-                        GROUP BY th_foo.id, mt.title
-                        ) as foo
-                WHERE id = th.id
-                )
-         WHERE scope = %(scope_prefix)s
-           AND date >= %(start_date)s"""
-
-    # Special case to put all category-tagged tasks in their own category
-    category_self_sql = """
-        UPDATE task_history th
-           SET category_title = (
-                   SELECT mt.title
-                     FROM maniphest_task mt
-                    WHERE th.id = mt.id
-                   )
-         WHERE th.id in (
-                   SELECT DISTINCT task
-                     FROM maniphest_edge
-                    WHERE project = %(category_id)s)
-               AND th.scope = %(scope_prefix)s"""
-
     if VERBOSE:
-        print('{0} {1} Updating Category Titles'.
+        print('{0} {1} Updating Phab Parent Category Titles'.
               format(scope_prefix, datetime.datetime.now()))
-    cur.execute(categories_sql, {'scope_prefix': scope_prefix, 'start_date': start_date})
-    cur.execute(category_self_sql, {'scope_prefix': scope_prefix,
-                                    'category_id': PHAB_TAGS['category']})
-
-    correct_status_sql = """
-        UPDATE task_history th
-           SET status = os.status_at_load
-          FROM (SELECT task_id,
-                       status_at_load
-                  FROM (
-                        SELECT mt.task_id,
-                               left(max(mt.new_value),15) as trans_status,
-                               count(mt.date_modified) as num_of_changes,
-                               max('"' || mta.status_at_load || '"') as status_at_load
-                         FROM maniphest_transaction mt, maniphest_task mta
-                        WHERE mt.transaction_type = 'status'
-                          AND mt.task_id = mta.id
-                        GROUP BY task_id) as flipflops
-                WHERE num_of_changes = 1
-                          AND trans_status <> status_at_load) os
-         WHERE th.scope = %(scope_prefix)s
-           AND th.id = os.task_id"""
+    cur.execute("SELECT update_phab_parent_category_titles(%s, %s)", (scope_prefix, start_date))  # noqa
+    cur.execute("SELECT put_category_tasks_in_own_category(%s, %s)",
+                (scope_prefix, PHAB_TAGS['category']))
 
     if VERBOSE:
         print('{0} {1}: Correcting corrupted task status info'.
               format(scope_prefix, datetime.datetime.now()))
-    cur.execute(correct_status_sql, {'scope_prefix': scope_prefix})
+    cur.execute("SELECT fix_status(%s)", (scope_prefix,))
     cur.close()
+
+    if VERBOSE:
+        print('{0} {1}: Finished Reconstruction.'.
+              format(scope_prefix, datetime.datetime.now()))
 
 
 def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
-           scope_title, default_points, project_name_list,
+           scope_title, default_points,
            retroactive_categories, retroactive_points,
-           backlog_resolved_cutoff, show_points, show_count):
+           backlog_resolved_cutoff, show_points, show_count, start_date):
+
+    if VERBOSE:
+        print('{0} {1}: Starting Report'.
+              format(scope_prefix, datetime.datetime.now()))
 
     ######################################################################
     # Prepare the data
     ######################################################################
+
+    # This config file is loaded during reconstruction.  Reload it here so that
+    # users can test changes to the file more quickly
+
+    import_recategorization_file(conn, scope_prefix)
 
     report_date = datetime.datetime.now().date()
     current_quarter_start = start_of_quarter(report_date)
@@ -712,119 +484,25 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
 
     cur = conn.cursor()
     size_query = """SELECT count(*)
-                      FROM task_history
+                      FROM task_on_date
                      WHERE scope = %(scope_prefix)s"""
     cur.execute(size_query, {'scope_prefix': scope_prefix})
     data_size = cur.fetchone()[0]
     if data_size == 0:
-        print("ERROR: no data in task_history for {0}".format(scope_prefix))
+        print("ERROR: no data in task_on_date for {0}".format(scope_prefix))
         sys.exit(-1)
 
     cur.execute('SELECT wipe_reporting(%(scope_prefix)s)',
                 {'scope_prefix': scope_prefix})
 
-    # generate the summary reporting data from the reconstructed records
-    report_tables_script = '{0}_make_history.sql'.format(scope_prefix)
-    if not os.path.isfile(report_tables_script):
-        report_tables_script = 'generic_make_history.sql'
-    subprocess.call("psql -d {0} -f {1} -v scope_prefix={2}".
-                    format(dbname, report_tables_script, scope_prefix), shell=True)
+    cur.execute('SELECT load_tasks_to_recategorize(%(scope_prefix)s)',
+                {'scope_prefix': scope_prefix})
 
     if backlog_resolved_cutoff:
         cur.execute('SELECT no_resolved_before_start(%(scope_prefix)s, %(backlog_resolved_cutoff)s)',    # noqa
                     {'scope_prefix': scope_prefix, 'backlog_resolved_cutoff': backlog_resolved_cutoff})  # noqa
 
-    # Reload the Recategorization mapping
-    recat_data = '{0}_recategorization.csv'.format(scope_prefix)
-    if os.path.isfile(recat_data):
-        category_save = """
-        INSERT INTO category_list
-        VALUES (%(scope_prefix)s, %(sort_order)s, %(category)s,
-                %(t1)s, %(t2)s, %(matchstring)s, %(zoom)s)"""
-        recat_cases = ''
-        recat_else = ''
-        with open(recat_data, 'rt') as f:
-            reader = csv.DictReader(f)
-            for line in reader:
-                try:
-                    matchstring = '%' + line['matchstring'] + '%'
-                except (KeyError,  TypeError):
-                    matchstring = ''
-
-                t1 = None
-                try:
-                    if line['t1']:
-                        t1 = line['t1']
-                except KeyError:
-                    pass
-
-                t2 = None
-                try:
-                    if line['t2']:
-                        t2 = line['t2']
-                except KeyError:
-                    pass
-
-                if line['zoom_list'].lower() in ['true', 't', '1', 'yes', 'y']:
-                    zoom = True
-                else:
-                    zoom = False
-                cur.execute(category_save,
-                            {'scope_prefix': scope_prefix,
-                             'sort_order': line['sort_order'],
-                             'category': line['title'],
-                             't1': t1,
-                             't2': t2,
-                             'matchstring': matchstring,
-                             'zoom': zoom})
-
-                # build up the recategorization query
-                if line['matchstring'] == 'PhlogOther':
-                    recat_else = line['title']
-                elif t1:
-                    # if a tag is specified, handle this later
-                    pass
-                elif matchstring:
-                    recat_cases += ' WHEN category LIKE \'{0}\' THEN \'{1}\''.format(  # noqa
-                        matchstring, line['title'])
-                else:
-                    print('Bad line in recat file: {0}'.format(line))
-
-        if recat_cases:
-            recat_update = """UPDATE task_history_recat
-                                 SET category = CASE {0}
-                                                ELSE '{1}'
-                                                END
-                               WHERE scope =  '{2}'"""
-            unsafe_recat_update = recat_update.format(recat_cases, recat_else, scope_prefix)  # noqa
-        else:
-            recat_update = """UPDATE task_history_recat
-                                        SET category = \'{0}\'
-                               WHERE scope = '{1}'"""
-            unsafe_recat_update = recat_update.format(recat_else, scope_prefix)
-
-        if VERBOSE:
-            print('{0} {1}: Applying recategorization'.
-                  format(scope_prefix, datetime.datetime.now()))
-        cur.execute(unsafe_recat_update)
-        cur.execute('SELECT apply_tag_based_recategorization(%(scope_prefix)s)',
-                    {'scope_prefix': scope_prefix})
-
-    else:
-        # Build a category list from the data
-        category_insert = """INSERT INTO category_list (
-                         SELECT %(scope_prefix)s,
-                                row_number() OVER(ORDER BY category asc),
-                                category,
-                                NULL,
-                                NULL,
-                                NULL,
-                                TRUE
-                           FROM (SELECT DISTINCT category
-                                   FROM task_history_recat
-                                  WHERE scope = %(scope_prefix)s
-                                  ORDER BY category) as foo)"""
-        cur.execute(category_insert, {'scope_prefix': scope_prefix})
+    recategorize(conn, scope_prefix, VERBOSE)
 
     if retroactive_categories:
         cur.execute('SELECT set_category_retroactive(%(scope_prefix)s)',
@@ -842,15 +520,23 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
                                     SUM(points) as points,
                                     COUNT(id) as count,
                                     maint_type
-                               FROM task_history_recat
+                               FROM task_on_date_recategorized
                               WHERE scope = %(scope_prefix)s
                               GROUP BY status, category, maint_type, date, scope)"""
+
+    if VERBOSE:
+        print('{0} {1}: Populating tall_backlog.'.
+              format(scope_prefix, datetime.datetime.now()))
 
     cur.execute(tall_backlog_insert, {'scope_prefix': scope_prefix})
     cur.execute('SELECT populate_recently_closed(%(scope_prefix)s)',
                 {'scope_prefix': scope_prefix})
     cur.execute('SELECT populate_recently_closed_task(%(scope_prefix)s)',
                 {'scope_prefix': scope_prefix})
+
+    if VERBOSE:
+        print('{0} {1}: Making CSVs'.
+              format(scope_prefix, datetime.datetime.now()))
 
     ######################################################################
     # Prepare all the csv files and working directories
@@ -920,6 +606,10 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
 
         i += 1
 
+    if VERBOSE:
+        print('{0} {1}: Finished making tranch charts, starting on reports'.
+              format(scope_prefix, datetime.datetime.now()))
+
     cur.execute('SELECT * FROM get_forecast_weeks(%(scope_prefix)s)',
                 {'scope_prefix': scope_prefix})
     forecast_rows = cur.fetchall()
@@ -971,6 +661,17 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
     # Make the summary charts
     ######################################################################
 
+    if VERBOSE:
+        print('{0} {1}: Finished making reports, starting on summary charts'.
+              format(scope_prefix, datetime.datetime.now()))
+
+    if DEBUG:
+        print("""Rscript make_charts.R {0} {1} {2} {3} {4} {5}\
+        {6} {7} {8} {9}""".format(scope_prefix, scope_title, False,
+                                  report_date, current_quarter_start, next_quarter_start,
+                                  previous_quarter_start, chart_start, chart_end,
+                                  three_months_ago))
+
     for i in [True, False]:
         subprocess.call("""Rscript make_charts.R {0} {1} {2} {3} {4} {5}\
         {6} {7} {8} {9}""".format(scope_prefix, scope_title, i,
@@ -984,9 +685,9 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
 
     max_date_query = """
         SELECT MAX(date_modified), now()
-          FROM task_history th, maniphest_transaction mt
-         WHERE th.scope = %(scope_prefix)s
-           AND th.id = mt.task_id"""
+          FROM task_on_date tod, maniphest_transaction mt
+         WHERE tod.scope = %(scope_prefix)s
+           AND tod.id = mt.task_id"""
 
     cur.execute(max_date_query, {'scope_prefix': scope_prefix})
     result = cur.fetchone()
@@ -1007,13 +708,27 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
          }))
     date_row_output.close()
 
+    cur.execute('SELECT * FROM get_category_rules(%(scope_prefix)s)',
+                {'scope_prefix': scope_prefix})
+    category_rules_list = cur.fetchall()
+
+    project_name_list = get_project_list_from_recategorization(conn, scope_prefix)[1]
+    rules_html = Template(open('html/rules.html').read())
+    rules_output = open(os.path.join(script_dir, '../html/{0}_rules.html'.format(scope_prefix)), 'w')  # noqa
+    rules_output.write(rules_html.render(
+        {'title': scope_title,
+         'start_date': start_date,
+         'project_name_list': project_name_list,
+         'category_rules_list': category_rules_list
+         }))
+    rules_output.close()
+
     report_html = Template(open('html/report.html').read())
     report_output = open(os.path.join(script_dir, '../html/{0}_report.html'.format(scope_prefix)), 'w')  # noqa
     report_output.write(report_html.render(
         {'title': scope_title,
          'scope_prefix': scope_prefix,
          'default_points': default_points,
-         'project_name_list': project_name_list,
          'show_points': show_points,
          'show_count': show_count,
          'max_date_pt': max_date_pt,
@@ -1030,6 +745,198 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
     report_output.close()
 
     cur.close()
+    if VERBOSE:
+        print('{0} {1}: Finished Report'.
+              format(scope_prefix, datetime.datetime.now()))
+
+
+def get_project_list_from_recategorization(conn, scope_prefix):
+    """Given a list of recategorization rules in the database,
+    return a list (by id) of all categories mentioned in the rules.
+    Should handle project ids, exact project name matches, and
+    project name wildcards"""
+
+    cur = conn.cursor()
+    project_id_list = []
+    category_id_query = """SELECT project_id_list
+                             FROM category
+                            WHERE scope = %(scope_prefix)s"""
+
+    cur.execute(category_id_query, {'scope_prefix': scope_prefix})
+    for row in cur.fetchall():
+        result_list = row[0]
+        for id in result_list:
+            if id not in project_id_list:
+                project_id_list.append(id)
+
+    project_name_list = {}
+    cur.execute("SELECT name FROM phabricator_project WHERE id = ANY(%s)",
+                (project_id_list,))
+    result = cur.fetchall()
+    project_name_list = [x[0] for x in result]
+
+    return project_id_list, project_name_list
+
+
+def import_recategorization_file(conn, scope_prefix):
+    """ Reload the recategorization file into the database"""
+
+    cur = conn.cursor()
+
+    cur.execute('DELETE FROM category WHERE scope = %(scope_prefix)s',
+                {'scope_prefix': scope_prefix})
+
+    insert_sql = """INSERT INTO category VALUES (
+                    %(scope)s,
+                    %(sort_order)s,
+                    %(rule)s,
+                    %(project_id_list)s,
+                    %(project_name_list)s,
+                    %(matchstring)s,
+                    %(title)s,
+                    %(display)s)"""
+
+    recat_file = '{0}_recategorization.csv'.format(scope_prefix)
+    if not os.path.isfile(recat_file):
+        raise Exception('Missing recat file {0}'.recat_file)
+    with open(recat_file, 'rt') as f:
+        reader = csv.DictReader(f)
+        counter = 0
+        for line in reader:
+
+            try:
+                matchstring = line['matchstring']
+            except (KeyError,  TypeError):
+                matchstring = ''
+
+            rule = line['rule']
+            if rule not in ['ProjectByID', 'ProjectByName', 'ProjectsByWildcard',
+                            'Intersection', 'ProjectColumn', 'ParentTask']:
+                raise Exception('Error in recat file {0} line {1}: {2} is not a valid rule.'.format(recat_file, counter, rule))  # noqa
+                quit()
+
+            try:
+                title = line['title']
+            except KeyError:
+                title = ''
+
+            id_list = []
+            try:
+                if line['id']:
+                    id_list = [int(i) for i in line['id'].split()]
+            except KeyError:
+                pass
+
+            display = True
+            try:
+                if line['display'].lower() in ['false', 'f', 'no', '0']:
+                    display = False
+            except KeyError:
+                pass
+
+            if rule != 'Intersection' and len(id_list) > 1:
+                raise Exception("Too many IDs specified for rule that should have only 1 id. Rule: {0}".format(rule))  # noqa
+
+            if rule == 'ProjectsByWildcard':
+                wildcard_match = '%{0}%'.format(matchstring)
+                cur.execute("SELECT * FROM get_projects_by_name(%s)", (wildcard_match,))
+                for row in cur.fetchall():
+                    project_id = row[0]
+                    name = row[1]
+
+                    cur.execute(insert_sql,
+                                {'scope': scope_prefix,
+                                 'sort_order': counter,
+                                 'rule': 'ProjectByID',
+                                 'project_id_list': [project_id, ],
+                                 'project_name_list': [name, ],
+                                 'matchstring': '',
+                                 'title': name,
+                                 'display': display})
+                    counter += 1
+
+            elif rule == 'ProjectByName':
+                cur.execute("SELECT * FROM get_projects_by_name(%s)", (matchstring,))
+                row = cur.fetchone()
+                project_id = row[0]
+                cur.execute(insert_sql,
+                            {'scope': scope_prefix,
+                             'sort_order': counter,
+                             'rule': 'ProjectByID',
+                             'project_id_list': [project_id, ],
+                             'project_name_list': [matchstring, ],
+                             'matchstring': '',
+                             'title': title,
+                             'display': display})
+                counter += 1
+
+            else:
+                name_list = {}
+                cur.execute("SELECT name FROM phabricator_project WHERE id = ANY(%s)",
+                            (id_list,))
+                result = cur.fetchall()
+                name_list = [x[0] for x in result]
+
+                cur.execute(insert_sql,
+                            {'scope': scope_prefix,
+                             'sort_order': counter,
+                             'rule': rule,
+                             'project_id_list': id_list,
+                             'project_name_list': name_list,
+                             'matchstring': matchstring,
+                             'title': line['title'],
+                             'display': display})
+                counter += 1
+
+
+def recategorize(conn, scope_prefix, VERBOSE):
+    """ Categorize all tasks in a scope according to the recategorization configuration"""
+
+    if VERBOSE:
+        print('{0} {1}: Applying recategorization'.
+              format(scope_prefix, datetime.datetime.now()))
+    cur = conn.cursor()
+
+    cur.execute('SELECT * FROM get_category_rules(%(scope_prefix)s)', {'scope_prefix': scope_prefix})  # noqa
+
+    for row in cur.fetchall():
+        rule = row[0]
+        project_id_list = row[1]
+        matchstring = row[3]
+        title = row[4]
+        scope_prefix = scope_prefix
+
+        if rule == "ProjectByID":
+            cur.execute('SELECT recategorize_by_project(%(scope_prefix)s, %(project_id_list)s, %(title)s)',  # noqa
+                        {'scope_prefix': scope_prefix,
+                         'project_id_list': project_id_list,
+                         'title': title})
+        elif rule == "Intersection":
+            cur.execute('SELECT recategorize_by_intersection(%(scope_prefix)s, %(project_id_list)s, %(title)s)',  # noqa
+                        {'scope_prefix': scope_prefix,
+                         'project_id_list': project_id_list,
+                         'title': title})
+        elif rule == "ProjectColumn":
+            cur.execute('SELECT recategorize_by_column(%(scope_prefix)s, %(project_id_list)s, %(title)s, %(matchstring)s)',  # noqa
+                        {'scope_prefix': scope_prefix,
+                         'project_id_list': project_id_list,
+                         'title': title,
+                         'matchstring': matchstring})
+        elif rule == "ParentTask":
+            cur.execute('SELECT recategorize_by_parenttask(%(scope_prefix)s, %(project_id_list)s, %(title)s, %(matchstring)s)',  # noqa
+                        {'scope_prefix': scope_prefix,
+                         'project_id_list': project_id_list,
+                         'title': title,
+                         'matchstring': matchstring})
+        else:
+            raise Exception("Invalid categorization rule {0}".format(rule))
+            sys.exit()
+
+    cur.execute('SELECT purge_leftover_task_on_date(%(scope_prefix)s)',
+                {'scope_prefix': scope_prefix})
+    if VERBOSE:
+        print('{0} {1}: Recategorization complete'.
+              format(scope_prefix, datetime.datetime.now()))
 
 
 def start_of_quarter(input_date):
@@ -1039,5 +946,148 @@ def start_of_quarter(input_date):
     return quarter_start[index - 1]
 
 
+def reconstruct_task_on_date(cur, task_id, working_date, scope_prefix, DEBUG,
+                             default_points, project_id_list,
+                             project_id_to_name_dict,
+                             project_name_to_phid_dict, column_dict):
+
+    # ----------------------------------------------------------------------
+    # Data from as-is task record.  Points data prior to Feb 2016 was not
+    # recorded transactionally and is only available at the task record, so
+    # we need both sources to cover all scenarios.
+    # Title could be tracked through transactions but this code doesn't
+    # make that effort.
+    # ----------------------------------------------------------------------
+    task_info_query = """SELECT title, story_points
+    FROM maniphest_task
+    WHERE id = %(task_id)s"""
+    cur.execute(task_info_query,
+                {'task_id': task_id,
+                 'working_date': working_date,
+                 'transaction_type': 'status'})
+    task_info = cur.fetchone()
+    try:
+        points_from_info = int(task_info[1])
+    except:
+        points_from_info = None
+
+    # for each relevant variable of the task, use the most
+    # recent value that is no later than that day.  (So, if
+    # that variable didn't change that day, use the last time
+    # it was changed.  If it changed multiple times, use the
+    # final value)
+
+    # ----------------------------------------------------------------------
+    # Status
+    # ----------------------------------------------------------------------
+    cur.execute("SELECT * FROM get_transaction_value(%s, %s, %s)",
+                (working_date, 'status', task_id))
+    status_raw = cur.fetchone()
+    pretty_status = ""
+    if status_raw:
+        pretty_status = status_raw[0]
+
+    # ----------------------------------------------------------------------
+    # Priority
+    # ----------------------------------------------------------------------
+    cur.execute("SELECT * FROM get_transaction_value(%s, %s, %s)",
+                (working_date, 'priority', task_id))
+    priority_raw = cur.fetchone()
+    pretty_priority = ""
+    if priority_raw:
+        pretty_priority = priority_raw[0]
+
+    # ----------------------------------------------------------------------
+    # Story Points
+    # ----------------------------------------------------------------------
+    cur.execute("SELECT * FROM get_transaction_value(%s, %s, %s)",
+                (working_date, 'points', task_id))
+    points_raw = cur.fetchone()
+    try:
+        points_from_trans = int(points_raw[0])
+    except:
+        points_from_trans = None
+
+    if points_from_trans:
+        pretty_points = points_from_trans
+    elif points_from_info:
+        pretty_points = points_from_info
+    else:
+        pretty_points = default_points
+
+    # ----------------------------------------------------------------------
+    # Project & Maintenance Type
+    # ----------------------------------------------------------------------
+    cur.execute("SELECT * FROM get_edge_value(%s, %s)",
+                (working_date, task_id))
+    edges = cur.fetchall()[0][0]
+    pretty_project = ''
+
+    if PHAB_TAGS['new'] in edges:
+        maint_type = 'New Functionality'
+    elif PHAB_TAGS['maint'] in edges:
+        maint_type = 'Maintenance'
+    else:
+        maint_type = ''
+
+    best_edge = ''
+    # Reduce the list of edges to only the single best match,
+    # where best = earliest in the specified project list
+    for project in project_id_list:
+        if project in edges:
+            best_edge = project
+            break
+
+    if not best_edge:
+        # This should be impossible since by this point we
+        # only see tasks that have edges in the desired list.
+        # However, certain transactions (gerrit Conduit
+        # transactions) aren't properly parsed by Phlogiston.
+        # See https://phabricator.wikimedia.org/T114021.  Skipping
+        # these transactions should not affect the data for
+        # our purposes.
+        return
+
+    pretty_project = project_id_to_name_dict[best_edge]
+    project_phid = project_name_to_phid_dict[pretty_project]
+
+    # ----------------------------------------------------------------------
+    # Column
+    # ----------------------------------------------------------------------
+    pretty_column = ''
+    cur.execute("SELECT * FROM get_transaction_value(%s, %s, %s)",
+                (working_date, 'core:columns', task_id))
+    pc_trans_list = cur.fetchall()
+    for pc_trans in pc_trans_list:
+        jblob = json.loads(pc_trans[0])[0]
+        if project_phid in jblob['boardPHID']:
+            column_phid = jblob['columnPHID']
+            pretty_column = column_dict[column_phid]
+            break
+
+    denorm_insert = """
+        INSERT INTO task_on_date VALUES (
+        %(scope_prefix)s,
+        %(working_date)s,
+        %(id)s,
+        %(status)s,
+        %(project_id)s,
+        %(project)s,
+        %(projectcolumn)s,
+        %(points)s,
+        %(maint_type)s,
+        %(priority)s)"""
+
+    cur.execute(denorm_insert,
+                {'scope_prefix': scope_prefix,
+                 'working_date': working_date,
+                 'id': task_id,
+                 'status': pretty_status,
+                 'project_id': best_edge,
+                 'project': pretty_project,
+                 'projectcolumn': pretty_column,
+                 'points': pretty_points,
+                 'maint_type': maint_type,
+                 'priority': pretty_priority})
 if __name__ == "__main__":
     main(sys.argv[1:])

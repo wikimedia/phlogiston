@@ -1,0 +1,36 @@
+<html>
+  <head>
+    <title>{{ title }} Rules for Recategorization</title>
+  </head>
+  <link rel="stylesheet" type="text/css" href="style.css">
+  <link href='https://fonts.googleapis.com/css?family=Lato' rel='stylesheet' type='text/css'>
+  <body>
+    <h1>How this Report is Generated</h1>
+    <ol>
+      <li>Include all tasks in the following Phabricator projects, since {{ start_date }}:
+	<ul>
+	  {% for project in project_name_list %}
+	    <li><span class="phui-project">{{ project }}</span></li>
+	  {% endfor %}
+        </ul>
+      </li>
+      {% for rule in category_rules_list %}
+        <li>Categorize as <b>{{ rule[4] }}</b> all tasks
+	  <ol>
+	    <li>in project <span class="phui-project">{{ rule[2][0] }}</span></li>
+        {% if rule[0] == 'ProjectByID' %}
+        {% elif rule[0] == 'Intersection' %}
+	    <li>and project <span class="phui-project">{{ rule[2][1] }}</span></li>
+        {% elif rule[0] == 'ProjectColumn' %}
+	    <li>and in a column whose title includes the text <code>{{ rule[3] }}</code></li>
+        {% elif rule[0] == 'ParentTask' %}
+	    <li>and that are descendents of a task tagged <span class="phui-category">Category</span> whose title includes the text <code>{{ rule[3] }}</code></li>
+	{% endif %}
+	    {% if not loop.first %}<li>and not in any rules above</li>{% endif %}
+	  </ol>
+        </li>
+      {% endfor %}
+      <li>Delete any remaining tasks</li>
+    </ol>
+  </body>
+</html>

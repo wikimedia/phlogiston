@@ -1,6 +1,5 @@
 CREATE EXTENSION IF NOT EXISTS intarray;
 
-DROP TABLE IF EXISTS maniphest_edge;
 DROP TABLE IF EXISTS maniphest_blocked;
 DROP TABLE IF EXISTS maniphest_transaction;
 DROP TABLE IF EXISTS maniphest_task;
@@ -41,19 +40,6 @@ CREATE TABLE maniphest_transaction (
 );
 
 CREATE INDEX ON maniphest_transaction (task_id, date_modified, has_edge_data);
-
-CREATE TABLE maniphest_edge (
-       task int references maniphest_task,
-       project int references phabricator_project,
-       edge_date date
-);
-
--- TODO: maybe add the indexes after all rows are added?
-CREATE INDEX ON maniphest_edge (task, project, edge_date);
-CREATE INDEX ON maniphest_edge (task);
-CREATE INDEX ON maniphest_edge (project);
-CREATE INDEX ON maniphest_edge (edge_date);
-
 
 -- No RI for this table because otherwise we would have to load all
 -- tasks before any blocks
