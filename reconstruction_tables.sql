@@ -1,6 +1,7 @@
 DROP TABLE IF EXISTS phab_parent_category_edge;
 DROP TABLE IF EXISTS category;
 DROP TABLE IF EXISTS task_on_date;
+DROP TABLE IF EXISTS maniphest_edge;
 
 CREATE TABLE task_on_date (
        scope varchar(6),
@@ -43,6 +44,18 @@ CREATE TABLE category (
        display boolean,
        UNIQUE (scope, sort_order)
 );
+
+CREATE TABLE maniphest_edge (
+       task int,
+       project int,
+       edge_date date
+);
+
+-- TODO: maybe add the indexes after all rows are added?
+CREATE INDEX ON maniphest_edge (task, project, edge_date);
+CREATE INDEX ON maniphest_edge (task);
+CREATE INDEX ON maniphest_edge (project);
+CREATE INDEX ON maniphest_edge (edge_date);
 
 CREATE TABLE phab_parent_category_edge (
        scope varchar(6),

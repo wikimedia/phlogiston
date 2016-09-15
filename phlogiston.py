@@ -329,6 +329,7 @@ def load(conn, end_date, VERBOSE, DEBUG):
 
 def reconstruct(conn, VERBOSE, DEBUG, default_points,
                 start_date, end_date, scope_prefix, incremental):
+
     cur = conn.cursor()
 
     import_recategorization_file(conn, scope_prefix)
@@ -380,7 +381,7 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points,
         try:
             start_date = cur.fetchone()[0].date()
         except AttributeError:
-            print("No data available for incremental run.\nProbably this reconstruction should be run without --incremental.")  # noqa
+            print("No data available for incremental run.\nProbably this reconstruction should be run without --incremental.")
             sys.exit(1)
     else:
         cur.execute('SELECT wipe_reconstruction(%(scope_prefix)s)',
@@ -493,14 +494,6 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
 
     cur.execute('SELECT wipe_reporting(%(scope_prefix)s)',
                 {'scope_prefix': scope_prefix})
-
-    # generate the summary reporting data from the reconstructed records
-    # DEBUG: let's try killing this
-    # report_tables_script = '{0}_make_history.sql'.format(scope_prefix)
-    # if os.path.isfile(report_tables_script):
-    #     subprocess.call("psql -d {0} -f {1} -v scope_prefix={2}".
-    #                    format(dbname, report_tables_script, scope_prefix), shell=True)
-    # else:
 
     cur.execute('SELECT load_tasks_to_recategorize(%(scope_prefix)s)',
                 {'scope_prefix': scope_prefix})
