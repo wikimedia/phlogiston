@@ -1,8 +1,8 @@
-sort_order,zoom_list,title,matchstring
-1,True,Faster 2G,%Make Wikipedia more accessible to 2G connections%
-2,True,Language Switching,%in-article language switching%
-3,True,UserProfile,%Kill SpecialUserProfile%
-4,True,Quick Surveys,%QuickSurveys%
-5,True,Related Pages,%related pages to production%
-6,True,Hovercards,%Graduate Hovercards%
-7,True,Other,PhlogOther
+rule,title,display,id,matchstring
+ParentTask,Faster 2G,true,67,Make Wikipedia more accessible to 2G connections
+ParentTask,Language Switching,true,67,in-article language switching
+ParentTask,UserProfile,true,67,Kill SpecialUserProfile
+ParentTask,Quick Surveys,true,67,QuickSurveys
+ParentTask,Related Pages,true,67,related pages to production
+ParentTask,Hovercards,true,67,Graduate Hovercards
+ProjectByID,Reading Web Backlog Other,true,67,

@@ -2,5 +2,5 @@ rule,title,display,id,matchstring
 ProjectsByWildcard,,true,,TPG-2017Q1
 ProjectsByWildcard,,false,,TPG-2017Q4
 ProjectByName,Essential Functions,true,,TPG-Essential-Functions
-ProjectByName,Other,true,,Team-Practices-This-Week
+ProjectByID,Other,true,1105,
 ProjectByName,Other,true,,Team-Practices

@@ -1,19 +1,21 @@
-sort_order,zoom_list,title,matchstring
-1,True,Archive External Links,Migrate dead external links
-2,True,Pageview Stats,Pageview Stats tool
-3,True,Numerical sorting,Natural number sorting in category listings
-4,True,Cross-wiki watchlists,Cross-wiki watchlists
-5,True,Improve diffs,Improve diff compare screen
-6,True,Global repository,"Central Global Repository for Templates, Lua modules, and Gadgets"
-7,True,Commons translated categories,Allow categories in Commons in all languages
-8,True,Global user talk,Provide global user talk page (header)
-9,True,Copy and paste detection,copy and paste detection
-10,True,User watchlist,that lists all recent contributions of a set of users
-11,True,Fixes,Community-Tech-fixes
-12,True,Rev Slider,RevSlider
-13,True,WikiProject tools,WikiProject-tools
-14,True,Gadgets 2.0,Gadgets-2.0
-15,True,CopyVio tools,CopyVio-tools
-19,True,Other,PhlogOther
-17,False,Blocked,Blocked
-18,False,Frozen,Frozen
+rule,title,display,id,matchstring
+ParentTask,Archive External Links,true,1274,Migrate dead external links
+ParentTask,Pageview Stats,true,1274,Pageview Stats tool
+ParentTask,Numerical sorting,true,1274,Natural number sorting in category listings
+ParentTask,Cross-wiki watchlists,true,1274,Cross-wiki watchlists
+ParentTask,Improve diffs,true,1274,Improve diff compare screen
+ParentTask,Global repository,true,1274,"Central Global Repository for Templates, Lua modules, and Gadgets"
+ParentTask,Commons translated categories,true,1274,Allow categories in Commons in all languages
+ParentTask,Global user talk,true,1274,Provide global user talk page (header)
+ParentTask,Copy and paste detection,true,1274,copy and paste detection
+ParentTask,User watchlist,true,1274,that lists all recent contributions of a set of users
+ParentTask,Fixes,true,1274,Community-Tech-fixes
+ParentTask,Rev Slider,true,1274,RevSlider
+ParentTask,WikiProject tools,true,1274,WikiProject-tools
+ParentTask,Gadgets 2.0,true,1274,Gadgets-2.0
+ParentTask,CopyVio tools,true,1274,CopyVio-tools
+ProjectColumn,Blocked,false,1274,Blocked
+ProjectColumn,Frozen,false,1274,Frozen
+ProjectByID,Other,false,1274,
+
+

@@ -381,7 +381,7 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points,
         try:
             start_date = cur.fetchone()[0].date()
         except AttributeError:
-            print("No data available for incremental run.\nProbably this reconstruction should be run without --incremental.")
+            print("No data available for incremental run.\nProbably this reconstruction should be run without --incremental.")  # noqa
             sys.exit(1)
     else:
         cur.execute('SELECT wipe_reconstruction(%(scope_prefix)s)',
@@ -802,6 +802,8 @@ def import_recategorization_file(conn, scope_prefix):
     with open(recat_file, 'rt') as f:
         reader = csv.DictReader(f)
         counter = 0
+        valid_rule_list = ['ProjectByID', 'ProjectByName', 'ProjectsByWildcard',
+                           'Intersection', 'ProjectColumn', 'ParentTask']
         for line in reader:
 
             try:
@@ -810,9 +812,8 @@ def import_recategorization_file(conn, scope_prefix):
                 matchstring = ''
 
             rule = line['rule']
-            if rule not in ['ProjectByID', 'ProjectByName', 'ProjectsByWildcard',
-                            'Intersection', 'ProjectColumn', 'ParentTask']:
-                raise Exception('Error in recat file {0} line {1}: {2} is not a valid rule.'.format(recat_file, counter, rule))  # noqa
+            if rule not in valid_rule_list:
+                raise Exception('Error in recat file {0} line {1}: {2} is not a valid rule.  Must be one of {3}'.format(recat_file, counter, rule, valid_rule_list))  # noqa
                 quit()
 
             try:
@@ -835,8 +836,7 @@ def import_recategorization_file(conn, scope_prefix):
                 pass
 
             if rule != 'Intersection' and len(id_list) > 1:
-                raise Exception("Too many IDs specified for rule that should have only 1 id. Rule: {0}".format(rule))  # noqa
-
+                raise Exception('Error in recat file {0} line {1}: {2} is not a valid rule.  This type of rule should have only one id specified'.format(recat_file, counter, line))  # noqa
             if rule == 'ProjectsByWildcard':
                 wildcard_match = '%{0}%'.format(matchstring)
                 cur.execute("SELECT * FROM get_projects_by_name(%s)", (wildcard_match,))
@@ -858,7 +858,10 @@ def import_recategorization_file(conn, scope_prefix):
             elif rule == 'ProjectByName':
                 cur.execute("SELECT * FROM get_projects_by_name(%s)", (matchstring,))
                 row = cur.fetchone()
-                project_id = row[0]
+                try:
+                    project_id = row[0]
+                except TypeError:
+                    raise Exception('Error in recat file {0} line {1}: {2} is not a valid rule.  No matching project found for name {3}'.format(recat_file, counter, line, matchstring))  # noqa
                 cur.execute(insert_sql,
                             {'scope': scope_prefix,
                              'sort_order': counter,
