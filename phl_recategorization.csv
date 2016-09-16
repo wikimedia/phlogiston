@@ -1,2 +1,8 @@
 rule,title,display,id,matchstring
-ProjectsByWildcard,,,,Phlogiston
+ProjectByID,Forecasting,true,1961,
+ProjectByID,Core Fraction,false,1960,
+ProjectByID,Burnup Support,true,1959,
+ProjectByID,Interrupt,true,1795,
+ProjectByID,Technical Debt,true,1962,
+ProjectByName,Uncategorized,true,,Phlogiston
+ProjectsByWildcard,Other,true,,Phlogiston
