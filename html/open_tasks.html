@@ -22,7 +22,7 @@
       <tr>
         <td class="id"><a href="https://phabricator.wikimedia.org/T{{row.0}}">{{row.0}}</a></td>
 	<td class="name">{{ row.1|escape }}</td>
-	<td class="category">{{ row.2 }}</td>
+	<td class="category">{{ row.2|escape }}</td>
 	<td class="dateadded">{{ row.3.strftime('%Y-%m-%d') }}</td>
 	<td class="datechanged">{{ row.4.strftime('%Y-%m-%d') }}</td>
       </tr>

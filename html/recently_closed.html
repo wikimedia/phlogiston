@@ -21,9 +21,9 @@
       {% for row in recently_closed_tasks_rows %}
       <tr>
         <td class="id"><a href="https://phabricator.wikimedia.org/T{{row.0}}">{{row.0}}</a></td>
-	<td class="name">{{row.1}}</td>
-	<td class="category">{{row.3}}</td>
-	<td class="category">{{row.4}}</td>
+	<td class="name">{{row.1|escape}}</td>
+	<td class="category">{{row.3|escape}}</td>
+	<td class="category">{{row.4|escape}}</td>
 	<td class="dateclosed">{{row.2}}</td>
       </tr>
       {% endfor %}
