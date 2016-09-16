@@ -585,14 +585,16 @@ CREATE OR REPLACE FUNCTION get_recently_closed_tasks(
     id int,
     title text,
     date date, 
-    category text)
+    category text,
+    points int)
 AS $$
 BEGIN
     RETURN QUERY
     SELECT rct.id,
            mt.title,
            rct.date,
-           rct.category
+           rct.category,
+	   rct.points
       FROM recently_closed_task rct LEFT OUTER JOIN maniphest_task mt USING (id)
      WHERE rct.scope = scope_prefix
   ORDER BY rct.category, rct.date, rct.id;
@@ -710,7 +712,8 @@ BEGIN
              SELECT scope_prefix as scope,
                     thr.date,
                     thr.id,
-                    thr.category
+                    thr.category,
+		    thr.points as points
               FROM task_on_date_recategorized thr LEFT OUTER JOIN maniphest_task mt USING (id)
              WHERE thr.status = '"resolved"'
                AND thr.date = daterow.date

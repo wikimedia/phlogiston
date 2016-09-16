@@ -47,7 +47,8 @@ CREATE TABLE recently_closed_task (
     scope varchar(6),
     date date,
     id int,
-    category text
+    category text,
+    points int
 );
 
 DROP TABLE IF EXISTS maintenance_week;
