@@ -22,7 +22,7 @@ SELECT date,
        count,
        SUM(points) OVER (PARTITION BY date ORDER BY sort_order, category) AS label_points,
        SUM(count) OVER (PARTITION BY date ORDER BY sort_order, category) AS label_count
-  FROM get_backlog(:'scope_prefix', '"open"', False)
+  FROM get_backlog(:'scope_prefix', 'open', False)
 ) TO '/tmp/phlog/burn_open.csv' DELIMITER ',' CSV HEADER;
 
 COPY (
@@ -33,7 +33,7 @@ SELECT date,
        count,
        SUM(points) OVER (PARTITION BY date ORDER BY sort_order, category) AS label_points,
        SUM(count) OVER (PARTITION BY date ORDER BY sort_order, category) AS label_count
-  FROM get_backlog(:'scope_prefix', '"resolved"', False)
+  FROM get_backlog(:'scope_prefix', 'resolved', False)
 ) TO '/tmp/phlog/burn_done.csv' DELIMITER ',' CSV HEADER;
 
 COPY (
@@ -44,7 +44,7 @@ SELECT date,
        count,
        SUM(points) OVER (PARTITION BY date ORDER BY sort_order, category) AS label_points,
        SUM(count) OVER (PARTITION BY date ORDER BY sort_order, category) AS label_count
-  FROM get_backlog(:'scope_prefix', '"open"', True)
+  FROM get_backlog(:'scope_prefix', 'open', True)
 ) TO '/tmp/phlog/burn_open_showhidden.csv' DELIMITER ',' CSV HEADER;
 
 COPY (
@@ -55,7 +55,7 @@ SELECT date,
        count,
        SUM(points) OVER (PARTITION BY date ORDER BY sort_order, category) AS label_points,
        SUM(count) OVER (PARTITION BY date ORDER BY sort_order, category) AS label_count
-  FROM get_backlog(:'scope_prefix', '"resolved"', True)
+  FROM get_backlog(:'scope_prefix', 'resolved', True)
 ) TO '/tmp/phlog/burn_done_showhidden.csv' DELIMITER ',' CSV HEADER;
 
 COPY (
@@ -63,7 +63,7 @@ SELECT date,
        SUM(points) as points,
        SUM(count) as count
   FROM tall_backlog
- WHERE status = '"resolved"'
+ WHERE status = 'resolved'
    AND scope = :'scope_prefix'
    AND category IN (SELECT category
                       FROM category
@@ -78,7 +78,7 @@ SELECT date,
        SUM(points) as points,
        SUM(count) as count
   FROM tall_backlog
- WHERE status = '"resolved"'
+ WHERE status = 'resolved'
    AND scope = :'scope_prefix'
    AND category IN (SELECT category
                       FROM category
@@ -93,7 +93,7 @@ SELECT date,
        SUM(points) as points,
        SUM(count) as count
   FROM tall_backlog
- WHERE status = '"resolved"'
+ WHERE status = 'resolved'
    AND scope = :'scope_prefix'
    AND category in (SELECT category
                       FROM category
@@ -127,7 +127,7 @@ SELECT scope,
        SUM(points) as points,
        SUM(count) as count
   FROM tall_backlog
- WHERE status = '"resolved"'
+ WHERE status = 'resolved'
    AND EXTRACT(epoch FROM age(date))/604800 = ROUND(
        EXTRACT(epoch FROM age(date))/604800)
    AND date >= current_date - interval '3 months'
@@ -327,13 +327,13 @@ SELECT z.title as category,
                           MIN(date) as first_open_date
                      FROM tall_backlog
                     WHERE scope = :'scope_prefix'
-                      AND status = '"open"'
+                      AND status = 'open'
                     GROUP BY category) AS first ON (z.title = first.category)
   LEFT OUTER JOIN (SELECT category,
                           MAX(date) as last_open_date
                      FROM tall_backlog
                     WHERE scope = :'scope_prefix'
-                      AND status = '"open"'
+                      AND status = 'open'
                     GROUP BY category) AS last ON (z.title = last.category AND
                                                 date_trunc('day', last_open_date) <> (SELECT MAX(date) FROM tall_backlog WHERE scope = :'scope_prefix'))
 WHERE scope = :'scope_prefix'
@@ -372,7 +372,7 @@ SELECT points,
    AND date = (SELECT MAX(date)
                  FROM task_on_date
                 WHERE scope = :'scope_prefix')
-   AND status = '"resolved"') AS point_query
+   AND status = 'resolved') AS point_query
  GROUP BY points, priority
  ORDER BY priority, points
 ) to '/tmp/phlog/points_histogram.csv' DELIMITER ',' CSV HEADER;
@@ -409,11 +409,11 @@ since it's the only way to identify recently resolved tasks
 --        (SELECT min(date)
 --           FROM task_on_date th2
 --          WHERE th2.id = th1.id
---            AND status = '"open"') as open_date
+--            AND status = 'open') as open_date
 --   INTO leadtime
 --   FROM statushist as th1
---  WHERE prev_status = '"open"'
---    AND status = '"resolved"'
+--  WHERE prev_status = 'open'
+--    AND status = 'resolved'
 --    AND id = prev_id;
 
 -- /* This takes forever and the data isn't very useful.
@@ -424,10 +424,10 @@ since it's the only way to identify recently resolved tasks
 --        (SELECT min(date)
 --           FROM task_on_date th2
 --          WHERE th2.id = th1.id
---            AND status = '"open"') as open_date
+--            AND status = 'open') as open_date
 --   INTO openage
 --   FROM task_on_date as th1
---  WHERE status = '"open"'; */
+--  WHERE status = 'open'; */
 
 -- SELECT id,
 --        points,
@@ -435,10 +435,10 @@ since it's the only way to identify recently resolved tasks
 --        (SELECT min(date)
 --           FROM task_on_date th2
 --          WHERE th2.id = th1.id
---            AND status = '"open"') as open_date
+--            AND status = 'open') as open_date
 --   INTO openage_specific
 --   FROM task_on_date as th1
---  WHERE status = '"open"'
+--  WHERE status = 'open'
 --    AND NOT (project='VisualEditor' AND projectcolumn NOT SIMILAR TO 'TR%');
 
 -- COPY (SELECT SUM(points)/7 as points,

@@ -288,11 +288,16 @@ def load(conn, end_date, VERBOSE, DEBUG):
 
         # Load transactions for this task
         transactions = task['transactions']
+        quote_trans_table = {ord('"'): None}
         for trans_key in list(transactions.keys()):
             if transactions[trans_key]:
                 for trans in transactions[trans_key]:
                     trans_type = trans[6]
-                    new_value = trans[8]
+                    raw_new_value = trans[8]
+                    if trans_type == 'status':
+                        new_value = raw_new_value.translate(quote_trans_table)
+                    else:
+                        new_value = raw_new_value
                     date_mod = time.strftime('%m/%d/%Y %H:%M:%S',
                                              time.gmtime(trans[11]))
                     # If this is an edge transaction, parse out the

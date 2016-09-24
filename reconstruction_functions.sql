@@ -98,7 +98,7 @@ BEGIN
                     SELECT mt.task_id,
                            left(max(mt.new_value),15) as trans_status,
                            count(mt.date_modified) as num_of_changes,
-                           max('"' || mta.status_at_load || '"') as status_at_load
+                           max(mta.status_at_load) as status_at_load
                      FROM maniphest_transaction mt, maniphest_task mta
                     WHERE mt.transaction_type = 'status'
                       AND mt.task_id = mta.id

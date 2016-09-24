@@ -83,7 +83,7 @@ BEGIN
                    SUM(points) AS sum_points_resolved,
                    SUM(count) AS sum_count_resolved
               FROM tall_backlog
-             WHERE status = '"resolved"'
+             WHERE status = 'resolved'
                AND scope = scope_prefix
              GROUP BY scope, date, category) as t
      WHERE t.date = v.date
@@ -452,14 +452,14 @@ CREATE OR REPLACE FUNCTION load_tasks_to_recategorize(
   );
 
   UPDATE task_on_date_recategorized
-     SET status = '"open"'
-   WHERE status = '"stalled"'
+     SET status = 'open'
+   WHERE status = 'stalled'
      AND scope = $1;
 
   DELETE FROM task_on_date_recategorized
-   WHERE (status = '"duplicate"'
-      OR status = '"invalid"'
-      OR status = '"declined"')
+   WHERE (status = 'duplicate'
+      OR status = 'invalid'
+      OR status = 'declined')
      AND scope = $1;
 
 $$ LANGUAGE SQL VOLATILE;
@@ -569,7 +569,7 @@ BEGIN
                AND transaction_type IN ('core:columns', 'status', 'core:edge'))) AS date_last_changed
       FROM task_on_date_recategorized thr LEFT OUTER JOIN maniphest_task mt USING (id)
      WHERE scope = scope_prefix
-       AND thr.status = '"open"'
+       AND thr.status = 'open'
        AND thr.date = (SELECT MAX(date)
                          FROM task_on_date_recategorized
                         WHERE scope = scope_prefix)
@@ -644,7 +644,7 @@ BEGIN
                         FROM task_on_date th
                        WHERE date = backlog_resolved_cutoff
                          AND scope = scope_prefix
-                         AND status = '"resolved"');
+                         AND status = 'resolved');
     RETURN;
 
 END;
@@ -675,12 +675,12 @@ BEGIN
                     sum(points) AS points,
                     count(id) as count
                FROM task_on_date_recategorized
-              WHERE status = '"resolved"'
+              WHERE status = 'resolved'
                 AND date = weekrow.date
                 AND scope = scope_prefix
                 AND id NOT IN (SELECT id
                                  FROM task_on_date
-                                WHERE status = '"resolved"'
+                                WHERE status = 'resolved'
                                   AND scope = scope_prefix
                                   AND date = weekrow.date - interval '1 week' )
               GROUP BY date, category
@@ -715,12 +715,12 @@ BEGIN
                     thr.category,
 		    thr.points as points
               FROM task_on_date_recategorized thr LEFT OUTER JOIN maniphest_task mt USING (id)
-             WHERE thr.status = '"resolved"'
+             WHERE thr.status = 'resolved'
                AND thr.date = daterow.date
                AND thr.scope = scope_prefix
                AND thr.id NOT IN (SELECT id
                                     FROM task_on_date
-                                   WHERE status = '"resolved"'
+                                   WHERE status = 'resolved'
                                      AND scope = scope_prefix
                                      AND date = daterow.date - interval '1 day' )
                
