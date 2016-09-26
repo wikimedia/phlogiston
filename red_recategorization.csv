@@ -1,8 +1,3 @@
 rule,title,display,id,matchstring
-ParentTask,Faster 2G,true,67,Make Wikipedia more accessible to 2G connections
-ParentTask,Language Switching,true,67,in-article language switching
-ParentTask,UserProfile,true,67,Kill SpecialUserProfile
-ParentTask,Quick Surveys,true,67,QuickSurveys
-ParentTask,Related Pages,true,67,related pages to production
-ParentTask,Hovercards,true,67,Graduate Hovercards
-ProjectByID,Reading Web Backlog Other,true,67,
+ProjectByID,Hovercards (2016-17-Q2-Goal),true,2202
+ProjectByID,Reading-Web-Tech-Debt,true,2236
