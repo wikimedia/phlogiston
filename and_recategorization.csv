@@ -1,4 +1,4 @@
 rule,title,display,id,matchstring
 ProjectsByWildcard,,true,,Android-app-feature
-ProjectByName,2016-17 Q1 Goals,,,Android-app-goals-2016-17-Q1
+ProjectsByWildcard,,true,,Android-app-goals
 
