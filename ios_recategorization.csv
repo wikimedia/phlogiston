@@ -1,7 +1,7 @@
 rule,title,display,id,matchstring
 ProjectsByWildcard,,true,,iOS-app-feature
 ProjectsByWildcard,,True,,iOS-app-Bugs
-ProjectsByWildcard,,True,,iOS-app-v
+ProjectsByWildcard,,True,,iOS-app-v5
 ProjectColumn,Navigation,False,782,Enable a/b testing of navigation options
 ProjectColumn,Explore Refactor,False,782,Explore feed fixes
 ProjectColumn,5.0 Text Changes,True,782,"EPIC: Text Changes"
