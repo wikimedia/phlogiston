@@ -1,5 +1,4 @@
 rule,title,display,id,matchstring
 ProjectsByWildcard,,true,,Android-app-feature
 ProjectsByWildcard,,true,,Android-app-goals
-ProjectByID,Nav 2016 Q2 Jul - Oct MVP,true,2097,
-
+ProjectByID,Bugs,true,2302,
