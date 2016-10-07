@@ -112,7 +112,6 @@ bo_ylegend_points <- min(bo_labels_points$label_points, 10)
 
 png(filename = sprintf("~/html/%s_backlog_burnup_points%s.png", args$scope_prefix, showhidden_suffix), width=2000, height=1125, units="px", pointsize=30)
 
-
 p <- ggplot(burn_done) +
   geom_area(position='stack', aes(x = date, y = points, group=category, fill=category, order=-category)) +
   geom_area(data=burn_open, position='stack', aes(x = date, y = points, group=category, fill=category, order=-category)) +
@@ -136,12 +135,13 @@ if (nrow(bd_labels_points) > 0 ) {
 if (nrow(bo_labels_points) > 0 ) {
    p <- p + geom_text(data=bo_labels_points, aes(x=max_date, y=label_points, label=category), size=9, hjust=0)
 }
+
 p
 dev.off()
 
 png(filename = sprintf("~/html/%s_backlog_burnup_count%s.png", args$scope_prefix, showhidden_suffix), width=2000, height=1125, units="px", pointsize=30)
 
-ggplot(burn_done) +
+p <- ggplot(burn_done) +
   geom_area(position='stack', aes(x = date, y = count, group=category, fill=category, order=-category)) +
   geom_area(data=burn_open, position='stack', aes(x = date, y = count, group=category, fill=category, order=-category)) +
   theme_fivethirtynine() +
@@ -154,8 +154,17 @@ ggplot(burn_done) +
   annotate("text", x=previous_quarter_start, y=bd_ylegend_count, label="Complete Tasks", hjust=0, size=10) +
   geom_hline(aes(yintercept=c(0)), color="black", size=2) +
   labs(fill="Category") +
-  geom_text(data=bd_labels_count, aes(x=max_date, y=label_count, label=category), size=9, hjust=0) +
-  geom_text(data=bo_labels_count, aes(x=max_date, y=label_count, label=category), size=9, hjust=0)
+  geom_text(data=bd_labels_count, aes(x=max_date, y=label_count, label=category), size=9, hjust=0) 
+
+if (nrow(bd_labels_count) > 0 ) {
+    p <- p + geom_text(data=bd_labels_count, aes(x=max_date, y=label_count, label=category), size=9, hjust=0)
+}
+
+if (nrow(bo_labels_count) > 0 ) {
+   p <- p + geom_text(data=bo_labels_count, aes(x=max_date, y=label_count, label=category), size=9, hjust=0)
+}
+
+p
 dev.off()
 
 
