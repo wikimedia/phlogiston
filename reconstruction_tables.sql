@@ -42,7 +42,8 @@ CREATE TABLE category (
        matchstring text,
        title text,
        display boolean,
-       UNIQUE (scope, sort_order)
+       UNIQUE (scope, sort_order),
+       UNIQUE (scope, rule, project_id_list, matchstring)
 );
 
 CREATE TABLE maniphest_edge (

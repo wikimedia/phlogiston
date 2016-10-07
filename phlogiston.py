@@ -398,10 +398,12 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points,
             start_date = cur.fetchone()[0].date()
 
     working_date = start_date
+
     while working_date <= end_date:
         if VERBOSE:
             print('{0} {1}: Making maniphest_edge for {2}'.
                   format(scope_prefix, datetime.datetime.now(), working_date))
+
         cur.execute('SELECT build_edges(%(date)s, %(project_id_list)s)',
                     {'date': working_date,
                      'project_id_list': id_list_with_worktypes})
@@ -849,17 +851,20 @@ def import_recategorization_file(conn, scope_prefix):
                     project_id = row[0]
                     name = row[1]
 
-                    cur.execute(insert_sql,
-                                {'scope': scope_prefix,
-                                 'sort_order': counter,
-                                 'rule': 'ProjectByID',
-                                 'project_id_list': [project_id, ],
-                                 'project_name_list': [name, ],
-                                 'matchstring': '',
-                                 'title': name,
-                                 'display': display})
-                    counter += 1
-
+                    try:
+                        cur.execute(insert_sql,
+                                    {'scope': scope_prefix,
+                                     'sort_order': counter,
+                                     'rule': 'ProjectByID',
+                                     'project_id_list': [project_id, ],
+                                     'project_name_list': [name, ],
+                                     'matchstring': '',
+                                     'title': name,
+                                     'display': display})
+                        counter += 1
+                    except psycopg2.IntegrityError as E:
+                        print('Skipping a duplicate category produced by rule {0}: {1}'.
+                              format(line, E))
             elif rule == 'ProjectByName':
                 cur.execute("SELECT * FROM get_projects_by_name(%s)", (matchstring,))
                 row = cur.fetchone()
@@ -867,17 +872,21 @@ def import_recategorization_file(conn, scope_prefix):
                     project_id = row[0]
                 except TypeError:
                     raise Exception('Error in recat file {0} line {1}: {2} is not a valid rule.  No matching project found for name {3}'.format(recat_file, counter, line, matchstring))  # noqa
-                cur.execute(insert_sql,
-                            {'scope': scope_prefix,
-                             'sort_order': counter,
-                             'rule': 'ProjectByID',
-                             'project_id_list': [project_id, ],
-                             'project_name_list': [matchstring, ],
-                             'matchstring': '',
-                             'title': title,
-                             'display': display})
-                counter += 1
 
+                try:
+                    cur.execute(insert_sql,
+                                {'scope': scope_prefix,
+                                 'sort_order': counter,
+                                 'rule': 'ProjectByID',
+                                 'project_id_list': [project_id, ],
+                                 'project_name_list': [matchstring, ],
+                                 'matchstring': '',
+                                 'title': title,
+                                 'display': display})
+                    counter += 1
+                except psycopg2.IntegrityError as E:
+                    print('Skipping a duplicate category produced by rule {0}: {1}'.
+                          format(line, E))
             else:
                 name_list = {}
                 cur.execute("SELECT name FROM phabricator_project WHERE id = ANY(%s)",
@@ -885,16 +894,20 @@ def import_recategorization_file(conn, scope_prefix):
                 result = cur.fetchall()
                 name_list = [x[0] for x in result]
 
-                cur.execute(insert_sql,
-                            {'scope': scope_prefix,
-                             'sort_order': counter,
-                             'rule': rule,
-                             'project_id_list': id_list,
-                             'project_name_list': name_list,
-                             'matchstring': matchstring,
-                             'title': line['title'],
-                             'display': display})
-                counter += 1
+                try:
+                    cur.execute(insert_sql,
+                                {'scope': scope_prefix,
+                                 'sort_order': counter,
+                                 'rule': rule,
+                                 'project_id_list': id_list,
+                                 'project_name_list': name_list,
+                                 'matchstring': matchstring,
+                                 'title': line['title'],
+                                 'display': display})
+                    counter += 1
+                except psycopg2.IntegrityError as E:
+                    print('Skipping a duplicate category produced by rule {0}: {1}'.
+                          format(line, E))
 
 
 def recategorize(conn, scope_prefix, VERBOSE):
@@ -1031,6 +1044,10 @@ def reconstruct_task_on_date(cur, task_id, working_date, scope_prefix, DEBUG,
     edges = cur.fetchall()[0][0]
     pretty_project = ''
 
+    if not edges:
+        raise Exception('Task {0} has no edges; it may have been removed from\
+        the data, in which case a complete rebuild is appropriate'.format(task_id))
+        sys.exit()
     if PHAB_TAGS['new'] in edges:
         maint_type = 'New Functionality'
     elif PHAB_TAGS['maint'] in edges:
