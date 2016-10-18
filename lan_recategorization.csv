@@ -1,12 +1,11 @@
 rule,title,display,id,matchstring
-ProjectColumn,CX Infrastructure,True,2042,Infrastructure WMF requirements
-ParentTask,Template Adaptation,True,2042,Improved Content Translation template adaptation (tracking)
-ProjectColumn,Template Handling,True,2042,Template handling
-ProjectByID,CX Release 10 Other,True,2042,
-ProjectColumn,CX FY2016-17-Q1 Uncategorized,False,2041,CX10
-ProjectColumn,ULS,True,2041,ULS
-ProjectColumn,Translate,True,2041,Translate
-ProjectByID,FY2016-17-Q1 Quarterly Backlog/Other,True,2041,
-ProjectByID,MLEB,False,1464,
+ProjectColumn,CX-tasklist (1st goal),True,2184,CX Tasklist (1st goal)
+ProjectColumn,CX-templates (2nd goal),True,2184,CX Template handling
+ProjectColumn,CX-Infrastructure/Deployments,True,2184,CX Infrastructure maintenance
+ProjectColumn,Translate-goal,True,2184,Translate subtitles (goal)
+ProjectColumn,CX-Maintenance,True,2184,CX general maintenance
+ProjectColumn,Translate-Maintenance,True,2184,Translate general maintenance
+ProjectColumn,ULS-maintenance,True,2184,ULS general maintenance
+ProjectColumn,Unplanned,True,2184,All kinds of unplanned work
 
 
