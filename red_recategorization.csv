@@ -1,4 +1,3 @@
 rule,title,display,id,matchstring
 ProjectByID,Hovercards (2016-17-Q2-Goal),true,2202,
 ProjectByID,Technical-Debt (RW-Tech-Debt),true,2296,
-ProjectsByWildcard,,true,,Reading-Web-Sprint
