@@ -1,4 +1,4 @@
-rule,title,display,id,matchstring
+rule,matchstring,display,id,title
 ProjectColumn,CX-tasklist (1st goal),True,2184,CX Tasklist (1st goal)
 ProjectColumn,CX-templates (2nd goal),True,2184,CX Template handling
 ProjectColumn,CX-Infrastructure/Deployments,True,2184,CX Infrastructure maintenance
