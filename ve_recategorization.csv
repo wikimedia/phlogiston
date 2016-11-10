@@ -16,6 +16,7 @@ ProjectColumn,Links,FALSE,483,TR4
 ParentTask,Formulae,FALSE,483,Improve support for math editing by improving the UX of the Math extension and researching its usability
 ParentTask,Charts,TRUE,483,easier to create and edit charts from within VisualEditor
 ProjectColumn,Rich media,TRUE,483,TR5
+ProjectColumn,Rich diffs,TRUE,483,TR6
 ProjectColumn,Mobile,FALSE,483,TR2
 ParentTask,Wikivoyages on for all,FALSE,483,Enable VisualEditor by default for all users of all Wikivoyages
 ProjectByID,VisualEditor Other,FALSE,483,
