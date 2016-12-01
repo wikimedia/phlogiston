@@ -78,7 +78,8 @@ if (args$showhidden == 'True') {
 bd_cat_count <- length(unique(burn_done$category)) + 1
 bo_cat_count <- length(unique(burn_open$category)) + 1 
 
-colorCount = max(bd_cat_count, bo_cat_count)
+# Another +1 hack, fixes https://phabricator.wikimedia.org/T150980, no idea why it's necessary.
+colorCount = max(bd_cat_count, bo_cat_count) + 1
 getPalette = colorRampPalette(brewer.pal(12, "Set3"))
 
 burn_done$category <- factor(burn_done$category, levels=rev(unique(burn_done$category)))

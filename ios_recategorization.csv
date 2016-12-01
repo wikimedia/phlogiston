@@ -1,4 +1,7 @@
 rule,title,display,id,matchstring
+ProjectsByWildcard,,False,,iOS-app-v5.0
+ProjectsByWildcard,,False,,iOS-app-v5.1
+ProjectsByWildcard,,False,,iOS-app-v5.2
 ProjectsByWildcard,,true,,iOS-app-feature
 ProjectsByWildcard,,True,,iOS-app-Bugs
 ProjectsByWildcard,,True,,iOS-app-v5
