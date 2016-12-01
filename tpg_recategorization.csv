@@ -1,5 +1,6 @@
 rule,title,display,id,matchstring
-ProjectsByWildcard,,true,,TPG-FY2016
+ProjectsByWildcard,,false,,TPG-FY2016-17-Q1
+ProjectsByWildcard,,true,,TPG-FY2016-17-Q2
 ProjectByName,Essential Functions,true,,TPG-Essential-Functions
 ProjectsByWildcard,,false,,TPG-
 ProjectByID,Uncategorized from This Week,true,1105,
