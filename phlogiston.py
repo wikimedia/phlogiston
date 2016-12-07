@@ -116,6 +116,11 @@ def main(argv):
         else:
             backlog_resolved_cutoff = None
 
+        if config.has_option('vars', 'status_report_range'):
+            status_report_range = int(config['vars']['status_report_range'])
+        else:
+            status_report_range = None
+
         retroactive_categories = False
         if config.has_option('vars', 'retroactive_categories'):
             if config.getboolean('vars', 'retroactive_categories'):
@@ -146,7 +151,8 @@ def main(argv):
             report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
                    scope_title, default_points,
                    retroactive_categories, retroactive_points,
-                   backlog_resolved_cutoff, show_points, show_count, start_date)
+                   backlog_resolved_cutoff, show_points, show_count, start_date,
+                   status_report_range)
         else:
             print("Report specified without a scope_prefix.\nPlease specify a scope_prefix with --scope_prefix.")  # noqa
     conn.close()
@@ -335,7 +341,7 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points,
     cur = conn.cursor()
 
     import_recategorization_file(conn, scope_prefix)
-    project_id_list = get_project_list_from_recategorization(conn, scope_prefix)[0]
+    project_id_list = get_project_list(conn, scope_prefix, False)[0]
     lookups = {}
     lookups['project_id_list'] = project_id_list
 
@@ -376,12 +382,8 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points,
     # simplicity.
 
     if incremental:
-        max_date_query = """SELECT MAX(date)
-                              FROM task_on_date
-                             WHERE scope like %(scope_prefix)s"""
-        cur.execute(max_date_query, {'scope_prefix': scope_prefix})
         try:
-            start_date = cur.fetchone()[0].date()
+            start_date = get_max_date(conn, scope_prefix)
         except AttributeError:
             print("No data available for incremental run.\nProbably this reconstruction should be run without --incremental.")  # noqa
             sys.exit(1)
@@ -456,7 +458,8 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points,
 def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
            scope_title, default_points,
            retroactive_categories, retroactive_points,
-           backlog_resolved_cutoff, show_points, show_count, start_date):
+           backlog_resolved_cutoff, show_points, show_count, start_date,
+           status_report_range):
 
     cur = conn.cursor()
     log('Report Starting', scope_prefix, VERBOSE)
@@ -580,8 +583,16 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
          }))
     recently_closed_output.close()
 
-    cur.execute('SELECT * FROM get_status_report(%(scope_prefix)s)',
-                {'scope_prefix': scope_prefix})
+    final_status_date = get_max_date(conn, scope_prefix)
+    initial_status_date = final_status_date - datetime.timedelta(days=status_report_range)
+    status_report_name_list = get_project_list(conn, scope_prefix, True)[1]
+    cur.execute('SELECT * FROM get_status_report(\
+                 %(scope_prefix)s,\
+                 %(initial_date)s,\
+                 %(final_date)s)',
+                {'scope_prefix': scope_prefix,
+                 'initial_date': initial_status_date,
+                 'final_date': final_status_date})
     status_report_rows = cur.fetchall()
     status_report_html = Template(open('html/status_report.html').read())
     file_path = '../html/{0}_status_report.html'.format(scope_prefix)
@@ -589,7 +600,10 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
     status_report_output = open(os.path.join(script_dir, file_path), 'w')
     status_report_output.write(status_report_html.render(
         {'status_report_rows': status_report_rows,
-         'title': scope_title}))
+         'title': scope_title,
+         'status_report_name_list': status_report_name_list,
+         'initial_status_date': initial_status_date,
+         'final_status_date': final_status_date}))
     status_report_output.close()
 
     ######################################################################
@@ -616,13 +630,13 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
     # Update dates
     ######################################################################
 
-    max_date_query = """
+    max_trans_date_query = """
         SELECT MAX(date_modified), now()
           FROM task_on_date tod, maniphest_transaction mt
          WHERE tod.scope = %(scope_prefix)s
            AND tod.id = mt.task_id"""
 
-    cur.execute(max_date_query, {'scope_prefix': scope_prefix})
+    cur.execute(max_trans_date_query, {'scope_prefix': scope_prefix})
     result = cur.fetchone()
     max_date = result[0]
     now_db = result[1]
@@ -645,7 +659,7 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
                 {'scope_prefix': scope_prefix})
     category_rules_list = cur.fetchall()
 
-    project_name_list = get_project_list_from_recategorization(conn, scope_prefix)[1]
+    project_name_list = get_project_list(conn, scope_prefix, False)[1]
     rules_html = Template(open('html/rules.html').read())
     rules_output = open(os.path.join(script_dir, '../html/{0}_rules.html'.format(scope_prefix)), 'w')  # noqa
     rules_output.write(rules_html.render(
@@ -706,9 +720,9 @@ def aggregate_task_on_date(conn, scope_prefix, backlog_resolved_cutoff):
                                       COUNT(id) as count,
                                       maint_type
                                  FROM task_on_date_recategorized
-                                WHERE scope = %(scope_prefix)s """
+                                WHERE scope = %(scope_prefix)s"""
     if backlog_resolved_cutoff:
-        tod_agg_cutoff_insert += """AND id NOT IN (SELECT id
+        tod_agg_cutoff_insert += """ AND id NOT IN (SELECT id
                                      FROM task_on_date th
                                     WHERE date = %(backlog_resolved_cutoff)s
                                       AND scope = %(scope_prefix)s
@@ -758,7 +772,17 @@ def generate_reporting_files(conn, scope_prefix, dbname):
     subprocess.call('cp /tmp/{0}/category_possibilities.txt ~/html/{0}_category_possibilities.txt'.format(scope_prefix), shell=True)  # noqa
 
 
-def get_project_list_from_recategorization(conn, scope_prefix):
+def get_max_date(conn, scope_prefix):
+    cur = conn.cursor()
+    max_date_query = """SELECT MAX(date)
+                          FROM task_on_date_recategorized
+                         WHERE scope = %(scope_prefix)s"""
+    cur.execute(max_date_query, {'scope_prefix': scope_prefix})
+    max_date = cur.fetchone()[0].date()
+    return max_date
+
+
+def get_project_list(conn, scope_prefix, status_report):
     """Given a list of recategorization rules in the database,
     return a list (by id) of all categories mentioned in the rules.
     Should handle project ids, exact project name matches, and
@@ -769,7 +793,8 @@ def get_project_list_from_recategorization(conn, scope_prefix):
     category_id_query = """SELECT project_id_list
                              FROM category
                             WHERE scope = %(scope_prefix)s"""
-
+    if status_report:
+        category_id_query += """ AND include_in_status = True"""
     cur.execute(category_id_query, {'scope_prefix': scope_prefix})
     for row in cur.fetchall():
         result_list = row[0]
@@ -934,7 +959,9 @@ def log(message, scope_prefix, VERBOSE):
     """ TODO: convert this into native logging """
     if VERBOSE:
         print('{0} {1}: {2}'.
-              format(scope_prefix, datetime.datetime.now(), message))
+              format(scope_prefix,
+                     datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                     message))
 
 
 def populate_recently_closed(conn, scope_prefix):

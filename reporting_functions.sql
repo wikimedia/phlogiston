@@ -571,54 +571,62 @@ $$ LANGUAGE plpgsql;
 
 DROP FUNCTION IF EXISTS get_status_report(character varying);
 CREATE OR REPLACE FUNCTION get_status_report(
-    scope_prefix varchar(6)
+    scope_prefix varchar(6),
+    initial_date date,
+    final_date date
     ) RETURNS TABLE (
     id int,
     title text,
     category text,
     status text,
-    previous_status text,
     points text)
 AS $$
-DECLARE
-  initial_date date;
-  final_date date;
 BEGIN
-
-    SELECT MAX(date)
-      INTO final_date
-      FROM task_on_date_recategorized
-     WHERE scope = scope_prefix;
-
-    SELECT final_date - INTERVAL '7 days'
-      INTO initial_date;
 
     RETURN QUERY
     SELECT q2.id,
            q2.title,
            q2.category,
-           q2.status,
-	   q2.previous_status,
+	   CASE WHEN q2.previous_status IS NULL
+                 AND q2.status = 'open'
+                 AND q2.parent_previous_status = 'open' THEN 'Elaborated'
+	        WHEN q2.previous_status IS NULL AND q2.status = 'open' THEN 'Screep'
+                WHEN q2.previous_status IS NULL AND q2.status = 'resolved' THEN 'Screep Done'
+		WHEN q2.previous_status = 'open' AND q2.status IS NULL THEN 'Cut'
+                WHEN q2.previous_status = 'open' AND q2.status = 'open' THEN 'Stalled'
+		WHEN q2.previous_status = 'open' AND q2.status = 'resolved' THEN 'Done'
+                WHEN q2.previous_status = 'resolved' AND q2.status = 'resolved' THEN 'Still Done'
+                WHEN q2.previous_status = 'resolved' AND q2.status = 'open' THEN 'Reopened'
+                ELSE 'Unknown'
+           END as status,
            q2.points
       FROM (
 	    SELECT q1.id,
 	           q1.title,
 	           q1.category,
 	           q1.status,
-                   (SELECT thr2.status
-                      FROM task_on_date_recategorized as thr2
-                     WHERE thr2.id = q1.id
-                       AND thr2.date = initial_date
-                       AND thr2.scope = scope_prefix) AS previous_status,
+                   (SELECT thr2pre.status
+                      FROM task_on_date_recategorized as thr2pre
+                     WHERE thr2pre.id = q1.id
+                       AND thr2pre.date = initial_date
+                       AND thr2pre.scope = scope_prefix) AS previous_status,
+		   (SELECT thr2par.status
+                      FROM task_on_date_recategorized as thr2par
+                     WHERE thr2par.id = q1.parent_id
+                       AND thr2par.date = initial_date
+                       AND thr2par.scope = scope_prefix) AS parent_previous_status,
  	           q1.points
               FROM (SELECT thr1.id,
 		           mt1.title,
 		           thr1.category,
 		           thr1.status,
-		           mt1.story_points as points
+		           mt1.story_points as points,
+                           mb.parent_id
 		      FROM task_on_date_recategorized thr1
                         LEFT OUTER JOIN maniphest_task mt1 USING (id)
-		        LEFT OUTER JOIN category z1 ON (z1.title = thr1.category)
+                        LEFT OUTER JOIN category z1 ON (z1.title = thr1.category)
+                        LEFT OUTER JOIN maniphest_blocked mb ON (
+                          mb.child_id = thr1.id AND mb.blocked_date = final_date)
 		     WHERE thr1.scope = scope_prefix
 		       AND thr1.date = final_date
 		       AND thr1.category IN (SELECT category.title

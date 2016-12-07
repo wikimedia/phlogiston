@@ -16,6 +16,11 @@ table.bord, table.bord th, table.bord td {
     text-align: center;
 }
 
+td.name {
+    text-align: left!important;
+    
+}
+
 /* list.js styling */
 
 input {
@@ -101,3 +106,43 @@ input:focus {
   white-space: nowrap;
   font: 13px 'Segoe UI','Segoe UI Web Regular','Segoe UI Symbol','Lato','Helvetica Neue',Helvetica,Arial,sans-serif;
 }
+
+span:before {
+    margin-left: 0.5em;
+    margin-right: 1em;
+}
+
+span.Cut:before {
+    content: "✂";
+}
+
+span.Done:before {
+    content: "✔";
+}
+
+s.Done {
+    color: rgba(60, 60, 60, .5);
+    content: "✔";
+}
+
+span.Done {
+    color: black;
+}
+
+span.Elaborated:before {
+    content: "↪";
+}
+
+span.Screep:before {
+    content: "🐵" ;
+}
+
+span.Screep span {
+    color: red;
+}
+
+span.Stalled:before {
+    content: "⏳";
+}
+
+
