@@ -569,7 +569,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-DROP FUNCTION IF EXISTS get_status_report(character varying);
+DROP FUNCTION IF EXISTS get_status_report(character varying, date, date);
 CREATE OR REPLACE FUNCTION get_status_report(
     scope_prefix varchar(6),
     initial_date date,
@@ -593,7 +593,7 @@ BEGIN
 	        WHEN q2.previous_status IS NULL AND q2.status = 'open' THEN 'Screep'
                 WHEN q2.previous_status IS NULL AND q2.status = 'resolved' THEN 'Screep Done'
 		WHEN q2.previous_status = 'open' AND q2.status IS NULL THEN 'Cut'
-                WHEN q2.previous_status = 'open' AND q2.status = 'open' THEN 'Stalled'
+                WHEN q2.previous_status = 'open' AND q2.status = 'open' THEN 'Open'
 		WHEN q2.previous_status = 'open' AND q2.status = 'resolved' THEN 'Done'
                 WHEN q2.previous_status = 'resolved' AND q2.status = 'resolved' THEN 'Still Done'
                 WHEN q2.previous_status = 'resolved' AND q2.status = 'open' THEN 'Reopened'

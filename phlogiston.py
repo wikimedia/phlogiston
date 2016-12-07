@@ -119,7 +119,7 @@ def main(argv):
         if config.has_option('vars', 'status_report_range'):
             status_report_range = int(config['vars']['status_report_range'])
         else:
-            status_report_range = None
+            status_report_range = 7
 
         retroactive_categories = False
         if config.has_option('vars', 'retroactive_categories'):

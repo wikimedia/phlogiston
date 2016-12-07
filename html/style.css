@@ -141,7 +141,7 @@ span.Screep span {
     color: red;
 }
 
-span.Stalled:before {
+span.Open:before {
     content: "⏳";
 }
 
