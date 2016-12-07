@@ -5,7 +5,7 @@ SELECT date,
        SUM(points) as points,
        SUM(count) as count,
        BOOL_OR(z.display) as display
-  FROM tall_backlog t, category z
+  FROM task_on_date_agg t, category z
  WHERE t.scope = :'scope_prefix'
    AND z.scope = :'scope_prefix'
    AND t.scope = z.scope
@@ -62,7 +62,7 @@ COPY (
 SELECT date,
        SUM(points) as points,
        SUM(count) as count
-  FROM tall_backlog
+  FROM task_on_date_agg
  WHERE status = 'resolved'
    AND scope = :'scope_prefix'
    AND category IN (SELECT category
@@ -77,7 +77,7 @@ COPY (
 SELECT date,
        SUM(points) as points,
        SUM(count) as count
-  FROM tall_backlog
+  FROM task_on_date_agg
  WHERE status = 'resolved'
    AND scope = :'scope_prefix'
    AND category IN (SELECT category
@@ -92,7 +92,7 @@ SELECT date,
        category,
        SUM(points) as points,
        SUM(count) as count
-  FROM tall_backlog
+  FROM task_on_date_agg
  WHERE status = 'resolved'
    AND scope = :'scope_prefix'
    AND category in (SELECT category
@@ -126,7 +126,7 @@ SELECT scope,
        maint_type,
        SUM(points) as points,
        SUM(count) as count
-  FROM tall_backlog
+  FROM task_on_date_agg
  WHERE status = 'resolved'
    AND EXTRACT(epoch FROM age(date))/604800 = ROUND(
        EXTRACT(epoch FROM age(date))/604800)
@@ -310,32 +310,32 @@ COPY (
 SELECT z.title as category,
        z.display,
        (SELECT SUM(points)
-          FROM tall_backlog
+          FROM task_on_date_agg
          WHERE scope = :'scope_prefix'
            AND category = z.title
-           AND date = (SELECT MAX(date) FROM tall_backlog WHERE scope = :'scope_prefix')) AS points_total,
+           AND date = (SELECT MAX(date) FROM task_on_date_agg WHERE scope = :'scope_prefix')) AS points_total,
        (SELECT SUM(count)
-          FROM tall_backlog
+          FROM task_on_date_agg
          WHERE scope = :'scope_prefix'
            AND category = z.title
-           AND date = (SELECT MAX(date) FROM tall_backlog WHERE scope = :'scope_prefix')) AS count_total,
+           AND date = (SELECT MAX(date) FROM task_on_date_agg WHERE scope = :'scope_prefix')) AS count_total,
        z.sort_order,
        first.first_open_date,
        last.last_open_date + INTERVAL '1 week' as resolved_date
   FROM category z
   LEFT OUTER JOIN (SELECT category,
                           MIN(date) as first_open_date
-                     FROM tall_backlog
+                     FROM task_on_date_agg
                     WHERE scope = :'scope_prefix'
                       AND status = 'open'
                     GROUP BY category) AS first ON (z.title = first.category)
   LEFT OUTER JOIN (SELECT category,
                           MAX(date) as last_open_date
-                     FROM tall_backlog
+                     FROM task_on_date_agg
                     WHERE scope = :'scope_prefix'
                       AND status = 'open'
                     GROUP BY category) AS last ON (z.title = last.category AND
-                                                date_trunc('day', last_open_date) <> (SELECT MAX(date) FROM tall_backlog WHERE scope = :'scope_prefix'))
+                                                date_trunc('day', last_open_date) <> (SELECT MAX(date) FROM task_on_date_agg WHERE scope = :'scope_prefix'))
 WHERE scope = :'scope_prefix'
 ORDER BY sort_order
 ) TO '/tmp/phlog/forecast_done.csv' DELIMITER ',' CSV HEADER;

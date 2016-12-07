@@ -42,6 +42,7 @@ CREATE TABLE category (
        matchstring text,
        title text,
        display boolean,
+       include_in_status boolean,
        UNIQUE (scope, sort_order),
        UNIQUE (scope, rule, project_id_list, matchstring)
 );

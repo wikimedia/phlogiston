@@ -35,7 +35,7 @@ BEGIN
 
     SELECT MAX(date)
       INTO most_recent_data
-      FROM tall_backlog
+      FROM task_on_date_agg
      WHERE scope = scope_prefix
        AND count > 0;
 
@@ -68,7 +68,7 @@ BEGIN
            date,
            SUM(points) AS points_total,
            SUM(count) AS count_total
-      FROM tall_backlog
+      FROM task_on_date_agg
      WHERE date = ANY (past_dates)
        AND scope = scope_prefix
      GROUP BY date, scope, category);
@@ -82,7 +82,7 @@ BEGIN
                    category,
                    SUM(points) AS sum_points_resolved,
                    SUM(count) AS sum_count_resolved
-              FROM tall_backlog
+              FROM task_on_date_agg
              WHERE status = 'resolved'
                AND scope = scope_prefix
              GROUP BY scope, date, category) as t
@@ -118,7 +118,7 @@ BEGIN
     FOREACH weekday IN ARRAY past_dates
     LOOP
         FOR tranche IN SELECT DISTINCT category
-                         FROM tall_backlog
+                         FROM task_on_date_agg
                         WHERE date = weekday
                           AND scope = scope_prefix
                         ORDER BY category
@@ -392,7 +392,7 @@ BEGIN
     -- include today to get zero-based forecast viz lines
 
     FOR tranche IN SELECT DISTINCT category
-                     FROM tall_backlog
+                     FROM task_on_date_agg
                     WHERE scope = scope_prefix
                     ORDER BY category
     LOOP
@@ -432,39 +432,6 @@ END;
 $$ LANGUAGE plpgsql;
 
 
-CREATE OR REPLACE FUNCTION load_tasks_to_recategorize(
-    scope_prefix varchar(6)
-) RETURNS void AS $$
-
-  INSERT INTO task_on_date_recategorized(
-    SELECT scope,
-           date,
-           id,
-	   NULL,
-           project_id,
-           projectcolumn,
-           category_title,
-           status,
-           points,
-           maint_type
-      FROM task_on_date
-     WHERE scope = $1
-  );
-
-  UPDATE task_on_date_recategorized
-     SET status = 'open'
-   WHERE status = 'stalled'
-     AND scope = $1;
-
-  DELETE FROM task_on_date_recategorized
-   WHERE (status = 'duplicate'
-      OR status = 'invalid'
-      OR status = 'declined')
-     AND scope = $1;
-
-$$ LANGUAGE SQL VOLATILE;
-
-
 CREATE OR REPLACE FUNCTION get_backlog (
        scope_prefix varchar(6),
        status_input text,
@@ -477,7 +444,7 @@ BEGIN
                MAX(z.sort_order) as sort_order,
                SUM(t.points)::numeric as points,
                SUM(t.count)::numeric as count
-          FROM tall_backlog t, category z
+          FROM task_on_date_agg_with_cutoff t, category z
          WHERE t.scope = scope_prefix
            AND z.scope = scope_prefix
            AND t.scope = z.scope
@@ -504,7 +471,7 @@ BEGIN
                    bool_or(z.display) as display,
                    max(z.sort_order) as sort_order,
                    sum(t.count) as xcount
-              FROM category z, tall_backlog t
+              FROM category z, task_on_date_agg t
              WHERE z.scope = scope_prefix
                AND z.scope = t.scope
                AND z.title = t.category
@@ -602,6 +569,69 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP FUNCTION get_status_report(character varying);
+CREATE OR REPLACE FUNCTION get_status_report(
+    scope_prefix varchar(6)
+    ) RETURNS TABLE (
+    id int,
+    title text,
+    category text,
+    status text,
+    previous_status text,
+    points text)
+AS $$
+DECLARE
+  initial_date date;
+  final_date date;
+BEGIN
+
+    SELECT MAX(date)
+      INTO final_date
+      FROM task_on_date_recategorized
+     WHERE scope = scope_prefix;
+
+    SELECT final_date - INTERVAL '7 days'
+      INTO initial_date;
+
+    RETURN QUERY
+    SELECT q2.id,
+           q2.title,
+           q2.category,
+           q2.status,
+	   q2.previous_status,
+           q2.points
+      FROM (
+	    SELECT q1.id,
+	           q1.title,
+	           q1.category,
+	           q1.status,
+                   (SELECT thr2.status
+                      FROM task_on_date_recategorized as thr2
+                     WHERE thr2.id = q1.id
+                       AND thr2.date = initial_date
+                       AND thr2.scope = scope_prefix) AS previous_status,
+ 	           q1.points
+              FROM (SELECT thr1.id,
+		           mt1.title,
+		           thr1.category,
+		           thr1.status,
+		           mt1.story_points as points
+		      FROM task_on_date_recategorized thr1
+                        LEFT OUTER JOIN maniphest_task mt1 USING (id)
+		        LEFT OUTER JOIN category z1 ON (z1.title = thr1.category)
+		     WHERE thr1.scope = scope_prefix
+		       AND thr1.date = final_date
+		       AND thr1.category IN (SELECT category.title
+		                               FROM category
+		                              WHERE scope = scope_prefix
+		                                AND include_in_status = True)
+                   ) as q1
+           ) as q2
+     WHERE q2.previous_status != 'resolved' OR q2.previous_status IS NULL;
+
+END;
+$$ LANGUAGE plpgsql;
+
 
 CREATE OR REPLACE FUNCTION get_unpointed_tasks(
     scope_prefix varchar(6)
@@ -632,23 +662,38 @@ END;
 $$ LANGUAGE plpgsql;
 
 
-CREATE OR REPLACE FUNCTION no_resolved_before_start(
-    scope_prefix varchar(6),
-    backlog_resolved_cutoff date
-    ) RETURNS void AS $$
-BEGIN
+CREATE OR REPLACE FUNCTION load_tasks_to_recategorize(
+    scope_prefix varchar(6)
+) RETURNS void AS $$
 
-    DELETE FROM task_on_date_recategorized thr
-     WHERE thr.scope = scope_prefix
-       AND thr.id IN (SELECT id
-                        FROM task_on_date th
-                       WHERE date = backlog_resolved_cutoff
-                         AND scope = scope_prefix
-                         AND status = 'resolved');
-    RETURN;
+  INSERT INTO task_on_date_recategorized(
+    SELECT scope,
+           date,
+           id,
+	   NULL,
+           project_id,
+           projectcolumn,
+           category_title,
+           status,
+           points,
+           maint_type
+      FROM task_on_date
+     WHERE scope = $1
+  );
 
-END;
-$$ LANGUAGE plpgsql;
+  UPDATE task_on_date_recategorized
+     SET status = 'open'
+   WHERE status = 'stalled'
+     AND scope = $1;
+
+  DELETE FROM task_on_date_recategorized
+   WHERE (status = 'duplicate'
+      OR status = 'invalid'
+      OR status = 'declined')
+     AND scope = $1;
+
+$$ LANGUAGE SQL VOLATILE;
+
 
 CREATE OR REPLACE FUNCTION populate_recently_closed(
     scope_prefix varchar(6)
@@ -885,7 +930,7 @@ BEGIN
     DELETE FROM task_on_date_recategorized
      WHERE scope = scope_prefix;
 
-    DELETE FROM tall_backlog
+    DELETE FROM task_on_date_agg
      WHERE scope = scope_prefix;
 
     DELETE FROM recently_closed

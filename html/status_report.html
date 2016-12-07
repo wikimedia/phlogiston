@@ -1,0 +1,42 @@
+<html>
+  <head>
+    <title>{{ title }} Status Report</title>
+  </head>
+  <link rel="stylesheet" type="text/css" href="style.css">
+  <link href='https://fonts.googleapis.com/css?family=Lato' rel='stylesheet' type='text/css'>
+  <body>
+    <div id="sorttable">
+    <h1>{{ title }} Status Report</h1>
+    <p><a href="https://www.mediawiki.org/wiki/Phlogiston/Guide_to_Phlogiston_Reports#Status_Report">Help</a></p>
+    <table class="bord">
+      <tr>
+        <th><button class="sort" data-sort="id">ID</button></th>
+	<th><button class="sort" data-sort="name">Task Title</button>
+	    <input class="search" placeholder="Filter by Title" /></th>
+	<th><button class="sort" data-sort="category">Category</button></th>
+	<th><button class="sort" data-sort="points">Points</button></th>
+	<th><button class="sort" data-sort="status">Status</button></th>
+      </tr>
+      <tbody class="list">
+      {% for row in status_report_rows %}
+      <tr>
+        <td class="id"><a href="https://phabricator.wikimedia.org/T{{row.0}}">{{row.0}}</a></td>
+	<td class="name">{{row.1|escape}}</td>
+	<td class="category">{{row.2|escape}}</td>
+	<td class="points">{{row.4|escape}}</td>
+	<td class="status">{{row.3}}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/list.js/1.2.0/list.min.js"></script>
+    <script>
+      var options = {
+        valueNames: [ 'id', 'name', 'category', 'points', 'status' ]
+      };
+
+      var userList = new List('sorttable', options);
+    </script>
+  </body>
+</html>

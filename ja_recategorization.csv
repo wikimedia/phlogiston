@@ -1,2 +1,3 @@
-rule,title,display,id,matchstring
-ProjectsByWildcard,,,,User-JAufrecht
+rule,title,display,id,matchstring,include_in_status
+ProjectsByWildcard,,t,,User-JAufrecht
+ProjectByID,"This Week",t,2335,,True

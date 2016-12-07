@@ -199,17 +199,16 @@ def load(conn, end_date, VERBOSE, DEBUG):
     cur = conn.cursor()
     cur.execute(open("loading_tables.sql", "r").read())
 
-    if VERBOSE:
-        print('{0} Loading dump file'.format(datetime.datetime.now()))
+    log('Dump file load starting', 'load', VERBOSE)
     with open('../phabricator_public.dump') as dump_file:
         data = json.load(dump_file)
 
     ######################################################################
     # Load project and project column data
     ######################################################################
-    if VERBOSE:
-        count = len(data['project']['projects'])
-        print("{0} Load {1} projects".format(datetime.datetime.now(), count))
+
+    project_count = len(data['project']['projects'])
+    log('{0} projects loading'.format(project_count), 'load', VERBOSE)
 
     project_insert = ("""INSERT INTO phabricator_project
                 VALUES (%(id)s, %(name)s, %(phid)s)""")
@@ -222,9 +221,8 @@ def load(conn, end_date, VERBOSE, DEBUG):
 
     column_insert = ("""INSERT INTO phabricator_column
                 VALUES (%(id)s, %(phid)s, %(name)s, %(project_phid)s)""")
-    if VERBOSE:
-        count = len(data['project']['columns'])
-        print("{0} Load {1} projectcolumns".format(datetime.datetime.now(), count))
+    column_count = len(data['project']['columns'])
+    log('{0} columns loading'.format(column_count), 'load', VERBOSE)
     for row in data['project']['columns']:
         phid = row[1]
         project_phid = row[5]
@@ -254,9 +252,9 @@ def load(conn, end_date, VERBOSE, DEBUG):
       INSERT INTO maniphest_blocked_phid
       VALUES (%(date)s, %(phid)s, %(blocked_phid)s) """
 
-    if VERBOSE:
-        print("{0} Load tasks, transactions, and edges for {1} tasks".
-              format(datetime.datetime.now(), len(data['task'].keys())))
+    task_count = len(data['task'].keys())
+    log('Tasks, transactions, and edges for {0} tasks loading'.format(task_count),
+        'load', VERBOSE)
 
     for task_id in data['task'].keys():
         task = data['task'][task_id]
@@ -328,8 +326,7 @@ def load(conn, end_date, VERBOSE, DEBUG):
 
     cur.execute('SELECT convert_blocked_phid_to_id_sql()')
     cur.close()
-    if VERBOSE:
-        print('{0} Done loading dump file'.format(datetime.datetime.now()))
+    log('Dump file load finished.', 'load', VERBOSE)
 
 
 def reconstruct(conn, VERBOSE, DEBUG, default_points,
@@ -400,9 +397,8 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points,
     working_date = start_date
 
     while working_date <= end_date:
-        if VERBOSE:
-            print('{0} {1}: Making maniphest_edge for {2}'.
-                  format(scope_prefix, datetime.datetime.now(), working_date))
+        log('Maniphest_edge creation for {0}'.format(working_date),
+            scope_prefix, VERBOSE)
 
         cur.execute('SELECT build_edges(%(date)s, %(project_id_list)s)',
                     {'date': working_date,
@@ -416,9 +412,8 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points,
 
     working_date = start_date
     while working_date <= end_date:
-        if VERBOSE:
-            print('{0} {1}: Reconstructing data for {2}'.
-                  format(scope_prefix, datetime.datetime.now(), working_date))
+        log('Task reconstruction for {0}'.format(working_date),
+            scope_prefix, VERBOSE)
 
         # because working_date is midnight at the beginning of the
         # day, increment the count before using it so that the
@@ -445,22 +440,17 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points,
                          'category_id': category_id,
                          'working_date': working_date})
 
-    if VERBOSE:
-        print('{0} {1} Updating Phab Parent Category Titles'.
-              format(scope_prefix, datetime.datetime.now()))
+    log('Phab parent category titles updating', scope_prefix, VERBOSE)
     cur.execute("SELECT update_phab_parent_category_titles(%s, %s)", (scope_prefix, start_date))  # noqa
     cur.execute("SELECT put_category_tasks_in_own_category(%s, %s)",
                 (scope_prefix, PHAB_TAGS['category']))
 
-    if VERBOSE:
-        print('{0} {1}: Correcting corrupted task status info'.
-              format(scope_prefix, datetime.datetime.now()))
+    log('Corrupted task status info correcting', scope_prefix, VERBOSE)
+
     cur.execute("SELECT fix_status(%s)", (scope_prefix,))
     cur.close()
 
-    if VERBOSE:
-        print('{0} {1}: Finished Reconstruction.'.
-              format(scope_prefix, datetime.datetime.now()))
+    log('Reconstruction finished.', scope_prefix, VERBOSE)
 
 
 def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
@@ -468,19 +458,8 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
            retroactive_categories, retroactive_points,
            backlog_resolved_cutoff, show_points, show_count, start_date):
 
-    if VERBOSE:
-        print('{0} {1}: Starting Report'.
-              format(scope_prefix, datetime.datetime.now()))
-
-    ######################################################################
-    # Prepare the data
-    ######################################################################
-
-    # This config file is loaded during reconstruction.  Reload it here so that
-    # users can test changes to the file more quickly
-
-    import_recategorization_file(conn, scope_prefix)
-
+    cur = conn.cursor()
+    log('Report Starting', scope_prefix, VERBOSE)
     report_date = datetime.datetime.now().date()
     current_quarter_start = start_of_quarter(report_date)
     next_quarter_start = current_quarter_start + rd.relativedelta(months=+3)
@@ -489,94 +468,31 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
     chart_end = current_quarter_start + rd.relativedelta(months=+4)
     three_months_ago = report_date + rd.relativedelta(months=-3)
 
-    cur = conn.cursor()
-    size_query = """SELECT count(*)
-                      FROM task_on_date
-                     WHERE scope = %(scope_prefix)s"""
-    cur.execute(size_query, {'scope_prefix': scope_prefix})
-    data_size = cur.fetchone()[0]
-    if data_size == 0:
-        print("ERROR: no data in task_on_date for {0}".format(scope_prefix))
-        sys.exit(-1)
+    # This config file is loaded during reconstruction.  Reload it here to
+    # make it possible to run reporting without reconstruction
+    import_recategorization_file(conn, scope_prefix)
 
-    cur.execute('SELECT wipe_reporting(%(scope_prefix)s)',
-                {'scope_prefix': scope_prefix})
-
-    cur.execute('SELECT load_tasks_to_recategorize(%(scope_prefix)s)',
-                {'scope_prefix': scope_prefix})
-
-    if backlog_resolved_cutoff:
-        cur.execute('SELECT no_resolved_before_start(%(scope_prefix)s, %(backlog_resolved_cutoff)s)',    # noqa
-                    {'scope_prefix': scope_prefix, 'backlog_resolved_cutoff': backlog_resolved_cutoff})  # noqa
-
-    recategorize(conn, scope_prefix, VERBOSE)
-
+    check_for_empty_task_on_date(conn, scope_prefix)
+    reset_reporting_tables(conn, scope_prefix)
+    log('Recategorization Starting', scope_prefix, VERBOSE)
+    recategorize(conn, scope_prefix)
+    log('Applying Retroactive values, if any', scope_prefix, VERBOSE)
     if retroactive_categories:
-        cur.execute('SELECT set_category_retroactive(%(scope_prefix)s)',
-                    {'scope_prefix': scope_prefix})
-
+        set_categories_retroactively(conn, scope_prefix)
     if retroactive_points:
-        cur.execute('SELECT set_points_retroactive(%(scope_prefix)s)',
-                    {'scope_prefix': scope_prefix})
-
-    tall_backlog_insert = """INSERT INTO tall_backlog(
-                             SELECT scope,
-                                    date,
-                                    category,
-                                    status,
-                                    SUM(points) as points,
-                                    COUNT(id) as count,
-                                    maint_type
-                               FROM task_on_date_recategorized
-                              WHERE scope = %(scope_prefix)s
-                              GROUP BY status, category, maint_type, date, scope)"""
-
-    if VERBOSE:
-        print('{0} {1}: Populating tall_backlog.'.
-              format(scope_prefix, datetime.datetime.now()))
-
-    cur.execute(tall_backlog_insert, {'scope_prefix': scope_prefix})
-    cur.execute('SELECT populate_recently_closed(%(scope_prefix)s)',
-                {'scope_prefix': scope_prefix})
-    cur.execute('SELECT populate_recently_closed_task(%(scope_prefix)s)',
-                {'scope_prefix': scope_prefix})
-
-    if VERBOSE:
-        print('{0} {1}: Making CSVs'.
-              format(scope_prefix, datetime.datetime.now()))
-
-    ######################################################################
-    # Prepare all the csv files and working directories
-    ######################################################################
-    # working around dynamic filename constructions limitations in
-    # psql rather than try to write the file /tmp/foo/report.csv,
-    # write the file /tmp/phlog/report.csv and then move it to
-    # /tmp/foo/report.csv
-    # note that all the COPY commands in the psql scripts run
-    # server-side as user postgres
-
-    subprocess.call('rm -rf /tmp/{0}/'.format(scope_prefix), shell=True)
-    subprocess.call('rm -rf /tmp/phlog/', shell=True)
-    subprocess.call('mkdir -p /tmp/{0}'.format(scope_prefix), shell=True)
-    subprocess.call('chmod g+w /tmp/{0}'.format(scope_prefix), shell=True)
-    subprocess.call('mkdir -p /tmp/phlog', shell=True)
-    subprocess.call('chmod g+w /tmp/phlog', shell=True)
-    subprocess.call('psql -d {0} -f make_report_csvs.sql -v scope_prefix={1}'.
-                    format(dbname, scope_prefix), shell=True)
-    subprocess.call('mv /tmp/phlog/* /tmp/{0}/'.
-                    format(scope_prefix), shell=True)
-    subprocess.call('rm ~/html/{0}_*'.format(scope_prefix), shell=True)
-
-    script_dir = os.path.dirname(__file__)
-
-    subprocess.call('cp /tmp/{0}/maintenance_fraction_total_by_points.csv ~/html/{0}_maintenance_fraction_total_by_points.csv'.format(scope_prefix), shell=True)  # noqa
-    subprocess.call('cp /tmp/{0}/maintenance_fraction_total_by_count.csv ~/html/{0}_maintenance_fraction_total_by_count.csv'.format(scope_prefix), shell=True)  # noqa
-    subprocess.call('cp /tmp/{0}/category_possibilities.txt ~/html/{0}_category_possibilities.txt'.format(scope_prefix), shell=True)  # noqa
+        set_points_retroactively(conn, scope_prefix)
+    log('Populating Recently Closed', scope_prefix, VERBOSE)
+    populate_recently_closed(conn, scope_prefix)
+    log('Aggregating task records', scope_prefix, VERBOSE)
+    aggregate_task_on_date(conn, scope_prefix, backlog_resolved_cutoff)
+    log('Generating CSVs', scope_prefix, VERBOSE)
+    generate_reporting_files(conn, scope_prefix, dbname)
 
     ######################################################################
     # for each category, generate burnup charts
     ######################################################################
 
+    log('Tranche Reports starting', scope_prefix, VERBOSE)
     cur.execute('SELECT * FROM get_categories(%(scope_prefix)s)',
                 {'scope_prefix': scope_prefix})
     cat_list = cur.fetchall()
@@ -613,15 +529,15 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
 
         i += 1
 
-    if VERBOSE:
-        print('{0} {1}: Finished making tranch charts, starting on reports'.
-              format(scope_prefix, datetime.datetime.now()))
+    log('Additional reports starting', scope_prefix, VERBOSE)
 
     cur.execute('SELECT * FROM get_forecast_weeks(%(scope_prefix)s)',
                 {'scope_prefix': scope_prefix})
     forecast_rows = cur.fetchall()
     forecast_html = Template(open('html/forecast.html').read())
     file_path = '../html/{0}_current_forecasts.html'.format(scope_prefix)
+
+    script_dir = os.path.dirname(__file__)
     forecast_output = open(os.path.join(script_dir, file_path), 'w')
     forecast_output.write(forecast_html.render(
         {'forecast_rows': forecast_rows,
@@ -664,13 +580,23 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
          }))
     recently_closed_output.close()
 
+    cur.execute('SELECT * FROM get_status_report(%(scope_prefix)s)',
+                {'scope_prefix': scope_prefix})
+    status_report_rows = cur.fetchall()
+    status_report_html = Template(open('html/status_report.html').read())
+    file_path = '../html/{0}_status_report.html'.format(scope_prefix)
+    script_dir = os.path.dirname(__file__)
+    status_report_output = open(os.path.join(script_dir, file_path), 'w')
+    status_report_output.write(status_report_html.render(
+        {'status_report_rows': status_report_rows,
+         'title': scope_title}))
+    status_report_output.close()
+
     ######################################################################
     # Make the summary charts
     ######################################################################
 
-    if VERBOSE:
-        print('{0} {1}: Finished making reports, starting on summary charts'.
-              format(scope_prefix, datetime.datetime.now()))
+    log('Summary charts starting', scope_prefix, VERBOSE)
 
     if DEBUG:
         print("""Rscript make_charts.R {0} {1} {2} {3} {4} {5}\
@@ -752,9 +678,84 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
     report_output.close()
 
     cur.close()
-    if VERBOSE:
-        print('{0} {1}: Finished Report'.
-              format(scope_prefix, datetime.datetime.now()))
+    log('Report finished.', scope_prefix, VERBOSE)
+
+
+def aggregate_task_on_date(conn, scope_prefix, backlog_resolved_cutoff):
+    cur = conn.cursor()
+
+    task_on_date_agg_insert = """INSERT INTO task_on_date_agg(
+                                 SELECT scope,
+                                        date,
+                                        category,
+                                        status,
+                                        SUM(points) as points,
+                                        COUNT(id) as count,
+                                        maint_type
+                                   FROM task_on_date_recategorized
+                                  WHERE scope = %(scope_prefix)s
+                                  GROUP BY status, category, maint_type, date, scope)"""
+    cur.execute(task_on_date_agg_insert, {'scope_prefix': scope_prefix})
+
+    tod_agg_cutoff_insert = """INSERT INTO task_on_date_agg_with_cutoff(
+                               SELECT scope,
+                                      date,
+                                      category,
+                                      status,
+                                      SUM(points) as points,
+                                      COUNT(id) as count,
+                                      maint_type
+                                 FROM task_on_date_recategorized
+                                WHERE scope = %(scope_prefix)s """
+    if backlog_resolved_cutoff:
+        tod_agg_cutoff_insert += """AND id NOT IN (SELECT id
+                                     FROM task_on_date th
+                                    WHERE date = %(backlog_resolved_cutoff)s
+                                      AND scope = %(scope_prefix)s
+                                      AND status = 'resolved') """
+
+    tod_agg_cutoff_insert += """GROUP BY status, category, maint_type, date, scope)"""
+
+    cur.execute(tod_agg_cutoff_insert,
+                {'scope_prefix': scope_prefix,
+                 'backlog_resolved_cutoff': backlog_resolved_cutoff})
+
+
+def check_for_empty_task_on_date(conn, scope_prefix):
+    cur = conn.cursor()
+    size_query = """SELECT count(*)
+                      FROM task_on_date
+                     WHERE scope = %(scope_prefix)s"""
+    cur.execute(size_query, {'scope_prefix': scope_prefix})
+    data_size = cur.fetchone()[0]
+    if data_size == 0:
+        print("ERROR: no data in task_on_date for {0}".format(scope_prefix))
+        sys.exit(-1)
+
+
+def generate_reporting_files(conn, scope_prefix, dbname):
+    # working around dynamic filename constructions limitations in
+    # psql rather than try to write the file /tmp/foo/report.csv,
+    # write the file /tmp/phlog/report.csv and then move it to
+    # /tmp/foo/report.csv
+    # note that all the COPY commands in the psql scripts run
+    # server-side as user postgres
+
+    subprocess.call('rm -rf /tmp/{0}/'.format(scope_prefix), shell=True)
+    subprocess.call('rm -rf /tmp/phlog/', shell=True)
+    subprocess.call('mkdir -p /tmp/{0}'.format(scope_prefix), shell=True)
+    subprocess.call('chmod g+w /tmp/{0}'.format(scope_prefix), shell=True)
+    subprocess.call('mkdir -p /tmp/phlog', shell=True)
+    subprocess.call('chmod g+w /tmp/phlog', shell=True)
+    subprocess.call('psql -d {0} -f make_report_csvs.sql -v scope_prefix={1}'.
+                    format(dbname, scope_prefix), shell=True)
+    subprocess.call('mv /tmp/phlog/* /tmp/{0}/'.
+                    format(scope_prefix), shell=True)
+    subprocess.call('rm ~/html/{0}_*'.format(scope_prefix), shell=True)
+
+    subprocess.call('cp /tmp/{0}/maintenance_fraction_total_by_points.csv ~/html/{0}_maintenance_fraction_total_by_points.csv'.format(scope_prefix), shell=True)  # noqa
+    subprocess.call('cp /tmp/{0}/maintenance_fraction_total_by_count.csv ~/html/{0}_maintenance_fraction_total_by_count.csv'.format(scope_prefix), shell=True)  # noqa
+    subprocess.call('cp /tmp/{0}/category_possibilities.txt ~/html/{0}_category_possibilities.txt'.format(scope_prefix), shell=True)  # noqa
 
 
 def get_project_list_from_recategorization(conn, scope_prefix):
@@ -801,7 +802,8 @@ def import_recategorization_file(conn, scope_prefix):
                     %(project_name_list)s,
                     %(matchstring)s,
                     %(title)s,
-                    %(display)s)"""
+                    %(display)s,
+                    %(include_in_status)s)"""
 
     recat_file = '{0}_recategorization.csv'.format(scope_prefix)
     if not os.path.isfile(recat_file):
@@ -836,11 +838,26 @@ def import_recategorization_file(conn, scope_prefix):
                 pass
 
             display = True
+            input_display = ''
             try:
-                if line['display'].lower() in ['false', 'f', 'no', '0']:
-                    display = False
+                input_display = line['display']
             except KeyError:
                 pass
+
+            if input_display:
+                if input_display.lower() in ['false', 'f', 'no', '0']:
+                    display = False
+
+            include_in_status = False
+            input_iis = ''
+            try:
+                input_iis = line['include_in_status']
+            except KeyError:
+                pass
+
+            if input_iis:
+                if input_iis.lower() in ['true', 't', 'yes', '1']:
+                    include_in_status = True
 
             if rule != 'Intersection' and len(id_list) > 1:
                 raise Exception('Error in recat file {0} line {1}: {2} is not a valid rule.  This type of rule should have only one id specified'.format(recat_file, counter, line))  # noqa
@@ -860,7 +877,8 @@ def import_recategorization_file(conn, scope_prefix):
                                      'project_name_list': [name, ],
                                      'matchstring': '',
                                      'title': name,
-                                     'display': display})
+                                     'display': display,
+                                     'include_in_status': include_in_status})
                         counter += 1
                     except psycopg2.IntegrityError as E:
                         print('Skipping a duplicate category produced by rule {0}: {1}'.
@@ -882,7 +900,8 @@ def import_recategorization_file(conn, scope_prefix):
                                  'project_name_list': [matchstring, ],
                                  'matchstring': '',
                                  'title': title,
-                                 'display': display})
+                                 'display': display,
+                                 'include_in_status': include_in_status})
                     counter += 1
                 except psycopg2.IntegrityError as E:
                     print('Skipping a duplicate category produced by rule {0}: {1}'.
@@ -903,19 +922,41 @@ def import_recategorization_file(conn, scope_prefix):
                                  'project_name_list': name_list,
                                  'matchstring': matchstring,
                                  'title': line['title'],
-                                 'display': display})
+                                 'display': display,
+                                 'include_in_status': include_in_status})
                     counter += 1
                 except psycopg2.IntegrityError as E:
                     print('Skipping a duplicate category produced by rule {0}: {1}'.
                           format(line, E))
 
 
-def recategorize(conn, scope_prefix, VERBOSE):
+def log(message, scope_prefix, VERBOSE):
+    """ TODO: convert this into native logging """
+    if VERBOSE:
+        print('{0} {1}: {2}'.
+              format(scope_prefix, datetime.datetime.now(), message))
+
+
+def populate_recently_closed(conn, scope_prefix):
+    cur = conn.cursor()
+    cur.execute('SELECT populate_recently_closed(%(scope_prefix)s)',
+                {'scope_prefix': scope_prefix})
+    cur.execute('SELECT populate_recently_closed_task(%(scope_prefix)s)',
+                {'scope_prefix': scope_prefix})
+
+
+def reset_reporting_tables(conn, scope_prefix):
+    cur = conn.cursor()
+    cur.execute('SELECT wipe_reporting(%(scope_prefix)s)',
+                {'scope_prefix': scope_prefix})
+
+    cur.execute('SELECT load_tasks_to_recategorize(%(scope_prefix)s)',
+                {'scope_prefix': scope_prefix})
+
+
+def recategorize(conn, scope_prefix):
     """ Categorize all tasks in a scope according to the recategorization configuration"""
 
-    if VERBOSE:
-        print('{0} {1}: Applying recategorization'.
-              format(scope_prefix, datetime.datetime.now()))
     cur = conn.cursor()
 
     cur.execute('SELECT * FROM get_category_rules(%(scope_prefix)s)', {'scope_prefix': scope_prefix})  # noqa
@@ -955,9 +996,6 @@ def recategorize(conn, scope_prefix, VERBOSE):
 
     cur.execute('SELECT purge_leftover_task_on_date(%(scope_prefix)s)',
                 {'scope_prefix': scope_prefix})
-    if VERBOSE:
-        print('{0} {1}: Recategorization complete'.
-              format(scope_prefix, datetime.datetime.now()))
 
 
 def start_of_quarter(input_date):
@@ -1114,5 +1152,19 @@ def reconstruct_task_on_date(cur, task_id, working_date, scope_prefix, DEBUG,
                  'points': pretty_points,
                  'maint_type': maint_type,
                  'priority': pretty_priority})
+
+
+def set_categories_retroactively(conn, scope_prefix):
+    cur = conn.cursor()
+    cur.execute('SELECT set_category_retroactive(%(scope_prefix)s)',
+                {'scope_prefix': scope_prefix})
+
+
+def set_points_retroactively(conn, scope_prefix):
+    cur = conn.cursor()
+    cur.execute('SELECT set_points_retroactive(%(scope_prefix)s)',
+                {'scope_prefix': scope_prefix})
+
+
 if __name__ == "__main__":
     main(sys.argv[1:])

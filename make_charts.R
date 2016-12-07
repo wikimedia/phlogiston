@@ -32,9 +32,6 @@ if (args$showhidden == 'True') {
   showhidden_suffix = ""
 }
 
-velocity_recent_date <- read.csv(sprintf("/tmp/%s/velocity_recent_date.csv", args$scope_prefix))
-velocity_recent_date$date <- as.Date(velocity_recent_date$date, "%Y-%m-%d")
-
 now <- as.Date(args$report_date)
 now_plus <- now + 4  # Apply 1/2-week fudge factor to make charts show current week
 chart_start <- as.Date(args$chart_start)
