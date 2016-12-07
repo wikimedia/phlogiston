@@ -569,7 +569,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-DROP FUNCTION get_status_report(character varying);
+DROP FUNCTION IF EXISTS get_status_report(character varying);
 CREATE OR REPLACE FUNCTION get_status_report(
     scope_prefix varchar(6)
     ) RETURNS TABLE (
