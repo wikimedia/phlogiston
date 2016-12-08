@@ -569,9 +569,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-DROP FUNCTION IF EXISTS get_status_report(character varying, date, date);
+DROP FUNCTION IF EXISTS get_status_report(character varying, int, date, date);
 CREATE OR REPLACE FUNCTION get_status_report(
     scope_prefix varchar(6),
+    status_report_project int,
     initial_date date,
     final_date date
     ) RETURNS TABLE (
@@ -629,13 +630,14 @@ BEGIN
                           mb.child_id = thr1.id AND mb.blocked_date = final_date)
 		     WHERE thr1.scope = scope_prefix
 		       AND thr1.date = final_date
-		       AND thr1.category IN (SELECT category.title
-		                               FROM category
-		                              WHERE scope = scope_prefix
-		                                AND include_in_status = True)
+		       AND thr1.id IN (SELECT task
+		                         FROM maniphest_edge me
+                                        WHERE edge_date = final_date
+                                          AND project = status_report_project)
                    ) as q1
            ) as q2
-     WHERE q2.previous_status != 'resolved' OR q2.previous_status IS NULL;
+     WHERE q2.previous_status != 'resolved' OR q2.previous_status IS NULL
+     ORDER BY category, status;
 
 END;
 $$ LANGUAGE plpgsql;
