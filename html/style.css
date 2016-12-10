@@ -16,6 +16,10 @@ table.bord, table.bord th, table.bord td {
     text-align: center;
 }
 
+th {
+    vertical-align: top;
+}
+
 td.name {
     text-align: left!important;
     
@@ -145,4 +149,23 @@ span.Open:before {
     content: "⏳";
 }
 
+tr.Done td {
+    background-color: #ECEFF1;
+}
+
+tr.Cut td {
+    background-color: #CFD8DC;
+}
+
+tr.Open td {
+    background-color: #B0BEc5;
+}
+
+tr.Elaborated td {
+    background-color: #B0BEc5;
+}
+
+tr.Screep td {
+    background-color: #90A4AE;
+}
 

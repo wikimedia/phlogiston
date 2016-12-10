@@ -597,7 +597,7 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
     if status_report_project:
         final_status_date = get_max_date(conn, scope_prefix)
         initial_status_date = final_status_date - datetime.timedelta(days=status_report_range)  # noqa
-        status_report_name_list = status_report_project
+        status_report_project_name = get_project_name(conn, status_report_project)
         cur.execute('SELECT * FROM get_status_report(\
                          %(scope_prefix)s,\
                          %(status_report_project)s,\
@@ -615,7 +615,7 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
         status_report_output.write(status_report_html.render(
             {'status_report_rows': status_report_rows,
              'title': scope_title,
-             'status_report_name_list': status_report_name_list,
+             'status_report_project_name': status_report_project_name,
              'initial_status_date': initial_status_date,
              'final_status_date': final_status_date}))
         status_report_output.close()
@@ -822,6 +822,21 @@ def get_project_list(conn, scope_prefix):
     project_name_list = [x[0] for x in result]
 
     return project_id_list, project_name_list
+
+
+def get_project_name(conn, project_id):
+    cur = conn.cursor()
+    project_name_query = """SELECT name
+                              FROM phabricator_project
+                             WHERE id = %(project_id)s"""
+
+    cur.execute(project_name_query, {'project_id': project_id})
+    try:
+        result = cur.fetchone()[0]
+    except:
+        result = ""
+
+    return result
 
 
 def import_recategorization_file(conn, scope_prefix):
