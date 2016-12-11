@@ -588,12 +588,12 @@ BEGIN
     SELECT q2.id,
            q2.title,
            q2.category,
-	   CASE WHEN q2.previous_status IS NULL
+	   CASE WHEN q2.cut_status = True THEN 'Cut'
+                WHEN q2.previous_status IS NULL
                  AND q2.status = 'open'
                  AND q2.parent_previous_status = 'open' THEN 'Elaborated'
 	        WHEN q2.previous_status IS NULL AND q2.status = 'open' THEN 'Screep'
                 WHEN q2.previous_status IS NULL AND q2.status = 'resolved' THEN 'Screep Done'
-		WHEN q2.previous_status = 'open' AND q2.status IS NULL THEN 'Cut'
                 WHEN q2.previous_status = 'open' AND q2.status = 'open' THEN 'Open'
 		WHEN q2.previous_status = 'open' AND q2.status = 'resolved' THEN 'Done'
                 WHEN q2.previous_status = 'resolved' AND q2.status = 'resolved' THEN 'Still Done'
@@ -616,13 +616,15 @@ BEGIN
                      WHERE thr2par.id = q1.parent_id
                        AND thr2par.date = initial_date
                        AND thr2par.scope = scope_prefix) AS parent_previous_status,
- 	           q1.points
+ 	           q1.points,
+		   q1.cut_status
               FROM (SELECT thr1.id,
 		           mt1.title,
 		           thr1.category,
 		           thr1.status,
 		           mt1.story_points as points,
-                           mb.parent_id
+                           mb.parent_id,
+			   False as cut_status
 		      FROM task_on_date_recategorized thr1
                         LEFT OUTER JOIN maniphest_task mt1 USING (id)
                         LEFT OUTER JOIN category z1 ON (z1.title = thr1.category)
@@ -634,6 +636,27 @@ BEGIN
 		                         FROM maniphest_edge me
                                         WHERE edge_date = final_date
                                           AND project = status_report_project)
+                    UNION
+                    SELECT thr1a.id,
+		           mt1a.title,
+		           thr1a.category,
+		           thr1a.status,
+		           mt1a.story_points as points,
+			   Null,
+                           True as cut_status
+		      FROM task_on_date_recategorized thr1a
+                        LEFT OUTER JOIN maniphest_task mt1a USING (id)
+                        LEFT OUTER JOIN category z1a ON (z1a.title = thr1a.category)
+		     WHERE thr1a.scope = scope_prefix
+		       AND thr1a.date = initial_date
+		       AND thr1a.id IN (SELECT task
+		                         FROM maniphest_edge me
+                                        WHERE edge_date = final_date
+                                          AND project = status_report_project)
+		       AND thr1a.id NOT IN (SELECT task
+   		                              FROM maniphest_edge me
+                                             WHERE edge_date = final_date
+                                               AND project = status_report_project)
                    ) as q1
            ) as q2
      WHERE q2.previous_status != 'resolved' OR q2.previous_status IS NULL
