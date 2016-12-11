@@ -381,9 +381,9 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points,
     for i in PHAB_TAGS.keys():
         reconstruction_id_list.extend([PHAB_TAGS[i]])
     # make sure every project in the status report list is also included
-    for i in status_report_project:
-        if i not in reconstruction_id_list:
-            reconstruction_id_list.extend(i)
+    if status_report_project:
+        if status_report_project not in reconstruction_id_list:
+            reconstruction_id_list.extend(status_report_project)
 
     ######################################################################
     # Generate denormalized data
