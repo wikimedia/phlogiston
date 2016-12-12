@@ -967,6 +967,9 @@ BEGIN
     DELETE FROM task_on_date_agg
      WHERE scope = scope_prefix;
 
+    DELETE FROM task_on_date_agg_with_cutoff
+     WHERE scope = scope_prefix;
+
     DELETE FROM recently_closed
      WHERE scope = scope_prefix;
 

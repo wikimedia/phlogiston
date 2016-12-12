@@ -711,7 +711,6 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
 
 def aggregate_task_on_date(conn, scope_prefix, backlog_resolved_cutoff):
     cur = conn.cursor()
-
     task_on_date_agg_insert = """INSERT INTO task_on_date_agg(
                                  SELECT scope,
                                         date,
