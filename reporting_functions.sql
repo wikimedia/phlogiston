@@ -588,16 +588,17 @@ BEGIN
     SELECT q2.id,
            q2.title,
            q2.category,
-	   CASE WHEN q2.cut_status = True THEN 'Cut'
-                WHEN q2.previous_status IS NULL
-                 AND q2.status = 'open'
-                 AND q2.parent_previous_status = 'open' THEN 'Elaborated'
-	        WHEN q2.previous_status IS NULL AND q2.status = 'open' THEN 'Screep'
-                WHEN q2.previous_status IS NULL AND q2.status = 'resolved' THEN 'Screep Done'
-                WHEN q2.previous_status = 'open' AND q2.status = 'open' THEN 'Open'
-		WHEN q2.previous_status = 'open' AND q2.status = 'resolved' THEN 'Done'
-                WHEN q2.previous_status = 'resolved' AND q2.status = 'resolved' THEN 'Still Done'
-                WHEN q2.previous_status = 'resolved' AND q2.status = 'open' THEN 'Reopened'
+	   CASE WHEN q2.cut_status = True                                                   THEN 'Cut'
+                WHEN q2.previous_status IS NULL      AND q2.status = 'open'
+                                                     AND q2.parent_previous_status = 'open' THEN 'Elaborated'
+                WHEN q2.previous_status IS NULL      AND q2.status = 'resolved'
+                                                     AND q2.parent_previous_status = 'open' THEN 'Elaborated Done'
+                WHEN q2.previous_status IS NULL      AND q2.status = 'open'                 THEN 'Screep'
+                WHEN q2.previous_status IS NULL      AND q2.status = 'resolved'             THEN 'Screep Done'
+                WHEN q2.previous_status = 'open'     AND q2.status = 'open'                 THEN 'Open'
+		WHEN q2.previous_status = 'open'     AND q2.status = 'resolved'             THEN 'Done'
+                WHEN q2.previous_status = 'resolved' AND q2.status = 'resolved'             THEN 'Still Done'
+                WHEN q2.previous_status = 'resolved' AND q2.status = 'open'                 THEN 'Reopened'
                 ELSE 'Unknown'
            END as status,
            q2.points
