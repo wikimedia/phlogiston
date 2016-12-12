@@ -1122,9 +1122,9 @@ def reconstruct_task_on_date(cur, task_id, working_date, scope_prefix, DEBUG,
     except:
         points_from_trans = None
 
-    if points_from_trans:
+    if isinstance(points_from_trans, int):
         pretty_points = points_from_trans
-    elif points_from_info:
+    elif isinstance(points_from_info, int):
         pretty_points = points_from_info
     else:
         pretty_points = default_points
