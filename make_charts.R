@@ -331,31 +331,83 @@ dev.off()
 ## Recently Closed
 ######################################################################
 
-done <- read.csv(sprintf("/tmp/%s/recently_closed.csv", args$scope_prefix))
-done$date <- as.Date(done$date, "%Y-%m-%d")
-done$category <- paste(sprintf("%02d",done$sort_order), strtrim(done$category, 35))
-done$category <- factor(done$category, levels=rev(done$category[order(done$priority)]))
+done_w <- read.csv(sprintf("/tmp/%s/recently_closed_week.csv", args$scope_prefix))
+done_w$date <- as.Date(done_w$date, "%Y-%m-%d")
+done_w$category <- paste(sprintf("%02d",done_w$sort_order), strtrim(done_w$category, 35))
+done_w$category <- factor(done_w$category, levels=rev(done_w$category[order(done_w$priority)]))
 
-colorCount = length(unique(done$category))
+colorCount = length(unique(done_w$category))
 getPalette = colorRampPalette(brewer.pal(9, "YlGn"))
 
 png(filename = sprintf("~/html/%s_done_points.png", args$scope_prefix), width=2000, height=1125, units="px", pointsize=30)
-ggplot(done, aes(x=date, y=points, fill=factor(category))) +
+ggplot(done_w, aes(x=regweek, y=points, fill=factor(category))) +
   geom_bar(stat="identity")+ 
   scale_fill_manual(values=getPalette(colorCount), name="Category") +
   theme_fivethirtynine() +
   theme(axis.title.x=element_blank()) +
-  scale_x_date(limits=c(three_months_ago, now_plus), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   theme(legend.direction='vertical', axis.title.x=element_blank()) +
   labs(title=sprintf("%s Recently Closed work by points", args$scope_title), y="Points", x="Month", aesthetic="Category")
 dev.off()
 
 png(filename = sprintf("~/html/%s_done_count.png", args$scope_prefix), width=2000, height=1125, units="px", pointsize=30)
-ggplot(done, aes(x=date, y=count, fill=factor(category))) +
+ggplot(done_w, aes(x=regweek, y=count, fill=factor(category))) +
   geom_bar(stat="identity") +
   scale_fill_manual(values=getPalette(colorCount), name="Category") +
   theme_fivethirtynine() +
-  scale_x_date(limits=c(three_months_ago, now_plus), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
+  theme(legend.direction='vertical', axis.title.x=element_blank()) +
+  labs(title=sprintf("%s Recently Closed work by count", args$scope_title), y="Count", x="Month", aesthetic="Category")
+dev.off()
+
+done_m <- read.csv(sprintf("/tmp/%s/recently_closed_month.csv", args$scope_prefix))
+done_m$date <- as.Date(done_m$date, "%Y-%m-%d")
+done_m$category <- paste(sprintf("%02d",done_m$sort_order), strtrim(done_m$category, 35))
+done_m$category <- factor(done_m$category, levels=rev(done_m$category[order(done_m$priority)]))
+
+colorCount = length(unique(done_m$category))
+getPalette = colorRampPalette(brewer.pal(9, "YlGn"))
+
+png(filename = sprintf("~/html/%s_done_m_points.png", args$scope_prefix), width=2000, height=1125, units="px", pointsize=30)
+ggplot(done_m, aes(x=regmonth, y=points, fill=factor(category))) +
+  geom_bar(stat="identity")+ 
+  scale_fill_manual(values=getPalette(colorCount), name="Category") +
+  theme_fivethirtynine() +
+  theme(axis.title.x=element_blank()) +
+  theme(legend.direction='vertical', axis.title.x=element_blank()) +
+  labs(title=sprintf("%s Recently Closed work by points", args$scope_title), y="Points", x="Month", aesthetic="Category")
+dev.off()
+
+png(filename = sprintf("~/html/%s_done_m_count.png", args$scope_prefix), width=2000, height=1125, units="px", pointsize=30)
+ggplot(done_m, aes(x=regmonth, y=count, fill=factor(category))) +
+  geom_bar(stat="identity") +
+  scale_fill_manual(values=getPalette(colorCount), name="Category") +
+  theme_fivethirtynine() +
+  theme(legend.direction='vertical', axis.title.x=element_blank()) +
+  labs(title=sprintf("%s Recently Closed work by count", args$scope_title), y="Count", x="Month", aesthetic="Category")
+dev.off()
+
+done_q <- read.csv(sprintf("/tmp/%s/recently_closed_quarter.csv", args$scope_prefix))
+done_q$date <- as.Date(done_q$date, "%Y-%m-%d")
+done_q$category <- paste(sprintf("%02d",done_q$sort_order), strtrim(done_q$category, 35))
+done_q$category <- factor(done_q$category, levels=rev(done_q$category[order(done_q$priority)]))
+
+colorCount = length(unique(done_q$category))
+getPalette = colorRampPalette(brewer.pal(9, "YlGn"))
+
+png(filename = sprintf("~/html/%s_done_q_points.png", args$scope_prefix), width=2000, height=1125, units="px", pointsize=30)
+ggplot(done_q, aes(x=regquarter, y=points, fill=factor(category))) +
+  geom_bar(stat="identity")+ 
+  scale_fill_manual(values=getPalette(colorCount), name="Category") +
+  theme_fivethirtynine() +
+  theme(axis.title.x=element_blank()) +
+  theme(legend.direction='vertical', axis.title.x=element_blank()) +
+  labs(title=sprintf("%s Recently Closed work by points", args$scope_title), y="Points", x="Month", aesthetic="Category")
+dev.off()
+
+png(filename = sprintf("~/html/%s_done_q_count.png", args$scope_prefix), width=2000, height=1125, units="px", pointsize=30)
+ggplot(done_q, aes(x=regquarter, y=count, fill=factor(category))) +
+  geom_bar(stat="identity") +
+  scale_fill_manual(values=getPalette(colorCount), name="Category") +
+  theme_fivethirtynine() +
   theme(legend.direction='vertical', axis.title.x=element_blank()) +
   labs(title=sprintf("%s Recently Closed work by count", args$scope_title), y="Count", x="Month", aesthetic="Category")
 dev.off()

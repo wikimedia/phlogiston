@@ -344,16 +344,68 @@ ORDER BY sort_order
 Recently Closed */
 
 COPY (
-SELECT rc.date,
-       z.sort_order as priority,
-       rc.category as category,
-       rc.points,
-       rc.count
-  FROM recently_closed rc LEFT OUTER JOIN category z ON rc.scope = z.scope AND rc.category = z.title
- WHERE rc.scope = :'scope_prefix'
-   AND date >= current_date - interval '3 months'
- ORDER BY date, sort_order
-) to '/tmp/phlog/recently_closed.csv' DELIMITER ',' CSV HEADER;
+SELECT MAX(date) AS date,
+       MAX(sort_order) AS priority,
+       MAX(category) AS category,
+       SUM(points) AS points,
+       SUM(count) AS count,
+       regweek
+  FROM (SELECT rc.date,
+               EXTRACT(YEAR FROM rc.date)::text ||  EXTRACT(WEEK FROM rc.date)::text AS regweek,
+               z.sort_order,
+               rc.category,
+               rc.points,
+               rc.count
+          FROM recently_closed rc
+          LEFT OUTER JOIN category z ON rc.scope = z.scope AND rc.category = z.title
+         WHERE rc.scope = :'scope_prefix'
+           AND date >= current_date - interval '3 months'
+         ORDER BY date, sort_order) AS recently_closed_daily
+ GROUP BY regweek, category
+ ORDER BY regweek, priority
+) to '/tmp/phlog/recently_closed_week.csv' DELIMITER ',' CSV HEADER;
+
+COPY (
+SELECT MAX(date) AS date,
+       MAX(sort_order) AS priority,
+       MAX(category) AS category,
+       SUM(points) AS points,
+       SUM(count) AS count,
+       regmonth
+  FROM (SELECT rc.date,
+               EXTRACT(YEAR FROM rc.date)::text || '-' || EXTRACT(MONTH FROM rc.date)::text AS regmonth,
+               z.sort_order,
+               rc.category,
+               rc.points,
+               rc.count
+          FROM recently_closed rc
+          LEFT OUTER JOIN category z ON rc.scope = z.scope AND rc.category = z.title
+         WHERE rc.scope = :'scope_prefix'
+         ORDER BY date, sort_order) AS recently_closed_m
+ GROUP BY regmonth, category
+ ORDER BY regmonth, priority
+) to '/tmp/phlog/recently_closed_month.csv' DELIMITER ',' CSV HEADER;
+
+COPY (
+SELECT MAX(date) AS date,
+       MAX(sort_order) AS priority,
+       MAX(category) AS category,
+       SUM(points) AS points,
+       SUM(count) AS count,
+       regquarter
+  FROM (SELECT rc.date,
+               EXTRACT(YEAR FROM rc.date)::text || '-' || EXTRACT(QUARTER FROM rc.date)::text AS regquarter,
+               z.sort_order,
+               rc.category,
+               rc.points,
+               rc.count
+          FROM recently_closed rc
+          LEFT OUTER JOIN category z ON rc.scope = z.scope AND rc.category = z.title
+         WHERE rc.scope = :'scope_prefix'
+         ORDER BY date, sort_order) AS recently_closed_q
+ GROUP BY regquarter, category
+ ORDER BY regquarter, priority
+) to '/tmp/phlog/recently_closed_quarter.csv' DELIMITER ',' CSV HEADER;
 
 /* ####################################################################
 Points Histogram */

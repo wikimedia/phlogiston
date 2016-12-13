@@ -496,7 +496,7 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
     if retroactive_points:
         set_points_retroactively(conn, scope_prefix)
     log('Populating Recently Closed', scope_prefix, VERBOSE)
-    populate_recently_closed(conn, scope_prefix)
+    populate_recently_closed(conn, scope_prefix, start_date)
     log('Aggregating task records', scope_prefix, VERBOSE)
     aggregate_task_on_date(conn, scope_prefix, backlog_resolved_cutoff)
     log('Generating CSVs', scope_prefix, VERBOSE)
@@ -991,10 +991,15 @@ def log(message, scope_prefix, VERBOSE):
                      message))
 
 
-def populate_recently_closed(conn, scope_prefix):
+def populate_recently_closed(conn, scope_prefix, start_date):
     cur = conn.cursor()
-    cur.execute('SELECT populate_recently_closed(%(scope_prefix)s)',
-                {'scope_prefix': scope_prefix})
+    end_date = get_max_date(conn, scope_prefix)
+    cur.execute('SELECT populate_recently_closed(%(scope_prefix)s,\
+                %(start_date)s,\
+                %(end_date)s)',
+                {'scope_prefix': scope_prefix,
+                 'start_date': start_date,
+                 'end_date': end_date})
     cur.execute('SELECT populate_recently_closed_task(%(scope_prefix)s)',
                 {'scope_prefix': scope_prefix})
 

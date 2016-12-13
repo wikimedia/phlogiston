@@ -730,40 +730,38 @@ $$ LANGUAGE SQL VOLATILE;
 
 
 CREATE OR REPLACE FUNCTION populate_recently_closed(
-    scope_prefix varchar(6)
+    scope_prefix varchar(6),
+    start_date date,
+    end_date date
     ) RETURNS void AS $$
 DECLARE
-  weekrow record;
+  daterow record;
 BEGIN
 
-    DELETE FROM recently_closed
-     WHERE scope = scope_prefix;
-
-    FOR weekrow IN SELECT DISTINCT date
-                     FROM task_on_date_recategorized
-                    WHERE EXTRACT(epoch FROM age(date))/604800 = ROUND(
-                          EXTRACT(epoch FROM age(date))/604800)
-                      AND scope = scope_prefix
-                    ORDER BY date
+  FOR daterow IN SELECT date
+                   FROM GENERATE_SERIES(
+                        start_date::date,
+                        end_date::date,
+                        '1 day'::interval) as date
     LOOP
 
         INSERT INTO recently_closed (
              SELECT scope_prefix as scope,
                     date,
                     category,
-                    sum(points) AS points,
-                    count(id) as count
+                    SUM(points) AS points,
+                    COUNT(id) AS count
                FROM task_on_date_recategorized
               WHERE status = 'resolved'
-                AND date = weekrow.date
+                AND date = daterow.date
                 AND scope = scope_prefix
                 AND id NOT IN (SELECT id
-                                 FROM task_on_date
+                                 FROM task_on_date_recategorized
                                 WHERE status = 'resolved'
                                   AND scope = scope_prefix
-                                  AND date = weekrow.date - interval '1 week' )
-              GROUP BY date, category
-             );
+                                  AND date = daterow.date - interval '1 day')
+              GROUP BY date, category);
+             
     END LOOP;
 
     RETURN;
@@ -776,9 +774,6 @@ CREATE OR REPLACE FUNCTION populate_recently_closed_task(
 DECLARE
   daterow record;
 BEGIN
-
-    DELETE FROM recently_closed_task
-     WHERE scope = scope_prefix;
 
     FOR daterow IN SELECT DISTINCT date
                      FROM task_on_date_recategorized
