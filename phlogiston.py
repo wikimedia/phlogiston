@@ -805,7 +805,8 @@ def get_project_list(conn, scope_prefix):
     project_id_list = []
     category_id_query = """SELECT project_id_list
                              FROM category
-                            WHERE scope = %(scope_prefix)s"""
+                            WHERE scope = %(scope_prefix)s
+                            ORDER BY sort_order"""
 
     cur.execute(category_id_query, {'scope_prefix': scope_prefix})
     for row in cur.fetchall():
