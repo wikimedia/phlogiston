@@ -373,7 +373,7 @@ SELECT MAX(date) AS date,
        SUM(count) AS count,
        regmonth
   FROM (SELECT rc.date,
-               EXTRACT(YEAR FROM rc.date)::text || '-' || EXTRACT(MONTH FROM rc.date)::text AS regmonth,
+               EXTRACT(YEAR FROM rc.date)::text || '-' || lpad(EXTRACT(MONTH FROM rc.date)::text, 2, '0') AS regmonth,
                z.sort_order,
                rc.category,
                rc.points,
