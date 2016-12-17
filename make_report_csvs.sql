@@ -220,16 +220,6 @@ Burnup and Velocity and Forecasts */
 COPY (
 SELECT calculate_velocities(:'scope_prefix') AS date
 ) TO '/tmp/phlog/velocity_recent_date.csv' DELIMITER ',' CSV HEADER;
-			      
-COPY (
-SELECT date,
-       sum(delta_points_resolved) as points,
-       sum(delta_count_resolved) as count
-  FROM velocity
- WHERE scope = :'scope_prefix'
- GROUP BY date
- ORDER BY date
-) TO '/tmp/phlog/velocity.csv' DELIMITER ',' CSV HEADER;
 
 COPY (
 SELECT date,
@@ -340,71 +330,47 @@ WHERE scope = :'scope_prefix'
 ORDER BY sort_order
 ) TO '/tmp/phlog/forecast_done.csv' DELIMITER ',' CSV HEADER;
 
-/* ####################################################################
-Recently Closed */
-
 COPY (
-SELECT MAX(date) AS date,
-       MAX(sort_order) AS priority,
-       MAX(category) AS category,
-       SUM(points) AS points,
-       SUM(count) AS count,
-       regweek
-  FROM (SELECT rc.date,
-               EXTRACT(YEAR FROM rc.date)::text ||  EXTRACT(WEEK FROM rc.date)::text AS regweek,
-               z.sort_order,
-               rc.category,
-               rc.points,
-               rc.count
-          FROM recently_closed rc
-          LEFT OUTER JOIN category z ON rc.scope = z.scope AND rc.category = z.title
-         WHERE rc.scope = :'scope_prefix'
-           AND date >= current_date - interval '3 months'
-         ORDER BY date, sort_order) AS recently_closed_daily
- GROUP BY regweek, category
- ORDER BY regweek, priority
+SELECT MAX(v.date) AS date,
+       z.sort_order,
+       MAX(v.category) AS category,
+       SUM(v.delta_points_resolved) AS points,
+       SUM(v.delta_count_resolved) AS count,
+       v.week
+  FROM velocity v
+  LEFT OUTER JOIN category z ON v.scope = z.scope AND v.category = z.title
+ WHERE v.scope = :'scope_prefix'
+   AND date >= current_date - interval '3 months'
+ GROUP BY week, sort_order
+ ORDER BY week, sort_order
 ) to '/tmp/phlog/recently_closed_week.csv' DELIMITER ',' CSV HEADER;
 
 COPY (
-SELECT MAX(date) AS date,
-       MAX(sort_order) AS priority,
-       MAX(category) AS category,
-       SUM(points) AS points,
-       SUM(count) AS count,
-       regmonth
-  FROM (SELECT rc.date,
-               EXTRACT(YEAR FROM rc.date)::text || '-' || lpad(EXTRACT(MONTH FROM rc.date)::text, 2, '0') AS regmonth,
-               z.sort_order,
-               rc.category,
-               rc.points,
-               rc.count
-          FROM recently_closed rc
-          LEFT OUTER JOIN category z ON rc.scope = z.scope AND rc.category = z.title
-         WHERE rc.scope = :'scope_prefix'
-         ORDER BY date, sort_order) AS recently_closed_m
- GROUP BY regmonth, category
- ORDER BY regmonth, priority
+SELECT MAX(v.date) AS date,
+       z.sort_order,
+       MAX(v.category) AS category,
+       SUM(v.delta_points_resolved) AS points,
+       SUM(v.delta_count_resolved) AS count,
+       v.month
+  FROM velocity v
+  LEFT OUTER JOIN category z ON v.scope = z.scope AND v.category = z.title
+ WHERE v.scope = :'scope_prefix'
+ GROUP BY month, sort_order
+ ORDER BY month, sort_order
 ) to '/tmp/phlog/recently_closed_month.csv' DELIMITER ',' CSV HEADER;
 
 COPY (
-SELECT MAX(date) AS date,
-       MAX(sort_order) AS priority,
-       MAX(category) AS category,
-       SUM(points) AS points,
-       SUM(count) AS count,
-       regquarter
-  FROM (SELECT rc.date,
-               EXTRACT(YEAR FROM rc.date)::text || '-' || EXTRACT(QUARTER FROM rc.date)::text AS regquarter,
-               z.sort_order,
-               rc.category,
-               rc.points,
-               rc.count
-          FROM recently_closed rc
-          LEFT OUTER JOIN category z ON rc.scope = z.scope AND rc.category = z.title
-         WHERE rc.scope = :'scope_prefix'
-         ORDER BY date, sort_order) AS recently_closed_q
- GROUP BY regquarter, category
- ORDER BY regquarter, priority
+SELECT MAX(v.date) AS date,
+       z.sort_order,
+       MAX(v.category) AS category,
+       SUM(v.delta_points_resolved) AS points,
+       SUM(v.delta_count_resolved) AS count,
+       v.quarter
+  FROM velocity v
+  LEFT OUTER JOIN category z ON v.scope = z.scope AND v.category = z.title
+ WHERE v.scope = :'scope_prefix'
+ GROUP BY quarter, sort_order
+ ORDER BY quarter, sort_order
 ) to '/tmp/phlog/recently_closed_quarter.csv' DELIMITER ',' CSV HEADER;
 
 /* ####################################################################

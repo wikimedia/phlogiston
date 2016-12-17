@@ -48,6 +48,9 @@ DROP TABLE IF EXISTS recently_closed;
 CREATE TABLE recently_closed (
     scope varchar(6),
     date date,
+    week varchar(7),
+    month varchar(7),
+    quarter varchar(7),
     category text,
     points int,
     count int
@@ -90,6 +93,9 @@ CREATE TABLE velocity (
     scope varchar(6),
     category text,
     date timestamp,
+    week varchar(7),
+    month varchar(7),
+    quarter varchar(7),
     points_total int,
     count_total int,
     points_resolved int,

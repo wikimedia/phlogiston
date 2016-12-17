@@ -6,6 +6,7 @@ DECLARE
   future_dates date[];
   weekday date;
   most_recent_data date;
+  oldest_data date;
   weekrow record;
   tranche record;
   weeks_ahead int;
@@ -39,15 +40,22 @@ BEGIN
      WHERE scope = scope_prefix
        AND count > 0;
 
-    -- Select dates at one week multiples of most_recent_data date
-    -- from 6 months ago (enough for full quarter plus 3 mo before for
-    -- historical baseline) to 3 months forward (full quarter)
+    -- get a start date that is an exact number of weeks back
+    SELECT most_recent_data - (age_interval * interval '1 weeks')
+      INTO oldest_data
+      FROM 
+           (SELECT (EXTRACT(days FROM (most_recent_data - min_data_date)) / 7)::int as age_interval
+             FROM 
+                  (SELECT MIN(date) AS min_data_date
+                    FROM task_on_date_agg
+                   WHERE scope = scope_prefix
+                     AND count > 0) AS sub1) AS sub2;
 
     SELECT ARRAY(
     SELECT date_trunc('day', dd)::date
       INTO past_dates
       FROM GENERATE_SERIES
-           (most_recent_data - interval '26 weeks',
+           (oldest_data,
             most_recent_data,
             '1 week'::interval) dd
     );
@@ -66,6 +74,9 @@ BEGIN
     SELECT scope,
            category,
            date,
+           EXTRACT(YEAR FROM date)::text || 'W' || EXTRACT(WEEK FROM date)::text AS week,
+           EXTRACT(YEAR FROM date)::text || 'M' || lpad(EXTRACT(MONTH FROM date)::text, 2, '0') AS month,
+           EXTRACT(YEAR FROM date)::text || 'Q' || EXTRACT(QUARTER FROM date)::text AS quarter,
            SUM(points) AS points_total,
            SUM(count) AS count_total
       FROM task_on_date_agg
@@ -652,7 +663,7 @@ BEGIN
 		       AND thr1a.date = initial_date
 		       AND thr1a.id IN (SELECT task
 		                         FROM maniphest_edge me
-                                        WHERE edge_date = final_date
+                                        WHERE edge_date = initial_date
                                           AND project = status_report_project)
 		       AND thr1a.id NOT IN (SELECT task
    		                              FROM maniphest_edge me
@@ -740,7 +751,7 @@ BEGIN
 
   FOR daterow IN SELECT date
                    FROM GENERATE_SERIES(
-                        start_date::date,
+                        (start_date::date + '1 day'::interval),
                         end_date::date,
                         '1 day'::interval) as date
     LOOP
@@ -748,6 +759,9 @@ BEGIN
         INSERT INTO recently_closed (
              SELECT scope_prefix as scope,
                     date,
+                    EXTRACT(YEAR FROM date)::text || 'W' ||  EXTRACT(WEEK FROM date)::text AS week,
+                    EXTRACT(YEAR FROM date)::text || 'M' || lpad(EXTRACT(MONTH FROM date)::text, 2, '0') AS month,
+                    EXTRACT(YEAR FROM date)::text || 'Q' || EXTRACT(QUARTER FROM date)::text AS quarter,
                     category,
                     SUM(points) AS points,
                     COUNT(id) AS count
@@ -761,7 +775,7 @@ BEGIN
                                   AND scope = scope_prefix
                                   AND date = daterow.date - interval '1 day')
               GROUP BY date, category);
-             
+
     END LOOP;
 
     RETURN;

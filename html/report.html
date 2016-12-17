@@ -9,9 +9,8 @@
         <td>
           <p><a href="#forecasts">Forecasts</a></p>
           <p><a href="#burnups">Burnup charts</a></p>
-          <p><a href="#category_burnups">Per-Category Burnups</a></p>
-          <p><a href="#velocity">Overall Velocity</a></p>
-          <p><a href="#recentlyclosed">Recently Closed</a></p>
+          <p><a href="#category_burnups">Per-Category Burnups and Velocity</a></p>
+          <p><a href="#velocity">Total Velocity</a></p>
         </td>
         <td>
           <table class="bord">
@@ -151,25 +150,6 @@
 
     <p><a href="https://www.mediawiki.org/wiki/Guide_to_Phlogiston_Reports#Per-category_charts">Help</a>.</p>
     <a name="velocity"><h2>Velocity</h2></a>
-    <p>Change in resolved tasks week to week.</p>
-    <p>
-      <table>
-	<tr>
-          {% if show_points %}
-	  <td>
-	    <a href="{{ scope_prefix }}_velocity_points.png"><img src="{{ scope_prefix }}_velocity_points.png"/></a>
-	  </td>
-          {% endif %}
-          {% if show_count %}
-	  <td>
-	    <a href="{{ scope_prefix }}_velocity_count.png"><img src="{{ scope_prefix }}_velocity_count.png"/></a>
-	  </td>
-          {% endif %}
-	</tr>
-      </table>
-    </p>
-    <p><a href="https://www.mediawiki.org/wiki/Guide_to_Phlogiston_Reports#Combined_Velocity">Help</a>.</p>
-    <a name="recentlyclosed"><h2>Recently Closed</h2></a>
     <p>Completed work per week, broken out by category, with highest-priority work on the bottom, in darkest green.</p>
     <table>
       <tr>
