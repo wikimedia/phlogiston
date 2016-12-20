@@ -929,19 +929,23 @@ $$ LANGUAGE SQL VOLATILE;
 CREATE OR REPLACE FUNCTION set_category_retroactive(
     scope_prefix varchar(6)
     ) RETURNS void AS $$
+DECLARE taskrow record;
 BEGIN
 
+FOR taskrow in SELECT id, category
+              FROM task_on_date_recategorized
+             WHERE date = (SELECT MAX(date)
+                             FROM task_on_date_recategorized
+                            WHERE scope = scope_prefix)
+               AND scope = scope_prefix
+  LOOP
     UPDATE task_on_date_recategorized t
-       SET category = t0.category
-      FROM task_on_date_recategorized t0
-     WHERE t0.date = (SELECT MAX(date)
-                        FROM task_on_date_recategorized
-                       WHERE scope = scope_prefix)
-       AND t0.scope = scope_prefix
-       AND t.scope = scope_prefix
-       AND t0.id = t.id;
+       SET category = taskrow.category
+     WHERE t.id = taskrow.id
+       AND scope = scope_prefix;
 
-    RETURN;
+  END LOOP;
+  RETURN;
 END;
 $$ LANGUAGE plpgsql;
 
