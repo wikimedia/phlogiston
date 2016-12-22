@@ -424,6 +424,8 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points,
     ######################################################################
 
     working_date = start_date
+    lookups['VERBOSE'] = VERBOSE
+    lookups['DEBUG'] = DEBUG
     while working_date <= end_date:
         log('Task reconstruction for {0}'.format(working_date),
             scope_prefix, VERBOSE)
@@ -438,7 +440,7 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points,
                      'project_ids': project_id_list})
         for row in cur.fetchall():
             task_id = row[0]
-            reconstruct_task_on_date(cur, task_id, working_date, scope_prefix, DEBUG, default_points, **lookups)  # noqa
+            reconstruct_task_on_date(cur, task_id, working_date, scope_prefix, default_points, **lookups)  # noqa
 
         # Use as-is data to reconstruct certain relationships for working data
         # see https://phabricator.wikimedia.org/T115936#1847188
@@ -630,14 +632,18 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
         print("""Rscript make_charts.R {0} {1} {2} {3} {4} {5}\
         {6} {7} {8} {9}""".format(scope_prefix, scope_title, False,
                                   report_date, current_quarter_start, next_quarter_start,
-                                  previous_quarter_start, chart_start, chart_end,
+                                  previous_quarter_start, adjusted_chart_start, chart_end,
                                   three_months_ago))
 
     for i in [True, False]:
+        if i:
+            adjusted_chart_start = chart_start
+        else:
+            adjusted_chart_start = start_date
         subprocess.call("""Rscript make_charts.R {0} {1} {2} {3} {4} {5}\
         {6} {7} {8} {9}""".format(scope_prefix, scope_title, i,
                                   report_date, current_quarter_start, next_quarter_start,
-                                  previous_quarter_start, chart_start, chart_end,
+                                  previous_quarter_start, adjusted_chart_start, chart_end,
                                   three_months_ago), shell=True)
 
     ######################################################################
@@ -1065,10 +1071,10 @@ def start_of_quarter(input_date):
     return quarter_start[index - 1]
 
 
-def reconstruct_task_on_date(cur, task_id, working_date, scope_prefix, DEBUG,
+def reconstruct_task_on_date(cur, task_id, working_date, scope_prefix,
                              default_points, project_id_list,
                              project_id_to_name_dict,
-                             project_name_to_phid_dict, column_dict):
+                             project_name_to_phid_dict, column_dict, DEBUG, VERBOSE):
 
     # ----------------------------------------------------------------------
     # Data from as-is task record.  Points data prior to Feb 2016 was not
@@ -1143,9 +1149,8 @@ def reconstruct_task_on_date(cur, task_id, working_date, scope_prefix, DEBUG,
     pretty_project = ''
 
     if not edges:
-        raise Exception('Task {0} has no edges; it may have been removed from\
-        the data, in which case a complete rebuild is appropriate'.format(task_id))
-        sys.exit()
+        log('Task {0} has no edges.'.format(task_id), 'load', VERBOSE)
+        return
     if PHAB_TAGS['new'] in edges:
         maint_type = 'New Functionality'
     elif PHAB_TAGS['maint'] in edges:
