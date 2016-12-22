@@ -38,6 +38,7 @@ def main(argv):
     start_date = ''
     scope_prefix = ''
     dbname = 'phlogiston'
+    today = datetime.datetime.now().date()
 
     # Wikimedia Phabricator constants
     # https://phabricator.wikimedia.org/T119473
@@ -71,7 +72,7 @@ def main(argv):
         elif opt in ("-r", "--report"):
             run_report = True
         elif opt in ("-s", "--startdate"):
-            start_date = datetime.datetime.strptime(arg, "%Y-%m-%d").date()
+            start_date = read_date(arg)
         elif opt in ("-v", "--verbose"):
             VERBOSE = True
 
@@ -112,14 +113,24 @@ def main(argv):
             default_points = None
 
         if config.has_option('vars', 'backlog_resolved_cutoff'):
-            backlog_resolved_cutoff = config['vars']['backlog_resolved_cutoff']
+            input_brc = config['vars']['backlog_resolved_cutoff']
+            if isinstance(input_brc, datetime.date):
+                backlog_resolved_cutoff = input_brc
+            if input_brc.lower() in ['default', 'true', 't', 'yes', '1']:
+                backlog_resolved_cutoff = start_of_quarter(today)
         else:
             backlog_resolved_cutoff = None
 
-        if config.has_option('vars', 'status_report_range'):
-            status_report_range = int(config['vars']['status_report_range'])
+        if config.has_option('vars', 'status_report_start'):
+            input_srs = config['vars']['status_report_start']
+            if isinstance(input_srs, int):
+                status_report_start = today - rd.relativedelta(days=input_srs)
+            elif isinstance(read_date(input_srs), datetime.date):
+                status_report_start = read_date(input_srs)
+            elif input_srs.lower() in ['default', 'true', 't', 'yes', '1']:
+                status_report_start = start_of_quarter(today)
         else:
-            status_report_range = 7
+            status_report_start = None
 
         if config.has_option('vars', 'status_report_project'):
             status_report_project = config['vars']['status_report_project']
@@ -137,12 +148,10 @@ def main(argv):
                 retroactive_points = True
 
         if not start_date:
-            try:
-                start_date = datetime.datetime.strptime(
-                    config['vars']['start_date'], "%Y-%m-%d").date()
-            except KeyError:
-                print('start_date must be in the config file or command line options')
-                sys.exit(1)
+            if config.has_option('vars', 'start_date'):
+                start_date = read_date(config['vars']['start_date'])
+            if not start_date:
+                start_date = start_of_quarter(today) - rd.relativedelta(months=+3)
 
     if reconstruct_data:
         if scope_prefix:
@@ -158,7 +167,7 @@ def main(argv):
                    scope_title, default_points,
                    retroactive_categories, retroactive_points,
                    backlog_resolved_cutoff, show_points, show_count, start_date,
-                   status_report_range, status_report_project)
+                   status_report_start, status_report_project)
         else:
             print("Report specified without a scope_prefix.\nPlease specify a scope_prefix with --scope_prefix.")  # noqa
     conn.close()
@@ -472,7 +481,7 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
            scope_title, default_points,
            retroactive_categories, retroactive_points,
            backlog_resolved_cutoff, show_points, show_count, start_date,
-           status_report_range, status_report_project):
+           status_report_start, status_report_project):
 
     cur = conn.cursor()
     log('Report Starting', scope_prefix, VERBOSE)
@@ -598,7 +607,7 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
 
     if status_report_project:
         final_status_date = get_max_date(conn, scope_prefix)
-        initial_status_date = final_status_date - datetime.timedelta(days=status_report_range)  # noqa
+        initial_status_date = status_report_start
         status_report_project_name = get_project_name(conn, status_report_project)
         cur.execute('SELECT * FROM get_status_report(\
                          %(scope_prefix)s,\
@@ -1011,13 +1020,12 @@ def populate_recently_closed(conn, scope_prefix, start_date):
                 {'scope_prefix': scope_prefix})
 
 
-def reset_reporting_tables(conn, scope_prefix):
-    cur = conn.cursor()
-    cur.execute('SELECT wipe_reporting(%(scope_prefix)s)',
-                {'scope_prefix': scope_prefix})
-
-    cur.execute('SELECT load_tasks_to_recategorize(%(scope_prefix)s)',
-                {'scope_prefix': scope_prefix})
+def read_date(input_string):
+    try:
+        output_date = datetime.datetime.strptime(input_string, "%Y-%m-%d").date()
+        return output_date
+    except:
+        return None
 
 
 def recategorize(conn, scope_prefix):
@@ -1062,13 +1070,6 @@ def recategorize(conn, scope_prefix):
 
     cur.execute('SELECT purge_leftover_task_on_date(%(scope_prefix)s)',
                 {'scope_prefix': scope_prefix})
-
-
-def start_of_quarter(input_date):
-    quarter_start = [datetime.date(input_date.year, month, 1) for month in (1, 4, 7, 10)]
-
-    index = bisect.bisect(quarter_start, input_date)
-    return quarter_start[index - 1]
 
 
 def reconstruct_task_on_date(cur, task_id, working_date, scope_prefix,
@@ -1219,6 +1220,15 @@ def reconstruct_task_on_date(cur, task_id, working_date, scope_prefix,
                  'priority': pretty_priority})
 
 
+def reset_reporting_tables(conn, scope_prefix):
+    cur = conn.cursor()
+    cur.execute('SELECT wipe_reporting(%(scope_prefix)s)',
+                {'scope_prefix': scope_prefix})
+
+    cur.execute('SELECT load_tasks_to_recategorize(%(scope_prefix)s)',
+                {'scope_prefix': scope_prefix})
+
+
 def set_categories_retroactively(conn, scope_prefix):
     cur = conn.cursor()
     cur.execute('SELECT set_category_retroactive(%(scope_prefix)s)',
@@ -1229,6 +1239,13 @@ def set_points_retroactively(conn, scope_prefix):
     cur = conn.cursor()
     cur.execute('SELECT set_points_retroactive(%(scope_prefix)s)',
                 {'scope_prefix': scope_prefix})
+
+
+def start_of_quarter(input_date):
+    quarter_start = [datetime.date(input_date.year, month, 1) for month in (1, 4, 7, 10)]
+
+    index = bisect.bisect(quarter_start, input_date)
+    return quarter_start[index - 1]
 
 
 if __name__ == "__main__":
