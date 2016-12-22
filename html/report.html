@@ -7,8 +7,8 @@
     <table>
       <tr>
         <td>
-          <p><a href="#forecasts">Forecasts</a></p>
           <p><a href="#burnups">Burnup charts</a></p>
+          <p><a href="#forecasts">Forecasts</a></p>
           <p><a href="#category_burnups">Per-Category Burnups and Velocity</a></p>
           <p><a href="#velocity">Total Velocity</a></p>
         </td>
@@ -51,7 +51,28 @@
         </td>
       </tr>
     </table>
-    <h2>Forecasts</h2>
+    <a name="burnups"><h2>Project Burnup</h2></a>
+    <p>History of completed work (above the line) and open work (below the line) for all categories of work over time.</p>
+    <p>
+      <table>
+	<tr>
+          {% if show_points %}
+	  <td>
+	    <a href="{{ scope_prefix }}_backlog_burnup_points.png"><img src="{{ scope_prefix }}_backlog_burnup_points.png"/></a><br/>
+            <a href="{{ scope_prefix }}_backlog_burnup_points_showhidden.png">Show hidden.</a><br/>
+	  </td>
+          {% endif %}
+          {% if show_count %}
+	  <td>
+	    <a href="{{ scope_prefix }}_backlog_burnup_count.png"><img src="{{ scope_prefix }}_backlog_burnup_count.png"/></a><br/>
+            <a href="{{ scope_prefix }}_backlog_burnup_count_showhidden.png">Show hidden.</a>
+	  </td>
+          {% endif %}
+	</tr>
+      </table>
+    </p>
+    <p><a href="https://www.mediawiki.org/wiki/Guide_to_Phlogiston_Reports#Combined_Burnup">Help</a>.</p>
+    <a name="forecasts"><h2>Forecasts</h2></a>
     <p>Overview of all categories, and the status (size of category, completion date, or completion % and forecast completion range).</p>
     <p>
       <table>
@@ -80,28 +101,7 @@
       </table>
     </p>
     <p><a href="https://www.mediawiki.org/wiki/Guide_to_Phlogiston_Reports#Forecast">Help</a>. See also <a href="{{ scope_prefix }}_current_forecasts.html">Complete forecast dates</a> for the raw data behind this chart.</p>
-    <a name="burnups"><h2>Project Burnup</h2></a>
-    <p>History of completed work (above the line) and open work (below the line) for all categories of work over time.</p>
-    <p>
-      <table>
-	<tr>
-          {% if show_points %}
-	  <td>
-	    <a href="{{ scope_prefix }}_backlog_burnup_points.png"><img src="{{ scope_prefix }}_backlog_burnup_points.png"/></a><br/>
-            <a href="{{ scope_prefix }}_backlog_burnup_points_showhidden.png">Show hidden.</a><br/>
-	  </td>
-          {% endif %}
-          {% if show_count %}
-	  <td>
-	    <a href="{{ scope_prefix }}_backlog_burnup_count.png"><img src="{{ scope_prefix }}_backlog_burnup_count.png"/></a><br/>
-            <a href="{{ scope_prefix }}_backlog_burnup_count_showhidden.png">Show hidden.</a>
-	  </td>
-          {% endif %}
-	</tr>
-      </table>
-    </p>
-    <p><a href="https://www.mediawiki.org/wiki/Guide_to_Phlogiston_Reports#Combined_Burnup">Help</a>.</p>
-    <h2><a name="category_burnups">Per-Category Burnups</a></h2>
+    <a name="category_burnups"><h2>Per-Category Burnups</h2></a>
     <table>
       <tr>
 	{% for row in rev_category_list %}
@@ -146,8 +146,6 @@
     </p>
     {% endfor %}
     </div>
-
-
     <p><a href="https://www.mediawiki.org/wiki/Guide_to_Phlogiston_Reports#Per-category_charts">Help</a>.</p>
     <a name="velocity"><h2>Velocity</h2></a>
     <p>Completed work per week, broken out by category, with highest-priority work on the bottom, in darkest green.</p>
