@@ -114,20 +114,18 @@ def main(argv):
         backlog_resolved_cutoff = None
         if config.has_option('vars', 'backlog_resolved_cutoff'):
             input_brc = config['vars']['backlog_resolved_cutoff']
-            if isinstance(input_brc, datetime.date):
+            if isinstance(read_date(input_brc), datetime.date):
                 backlog_resolved_cutoff = input_brc
             if input_brc.lower() in ['default', 'true', 't', 'yes', '1']:
                 backlog_resolved_cutoff = start_of_quarter(today)
 
-        status_report_start = None
+        status_report_start = start_of_quarter(today)
         if config.has_option('vars', 'status_report_start'):
             input_srs = config['vars']['status_report_start']
             if isinstance(input_srs, int):
                 status_report_start = today - rd.relativedelta(days=input_srs)
             elif isinstance(read_date(input_srs), datetime.date):
                 status_report_start = read_date(input_srs)
-            elif input_srs.lower() in ['default', 'true', 't', 'yes', '1']:
-                status_report_start = start_of_quarter(today)
 
         status_report_project = None
         if config.has_option('vars', 'status_report_project'):
