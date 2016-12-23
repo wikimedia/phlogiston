@@ -10,21 +10,21 @@
       <li>Include all tasks in the following Phabricator projects, since {{ start_date }}:
 	<ul>
 	  {% for project in project_name_list %}
-	    <li><span class="phui-project">{{ project }}</span></li>
+	    <li><a href="https://phabricator.wikimedia.org/project/view/{{ project.0 }}/" class="phui-project">{{ project.1 }}</a></li>
 	  {% endfor %}
         </ul>
       </li>
       {% for rule in category_rules_list %}
         <li>Categorize as <b>{{ rule[4] }}</b> all tasks
 	  <ol>
-	    <li>in project <span class="phui-project">{{ rule[2][0] }}</span></li>
+	    <li>in project <a href="https://phabricator.wikimedia.org/project/view/{{ rule[1][0] }}/" class="phui-project">{{ rule[2][0] }}</a></li>
         {% if rule[0] == 'ProjectByID' %}
         {% elif rule[0] == 'Intersection' %}
-	    <li>and project <span class="phui-project">{{ rule[2][1] }}</span></li>
+	    <li>and project <a href="https://phabricator.wikimedia.org/project/view/{{ rule[1][1] }}/" class="phui-project">{{ rule[2][1] }}</span></li>
         {% elif rule[0] == 'ProjectColumn' %}
 	    <li>and in a column whose title includes the text <code>{{ rule[3] }}</code></li>
         {% elif rule[0] == 'ParentTask' %}
-	    <li>and that are descendents of a task tagged <span class="phui-category">Category</span> whose title includes the text <code>{{ rule[3] }}</code></li>
+	    <li>and that are descendents of a task tagged <a href="https://phabricator.wikimedia.org/project/board/{{ category_id }}/" class="phui-category">Category</a> whose title includes the text <code>{{ rule[3] }}</code></li>
 	{% endif %}
 	    {% if not loop.first %}<li>and not in any rules above</li>{% endif %}
 	  </ol>

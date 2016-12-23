@@ -33,6 +33,8 @@ def main(argv):
     reconstruct_data = False
     run_report = False
     incremental = False
+    global DEBUG
+    global VERBOSE
     DEBUG = False
     VERBOSE = False
     start_date = ''
@@ -80,10 +82,10 @@ def main(argv):
     conn.autocommit = True
 
     if initialize:
-        do_initialize(conn, VERBOSE, DEBUG)
+        do_initialize(conn)
 
     if load_data:
-        load(conn, end_date, VERBOSE, DEBUG)
+        load(conn, end_date)
 
     if scope_prefix:
         config = configparser.ConfigParser()
@@ -149,7 +151,7 @@ def main(argv):
 
     if reconstruct_data:
         if scope_prefix:
-            reconstruct(conn, VERBOSE, DEBUG, default_points,
+            reconstruct(conn, default_points,
                         start_date, end_date,
                         scope_prefix, incremental,
                         status_report_project)
@@ -157,7 +159,7 @@ def main(argv):
             print("Reconstruct specified without a scope_prefix.\n Please specify a scope_prefix with --scope_prefix.")  # noqa
     if run_report:
         if scope_prefix:
-            report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
+            report(conn, dbname, scope_prefix,
                    scope_title, default_points,
                    retroactive_categories, retroactive_points,
                    backlog_resolved_cutoff, show_points, show_count, start_date,
@@ -200,7 +202,7 @@ Optionally:
   --verbose      Show progress messages.\n""")
 
 
-def do_initialize(conn, VERBOSE, DEBUG):
+def do_initialize(conn):
     cur = conn.cursor()
     cur.execute(open("loading_tables.sql", "r").read())
     cur.execute(open("loading_functions.sql", "r").read())
@@ -210,11 +212,11 @@ def do_initialize(conn, VERBOSE, DEBUG):
     cur.execute(open("reporting_functions.sql", "r").read())
 
 
-def load(conn, end_date, VERBOSE, DEBUG):
+def load(conn, end_date):
     cur = conn.cursor()
     cur.execute(open("loading_tables.sql", "r").read())
 
-    log('Dump file load starting', 'load', VERBOSE)
+    log('Dump file load starting', 'load')
     with open('../phabricator_public.dump') as dump_file:
         data = json.load(dump_file)
 
@@ -223,7 +225,7 @@ def load(conn, end_date, VERBOSE, DEBUG):
     ######################################################################
 
     project_count = len(data['project']['projects'])
-    log('{0} projects loading'.format(project_count), 'load', VERBOSE)
+    log('{0} projects loading'.format(project_count), 'load')
 
     project_insert = ("""INSERT INTO phabricator_project
                 VALUES (%(id)s, %(name)s, %(phid)s)""")
@@ -237,7 +239,7 @@ def load(conn, end_date, VERBOSE, DEBUG):
     column_insert = ("""INSERT INTO phabricator_column
                 VALUES (%(id)s, %(phid)s, %(name)s, %(project_phid)s)""")
     column_count = len(data['project']['columns'])
-    log('{0} columns loading'.format(column_count), 'load', VERBOSE)
+    log('{0} columns loading'.format(column_count), 'load')
     for row in data['project']['columns']:
         phid = row[1]
         project_phid = row[5]
@@ -268,8 +270,7 @@ def load(conn, end_date, VERBOSE, DEBUG):
       VALUES (%(date)s, %(phid)s, %(blocked_phid)s) """
 
     task_count = len(data['task'].keys())
-    log('Tasks, transactions, and edges for {0} tasks loading'.format(task_count),
-        'load', VERBOSE)
+    log('Tasks, transactions, and edges for {0} tasks loading'.format(task_count), 'load')
 
     for task_id in data['task'].keys():
         task = data['task'][task_id]
@@ -341,10 +342,10 @@ def load(conn, end_date, VERBOSE, DEBUG):
 
     cur.execute('SELECT convert_blocked_phid_to_id_sql()')
     cur.close()
-    log('Dump file load finished.', 'load', VERBOSE)
+    log('Dump file load finished.', 'load')
 
 
-def reconstruct(conn, VERBOSE, DEBUG, default_points,
+def reconstruct(conn, default_points,
                 start_date, end_date, scope_prefix, incremental,
                 status_report_project):
 
@@ -413,8 +414,7 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points,
     working_date = start_date
 
     while working_date <= end_date:
-        log('Maniphest_edge creation for {0}'.format(working_date),
-            scope_prefix, VERBOSE)
+        log('Maniphest_edge creation for {0}'.format(working_date), scope_prefix)
 
         cur.execute('SELECT build_edges(%(date)s, %(project_id_list)s)',
                     {'date': working_date,
@@ -427,11 +427,8 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points,
     ######################################################################
 
     working_date = start_date
-    lookups['VERBOSE'] = VERBOSE
-    lookups['DEBUG'] = DEBUG
     while working_date <= end_date:
-        log('Task reconstruction for {0}'.format(working_date),
-            scope_prefix, VERBOSE)
+        log('Task reconstruction for {0}'.format(working_date), scope_prefix)
 
         # because working_date is midnight at the beginning of the
         # day, increment the count before using it so that the
@@ -458,27 +455,27 @@ def reconstruct(conn, VERBOSE, DEBUG, default_points,
                          'category_id': category_id,
                          'working_date': working_date})
 
-    log('Phab parent category titles updating', scope_prefix, VERBOSE)
+    log('Phab parent category titles updating', scope_prefix)
     cur.execute("SELECT update_phab_parent_category_titles(%s, %s)", (scope_prefix, start_date))  # noqa
     cur.execute("SELECT put_category_tasks_in_own_category(%s, %s)",
                 (scope_prefix, PHAB_TAGS['category']))
 
-    log('Corrupted task status info correcting', scope_prefix, VERBOSE)
+    log('Corrupted task status info correcting', scope_prefix)
 
     cur.execute("SELECT fix_status(%s)", (scope_prefix,))
     cur.close()
 
-    log('Reconstruction finished.', scope_prefix, VERBOSE)
+    log('Reconstruction finished.', scope_prefix)
 
 
-def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
+def report(conn, dbname, scope_prefix,
            scope_title, default_points,
            retroactive_categories, retroactive_points,
            backlog_resolved_cutoff, show_points, show_count, start_date,
            status_report_start, status_report_project):
 
     cur = conn.cursor()
-    log('Report Starting', scope_prefix, VERBOSE)
+    log('Report Starting', scope_prefix)
     report_date = datetime.datetime.now().date()
     current_quarter_start = start_of_quarter(report_date)
     next_quarter_start = current_quarter_start + rd.relativedelta(months=+3)
@@ -493,25 +490,25 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
 
     check_for_empty_task_on_date(conn, scope_prefix)
     reset_reporting_tables(conn, scope_prefix)
-    log('Recategorization Starting', scope_prefix, VERBOSE)
+    log('Recategorization Starting', scope_prefix)
     recategorize(conn, scope_prefix)
-    log('Applying Retroactive values, if any', scope_prefix, VERBOSE)
+    log('Applying Retroactive values, if any', scope_prefix)
     if retroactive_categories:
         set_categories_retroactively(conn, scope_prefix)
     if retroactive_points:
         set_points_retroactively(conn, scope_prefix)
-    log('Populating Recently Closed', scope_prefix, VERBOSE)
+    log('Populating Recently Closed', scope_prefix)
     populate_recently_closed(conn, scope_prefix, start_date)
-    log('Aggregating task records', scope_prefix, VERBOSE)
+    log('Aggregating task records', scope_prefix)
     aggregate_task_on_date(conn, scope_prefix, backlog_resolved_cutoff)
-    log('Generating CSVs', scope_prefix, VERBOSE)
+    log('Generating CSVs', scope_prefix)
     generate_reporting_files(conn, scope_prefix, dbname)
 
     ######################################################################
     # for each category, generate burnup charts
     ######################################################################
 
-    log('Tranche Reports starting', scope_prefix, VERBOSE)
+    log('Tranche Reports starting', scope_prefix)
     cur.execute('SELECT * FROM get_categories(%(scope_prefix)s)',
                 {'scope_prefix': scope_prefix})
     cat_list = cur.fetchall()
@@ -548,7 +545,7 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
 
         i += 1
 
-    log('Additional reports starting', scope_prefix, VERBOSE)
+    log('Additional reports starting', scope_prefix)
 
     cur.execute('SELECT * FROM get_forecast_weeks(%(scope_prefix)s)',
                 {'scope_prefix': scope_prefix})
@@ -629,7 +626,7 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
     # Make the summary charts
     ######################################################################
 
-    log('Summary charts starting', scope_prefix, VERBOSE)
+    log('Summary charts starting', scope_prefix)
 
     if DEBUG:
         print("""Rscript make_charts.R {0} {1} {2} {3} {4} {5}\
@@ -681,15 +678,16 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
     cur.execute('SELECT * FROM get_category_rules(%(scope_prefix)s)',
                 {'scope_prefix': scope_prefix})
     category_rules_list = cur.fetchall()
-
-    project_name_list = get_project_list(conn, scope_prefix)[1]
+    project_list = get_project_list(conn, scope_prefix)
+    project_name_list = zip(project_list[0], project_list[1])
     rules_html = Template(open('html/rules.html').read())
     rules_output = open(os.path.join(script_dir, '../html/{0}_rules.html'.format(scope_prefix)), 'w')  # noqa
     rules_output.write(rules_html.render(
         {'title': scope_title,
          'start_date': start_date,
          'project_name_list': project_name_list,
-         'category_rules_list': category_rules_list
+         'category_rules_list': category_rules_list,
+         'category_id': PHAB_TAGS['category']
          }))
     rules_output.close()
 
@@ -715,7 +713,7 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
     report_output.close()
 
     cur.close()
-    log('Report finished.', scope_prefix, VERBOSE)
+    log('Report finished.', scope_prefix)
 
 
 def aggregate_task_on_date(conn, scope_prefix, backlog_resolved_cutoff):
@@ -805,10 +803,9 @@ def get_max_date(conn, scope_prefix):
 
 
 def get_project_list(conn, scope_prefix):
-    """Given a list of recategorization rules in the database,
-    return a list (by id) of all categories mentioned in the rules.
-    Should handle project ids, exact project name matches, and
-    project name wildcards"""
+    """Given a scope, return a list (by id) of all categories mentioned
+    in the rules.  Should handle project ids, exact project name matches,
+    and project name wildcards.  Also returns the names."""
 
     cur = conn.cursor()
     project_id_list = []
@@ -824,11 +821,10 @@ def get_project_list(conn, scope_prefix):
             if id not in project_id_list:
                 project_id_list.append(id)
 
-    project_name_list = {}
-    cur.execute("SELECT name FROM phabricator_project WHERE id = ANY(%s)",
-                (project_id_list,))
-    result = cur.fetchall()
-    project_name_list = [x[0] for x in result]
+    project_name_list = []
+    for project_id in project_id_list:
+        name = get_project_name(conn, project_id)
+        project_name_list.append(name)
 
     return project_id_list, project_name_list
 
@@ -992,7 +988,7 @@ def import_recategorization_file(conn, scope_prefix):
                           format(line, E))
 
 
-def log(message, scope_prefix, VERBOSE):
+def log(message, scope_prefix):
     """ TODO: convert this into native logging """
     if VERBOSE:
         print('{0} {1}: {2}'.
@@ -1069,7 +1065,7 @@ def recategorize(conn, scope_prefix):
 def reconstruct_task_on_date(cur, task_id, working_date, scope_prefix,
                              default_points, project_id_list,
                              project_id_to_name_dict,
-                             project_name_to_phid_dict, column_dict, DEBUG, VERBOSE):
+                             project_name_to_phid_dict, column_dict):
 
     # ----------------------------------------------------------------------
     # Data from as-is task record.  Points data prior to Feb 2016 was not
@@ -1144,7 +1140,7 @@ def reconstruct_task_on_date(cur, task_id, working_date, scope_prefix,
     pretty_project = ''
 
     if not edges:
-        log('Task {0} has no edges.'.format(task_id), 'load', VERBOSE)
+        log('Task {0} has no edges.'.format(task_id), 'load')
         return
     if PHAB_TAGS['new'] in edges:
         maint_type = 'New Functionality'

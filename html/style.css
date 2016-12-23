@@ -91,6 +91,7 @@ input:focus {
 
 .phui-project {
   background: #dee7f8;
+  text-decoration: none;
   border-color: #cfdbe3;
   color: #464c5c;
   border: 1px solid transparent;
@@ -100,8 +101,13 @@ input:focus {
   font: 13px 'Segoe UI','Segoe UI Web Regular','Segoe UI Symbol','Lato','Helvetica Neue',Helvetica,Arial,sans-serif;
 }
 
+a.phui-project:hover {
+  text-decoration: underline;
+}
+
 .phui-category {
   background: #fdf3da;
+  text-decoration: none;
   border-color: #e9dbcd;
   color: #726f56;
   border: 1px solid transparent;
@@ -109,6 +115,10 @@ input:focus {
   padding: 4 4px;
   white-space: nowrap;
   font: 13px 'Segoe UI','Segoe UI Web Regular','Segoe UI Symbol','Lato','Helvetica Neue',Helvetica,Arial,sans-serif;
+}
+
+a.phui-category:hover {
+  text-decoration: underline;
 }
 
 span:before {
