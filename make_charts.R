@@ -8,6 +8,8 @@ library(ggthemes)
 library(argparse)
 library(stringr)
 
+oldw <- getOption("warn")
+options(warn = -1)
 suppressPackageStartupMessages(library("argparse"))
 parser <- ArgumentParser(formatter_class= 'argparse.RawTextHelpFormatter')
 
@@ -115,12 +117,12 @@ p <- ggplot(burn_done) +
   geom_area(data=burn_open, position='stack', aes(x = date, y = points, group=category, fill=category, order=-category)) +
   theme_fivethirtynine() +
   scale_fill_manual(values=getPalette(colorCount)) +
-  scale_x_date(limits=c(previous_quarter_start, burn_done_chart_end), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
+  scale_x_date(limits=c(chart_start, burn_done_chart_end), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   theme(legend.position = "none", axis.title.x=element_blank()) +
   guides(col = guide_legend(reverse=TRUE)) +
   labs(title=sprintf("%s Backlog by points%s", args$scope_title, showhidden_title), y="Story Point Total") +
-  annotate("text", x=previous_quarter_start, y=bo_ylegend_points, label="Open Tasks", hjust=0, size=10) +
-  annotate("text", x=previous_quarter_start, y=bd_ylegend_points, label="Complete Tasks", hjust=0, size=10) +
+  annotate("text", x=chart_start, y=bo_ylegend_points, label="Open Tasks", hjust=0, size=10) +
+  annotate("text", x=chart_start, y=bd_ylegend_points, label="Complete Tasks", hjust=0, size=10) +
   geom_hline(aes(yintercept=c(0)), color="black", size=2) +
   labs(fill="Category")
 
@@ -144,12 +146,12 @@ p <- ggplot(burn_done) +
   geom_area(data=burn_open, position='stack', aes(x = date, y = count, group=category, fill=category, order=-category)) +
   theme_fivethirtynine() +
   scale_fill_manual(values=getPalette(colorCount)) +
-  scale_x_date(limits=c(previous_quarter_start, burn_done_chart_end), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
+  scale_x_date(limits=c(chart_start, burn_done_chart_end), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   theme(legend.position = "none", axis.title.x=element_blank()) +
   guides(col = guide_legend(reverse=TRUE)) +
   labs(title=sprintf("%s Backlog by count%s", args$scope_title, showhidden_title), y="Task Count Total") +
-  annotate("text", x=previous_quarter_start, y=bo_ylegend_count, label="Open Tasks", hjust=0, size=10) +
-  annotate("text", x=previous_quarter_start, y=bd_ylegend_count, label="Complete Tasks", hjust=0, size=10) +
+  annotate("text", x=chart_start, y=bo_ylegend_count, label="Open Tasks", hjust=0, size=10) +
+  annotate("text", x=chart_start, y=bd_ylegend_count, label="Complete Tasks", hjust=0, size=10) +
   geom_hline(aes(yintercept=c(0)), color="black", size=2) +
   labs(fill="Category") +
   geom_text(data=bd_labels_count, aes(x=max_date, y=label_count, label=category), size=9, hjust=0) 
@@ -174,7 +176,7 @@ forecast_done <- read.csv(sprintf("/tmp/%s/forecast_done.csv", args$scope_prefix
 forecast <- read.csv(sprintf("/tmp/%s/forecast.csv", args$scope_prefix))
 forecast$date <- as.Date(forecast$date, "%Y-%m-%d")
 forecast <- forecast[forecast$weeks_old < 5,]
-
+forecast_chart_start = quarter_start - 30
 
 if (args$showhidden == 'False') {
   forecast_done <- forecast_done[forecast_done$display == 't',]
@@ -187,8 +189,8 @@ forecast_done$category <- paste(sprintf("%02d",forecast_done$sort_order), strtri
 
 first_cat = forecast_done$category[1]
 last_cat = tail(forecast_done$category,1)
-done_before_chart <- na.omit(forecast_done[forecast_done$resolved_date <= chart_start, ])
-done_during_chart <- na.omit(forecast_done[forecast_done$resolved_date > chart_start, ])
+done_before_chart <- na.omit(forecast_done[forecast_done$resolved_date <= forecast_chart_start, ])
+done_during_chart <- na.omit(forecast_done[forecast_done$resolved_date > forecast_chart_start, ])
 forecast$category <- paste(sprintf("%02d",forecast$sort_order), strtrim(forecast$category, 35))
 forecast$pes_points_date <- as.Date(forecast$pes_points_date, "%Y-%m-%d")
 forecast$nom_points_date <- as.Date(forecast$nom_points_date, "%Y-%m-%d")
@@ -220,10 +222,10 @@ p <- ggplot(forecast_done) +
   geom_text(data = forecast_current, aes(x=category, y=opt_points_date, label=format(opt_points_date, format="optimistic:\n%b %d %Y")), size=8, color="gray") +
   geom_text(data = forecast_current, aes(x=category, y=pes_points_date, label=format(pes_points_date, format="pessimistic:\n%b %d %Y")), size=8, color="gray") +
   geom_text(data = forecast_current, aes(x=category, y=nom_points_date, label=format(nom_points_date, format="%b %d\n%Y")), size=8, color="DarkSlateGray") +
-  geom_point(data = forecast_done, aes(x=category, y=chart_start, label=points_total, size=points_total)) +
+  geom_point(data = forecast_done, aes(x=category, y=forecast_chart_start, label=points_total, size=points_total)) +
   scale_size_continuous(range = c(3,15)) +
   scale_x_discrete(limits = rev(forecast_done$category)) +
-  scale_y_date(limits=c(chart_start, chart_end_plus), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
+  scale_y_date(limits=c(forecast_chart_start, chart_end_plus), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   coord_flip() +
   theme_fivethirtynine() +
   labs(title=sprintf("%s forecast completion dates based on points velocity%s", args$scope_title, showhidden_title), x="Category") +
@@ -236,7 +238,7 @@ if(nrow(forecast_future_points) > 0) {
 }
 
 if(nrow(done_before_chart) > 0) {
-  p = p + geom_text(data = done_before_chart, aes(x=category, y=chart_start, label=format(resolved_date, format="%b %d\n%Y")), size=8)
+  p = p + geom_text(data = done_before_chart, aes(x=category, y=forecast_chart_start, label=format(resolved_date, format="%b %d\n%Y")), size=8)
 }
 
 if(nrow(done_during_chart) > 0) {
@@ -265,10 +267,10 @@ p <- ggplot(forecast_done) +
   geom_text(data = forecast_current, aes(x=category, y=opt_count_date, label=format(opt_count_date, format="optimistic:\n%b %d %Y")), size=8, color="gray") +
   geom_text(data = forecast_current, aes(x=category, y=pes_count_date, label=format(pes_count_date, format="pessimistic:\n%b %d %Y")), size=8, color="gray") +
   geom_text(data = forecast_current, aes(x=category, y=nom_count_date, label=format(nom_count_date, format="%b %d\n%Y")), size=8, color="DarkSlateGray") +
-  geom_text(data = forecast_done, aes(x=category, y=chart_start, label=count_total, size=count_total)) +
+  geom_text(data = forecast_done, aes(x=category, y=forecast_chart_start, label=count_total, size=count_total)) +
   scale_size_continuous(range = c(5,9)) +
   scale_x_discrete(limits = rev(forecast_done$category)) +
-  scale_y_date(limits=c(chart_start, chart_end_plus), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
+  scale_y_date(limits=c(forecast_chart_start, chart_end_plus), date_minor_breaks="1 month", label=date_format("%b %d\n%Y")) +
   coord_flip() +
   theme_fivethirtynine() +
   labs(title=sprintf("%s forecast completion dates based on count velocity%s", args$scope_title, showhidden_title), x="Category") +
@@ -281,7 +283,7 @@ if(nrow(forecast_future_count) > 0) {
 }
 
 if(nrow(done_before_chart) > 0) {
-  p = p + geom_text(data = done_before_chart, aes(x=category, y=chart_start, label=format(resolved_date, format="%b %d\n%Y")), size=8)
+  p = p + geom_text(data = done_before_chart, aes(x=category, y=forecast_chart_start, label=format(resolved_date, format="%b %d\n%Y")), size=8)
 }
 
 if(nrow(done_during_chart) > 0) {
@@ -331,7 +333,6 @@ ggplot(done_w, aes(x=date, y=count, fill=factor(category))) +
   labs(title=sprintf("%s Velocity by count", args$scope_title), y="Count", x="Month", aesthetic="Category")
 dev.off()
 
-print('bar')
 done_m <- read.csv(sprintf("/tmp/%s/recently_closed_month.csv", args$scope_prefix))
 done_m$date <- as.Date(done_m$date, "%Y-%m-%d")
 done_m$category <- paste(sprintf("%02d",done_m$sort_order), strtrim(done_m$category, 35))
@@ -455,3 +456,5 @@ ggplot(points_histogram, aes(points, count)) +
   facet_grid(priority ~ ., scales="free_y", space="free", margins=TRUE) +
   labs(title=sprintf("%s Number of resolved tasks by points and priority", args$scope_title), y="Count")
 dev.off()
+
+options(warn = oldw)

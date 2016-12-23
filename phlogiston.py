@@ -107,20 +107,19 @@ def main(argv):
             if not config.getboolean('vars', 'show_count'):
                 show_count = False
 
+        default_points = None
         if config.has_option('vars', 'default_points'):
             default_points = config['vars']['default_points']
-        else:
-            default_points = None
 
+        backlog_resolved_cutoff = None
         if config.has_option('vars', 'backlog_resolved_cutoff'):
             input_brc = config['vars']['backlog_resolved_cutoff']
             if isinstance(input_brc, datetime.date):
                 backlog_resolved_cutoff = input_brc
             if input_brc.lower() in ['default', 'true', 't', 'yes', '1']:
                 backlog_resolved_cutoff = start_of_quarter(today)
-        else:
-            backlog_resolved_cutoff = None
 
+        status_report_start = None
         if config.has_option('vars', 'status_report_start'):
             input_srs = config['vars']['status_report_start']
             if isinstance(input_srs, int):
@@ -129,13 +128,10 @@ def main(argv):
                 status_report_start = read_date(input_srs)
             elif input_srs.lower() in ['default', 'true', 't', 'yes', '1']:
                 status_report_start = start_of_quarter(today)
-        else:
-            status_report_start = None
 
+        status_report_project = None
         if config.has_option('vars', 'status_report_project'):
             status_report_project = config['vars']['status_report_project']
-        else:
-            status_report_project = None
 
         retroactive_categories = False
         if config.has_option('vars', 'retroactive_categories'):
@@ -641,14 +637,14 @@ def report(conn, dbname, VERBOSE, DEBUG, scope_prefix,
         print("""Rscript make_charts.R {0} {1} {2} {3} {4} {5}\
         {6} {7} {8} {9}""".format(scope_prefix, scope_title, False,
                                   report_date, current_quarter_start, next_quarter_start,
-                                  previous_quarter_start, adjusted_chart_start, chart_end,
+                                  previous_quarter_start, chart_start, chart_end,
                                   three_months_ago))
 
     for i in [True, False]:
         if i:
-            adjusted_chart_start = chart_start
-        else:
             adjusted_chart_start = start_date
+        else:
+            adjusted_chart_start = chart_start
         subprocess.call("""Rscript make_charts.R {0} {1} {2} {3} {4} {5}\
         {6} {7} {8} {9}""".format(scope_prefix, scope_title, i,
                                   report_date, current_quarter_start, next_quarter_start,

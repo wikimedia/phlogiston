@@ -8,6 +8,8 @@ library(ggthemes)
 library(argparse)
 library(reshape)
 
+oldw <- getOption("warn")
+options(warn = -1)
 suppressPackageStartupMessages(library("argparse"))
 parser <- ArgumentParser()
 
@@ -213,3 +215,5 @@ if(nrow(forecast_current) > 0) {
 
 p
 dev.off()
+
+options(warn = oldw)

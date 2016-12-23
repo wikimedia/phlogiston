@@ -542,9 +542,9 @@ BEGIN
            thr.category,
 	   date_trunc('day', (SELECT MIN(date) FROM task_on_date_recategorized thr1 WHERE thr1.id = thr.id)) AS date_added,
 	   date_trunc('day', (SELECT MAX(date_modified)
-              FROM maniphest_transaction
-             WHERE task_id = thr.id
-               AND transaction_type IN ('core:columns', 'status', 'core:edge'))) AS date_last_changed
+                                FROM maniphest_transaction
+                               WHERE task_id = thr.id
+                                 AND transaction_type IN ('core:columns', 'status', 'core:edge'))) AS date_last_changed
       FROM task_on_date_recategorized thr LEFT OUTER JOIN maniphest_task mt USING (id)
      WHERE scope = scope_prefix
        AND thr.status = 'open'
@@ -933,11 +933,11 @@ DECLARE taskrow record;
 BEGIN
 
 FOR taskrow in SELECT id, category
-              FROM task_on_date_recategorized
-             WHERE date = (SELECT MAX(date)
-                             FROM task_on_date_recategorized
-                            WHERE scope = scope_prefix)
-               AND scope = scope_prefix
+                 FROM task_on_date_recategorized
+                WHERE date = (SELECT MAX(date)
+                                FROM task_on_date_recategorized
+                               WHERE scope = scope_prefix)
+                  AND scope = scope_prefix
   LOOP
     UPDATE task_on_date_recategorized t
        SET category = taskrow.category
