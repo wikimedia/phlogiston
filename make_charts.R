@@ -92,6 +92,11 @@ burn_open$label_points <- burn_open$label_points * -1
 burn_open$label_count <- burn_open$label_count * -1
 
 max_date = max(burn_done$date, na.rm=TRUE)
+# if burn_done is empty, get it from burn_open.  Otherwise, burn_open labels will be missing
+if (is.null(nrow(max_date))) {
+   print('foo')
+   max_date = max(burn_open$date, na.rm=TRUE)
+}
 
 bd_labels <- subset(burn_done, date == max_date)
 bd_labels_count <- subset(bd_labels, count != 0)
@@ -113,7 +118,6 @@ bo_ylegend_points <- min(bo_labels_points$label_points, 10)
 png(filename = sprintf("~/html/%s_backlog_burnup_points%s.png", args$scope_prefix, showhidden_suffix), width=2000, height=1125, units="px", pointsize=30)
 
 p <- ggplot(burn_done) +
-  geom_area(position='stack', aes(x = date, y = points, group=category, fill=category, order=-category)) +
   geom_area(data=burn_open, position='stack', aes(x = date, y = points, group=category, fill=category, order=-category)) +
   theme_fivethirtynine() +
   scale_fill_manual(values=getPalette(colorCount)) +
@@ -126,7 +130,9 @@ p <- ggplot(burn_done) +
   geom_hline(aes(yintercept=c(0)), color="black", size=2) +
   labs(fill="Category")
 
-
+if (nrow(burn_done) > 0 ) {
+   p <- p + geom_area(position='stack', aes(x = date, y = points, group=category, fill=category, order=-category))
+}
 
 if (nrow(bd_labels_points) > 0 ) {
     p <- p + geom_text(data=bd_labels_points, aes(x=max_date, y=label_points, label=category), size=9, hjust=0)
@@ -142,7 +148,6 @@ dev.off()
 png(filename = sprintf("~/html/%s_backlog_burnup_count%s.png", args$scope_prefix, showhidden_suffix), width=2000, height=1125, units="px", pointsize=30)
 
 p <- ggplot(burn_done) +
-  geom_area(position='stack', aes(x = date, y = count, group=category, fill=category, order=-category)) +
   geom_area(data=burn_open, position='stack', aes(x = date, y = count, group=category, fill=category, order=-category)) +
   theme_fivethirtynine() +
   scale_fill_manual(values=getPalette(colorCount)) +
@@ -153,8 +158,11 @@ p <- ggplot(burn_done) +
   annotate("text", x=chart_start, y=bo_ylegend_count, label="Open Tasks", hjust=0, size=10) +
   annotate("text", x=chart_start, y=bd_ylegend_count, label="Complete Tasks", hjust=0, size=10) +
   geom_hline(aes(yintercept=c(0)), color="black", size=2) +
-  labs(fill="Category") +
-  geom_text(data=bd_labels_count, aes(x=max_date, y=label_count, label=category), size=9, hjust=0) 
+  labs(fill="Category")
+
+if (nrow(burn_done) > 0 ) {
+   p <- p + geom_area(position='stack', aes(x = date, y = count, group=category, fill=category, order=-category))
+}
 
 if (nrow(bd_labels_count) > 0 ) {
     p <- p + geom_text(data=bd_labels_count, aes(x=max_date, y=label_count, label=category), size=9, hjust=0)
