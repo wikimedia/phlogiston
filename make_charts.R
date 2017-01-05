@@ -94,7 +94,6 @@ burn_open$label_count <- burn_open$label_count * -1
 max_date = max(burn_done$date, na.rm=TRUE)
 # if burn_done is empty, get it from burn_open.  Otherwise, burn_open labels will be missing
 if (is.null(nrow(max_date))) {
-   print('foo')
    max_date = max(burn_open$date, na.rm=TRUE)
 }
 
