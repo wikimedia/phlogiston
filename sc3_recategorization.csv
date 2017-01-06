@@ -1,0 +1,2 @@
+rule,title,display,id,matchstring
+ProjectsByWildcard,,True,,Scap3
