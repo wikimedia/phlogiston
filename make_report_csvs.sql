@@ -33,7 +33,7 @@ SELECT date,
        count,
        SUM(points) OVER (PARTITION BY date ORDER BY sort_order, category) AS label_points,
        SUM(count) OVER (PARTITION BY date ORDER BY sort_order, category) AS label_count
-  FROM get_backlog(:'scope_prefix', 'resolved', False)
+  FROM get_backlog_with_cutoff(:'scope_prefix', 'resolved', False)
 ) TO '/tmp/phlog/burn_done.csv' DELIMITER ',' CSV HEADER;
 
 COPY (

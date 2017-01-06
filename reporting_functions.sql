@@ -449,21 +449,46 @@ CREATE OR REPLACE FUNCTION get_backlog (
        show_hidden boolean
 ) RETURNS TABLE(date timestamp, category text, sort_order int, points numeric, count numeric) AS $$
 BEGIN
-        RETURN QUERY
-        SELECT t.date,
-               t.category,
-               MAX(z.sort_order) as sort_order,
-               SUM(t.points)::numeric as points,
-               SUM(t.count)::numeric as count
-          FROM task_on_date_agg_with_cutoff t, category z
-         WHERE t.scope = scope_prefix
-           AND z.scope = scope_prefix
-           AND t.scope = z.scope
-           AND t.category = z.title
-           AND t.status = status_input
-           AND (show_hidden = True OR z.display = True)
-         GROUP BY t.date, t.category
-         ORDER BY t.date, sort_order;
+    RETURN QUERY
+    SELECT t.date,
+           t.category,
+           MAX(z.sort_order) as sort_order,
+           SUM(t.points)::numeric as points,
+           SUM(t.count)::numeric as count
+      FROM task_on_date_agg t, category z
+     WHERE t.scope = scope_prefix
+       AND z.scope = scope_prefix
+       AND t.scope = z.scope
+       AND t.category = z.title
+       AND t.status = status_input
+       AND (show_hidden = True OR z.display = True)
+     GROUP BY t.date, t.category
+     ORDER BY t.date, sort_order;
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE FUNCTION get_backlog_with_cutoff (
+       scope_prefix varchar(6),
+       status_input text,
+       show_hidden boolean
+) RETURNS TABLE(date timestamp, category text, sort_order int, points numeric, count numeric) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT t.date,
+           t.category,
+           MAX(z.sort_order) as sort_order,
+           SUM(t.points)::numeric as points,
+           SUM(t.count)::numeric as count
+      FROM task_on_date_agg_with_cutoff t, category z
+     WHERE t.scope = scope_prefix
+       AND z.scope = scope_prefix
+       AND t.scope = z.scope
+       AND t.category = z.title
+       AND t.status = status_input
+       AND (show_hidden = True OR z.display = True)
+     GROUP BY t.date, t.category
+     ORDER BY t.date, sort_order;
 END;
 $$ LANGUAGE plpgsql;
 

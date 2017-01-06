@@ -480,7 +480,7 @@ def report(conn, dbname, scope_prefix,
     current_quarter_start = start_of_quarter(report_date)
     next_quarter_start = current_quarter_start + rd.relativedelta(months=+3)
     previous_quarter_start = current_quarter_start + rd.relativedelta(months=-3)
-    chart_start = current_quarter_start + rd.relativedelta(months=-1)
+    month_before_current_q_start = current_quarter_start + rd.relativedelta(months=-1)
     chart_end = current_quarter_start + rd.relativedelta(months=+4)
     three_months_ago = report_date + rd.relativedelta(months=-3)
 
@@ -533,7 +533,7 @@ def report(conn, dbname, scope_prefix,
                         'color': color,
                         'category': category,
                         'report_date': report_date,
-                        'chart_start': chart_start,
+                        'chart_start': previous_quarter_start,
                         'chart_end': chart_end,
                         'current_quarter_start': current_quarter_start,
                         'next_quarter_start': next_quarter_start}
@@ -632,14 +632,14 @@ def report(conn, dbname, scope_prefix,
         print("""Rscript make_charts.R {0} {1} {2} {3} {4} {5}\
         {6} {7} {8} {9}""".format(scope_prefix, scope_title, False,
                                   report_date, current_quarter_start, next_quarter_start,
-                                  previous_quarter_start, chart_start, chart_end,
-                                  three_months_ago))
+                                  previous_quarter_start, month_before_current_q_start,
+                                  chart_end, three_months_ago))
 
     for i in [True, False]:
         if i:
             adjusted_chart_start = start_date
         else:
-            adjusted_chart_start = chart_start
+            adjusted_chart_start = month_before_current_q_start
         subprocess.call("""Rscript make_charts.R {0} {1} {2} {3} {4} {5}\
         {6} {7} {8} {9}""".format(scope_prefix, scope_title, i,
                                   report_date, current_quarter_start, next_quarter_start,
@@ -718,41 +718,37 @@ def report(conn, dbname, scope_prefix,
 
 def aggregate_task_on_date(conn, scope_prefix, backlog_resolved_cutoff):
     cur = conn.cursor()
-    task_on_date_agg_insert = """INSERT INTO task_on_date_agg(
-                                 SELECT scope,
-                                        date,
-                                        category,
-                                        status,
-                                        SUM(points) as points,
-                                        COUNT(id) as count,
-                                        maint_type
-                                   FROM task_on_date_recategorized
-                                  WHERE scope = %(scope_prefix)s
-                                  GROUP BY status, category, maint_type, date, scope)"""
-    cur.execute(task_on_date_agg_insert, {'scope_prefix': scope_prefix})
+    tod_agg_common = """INSERT INTO {table} (
+                        SELECT scope,
+                               date,
+                               category,
+                               status,
+                               SUM(points) as points,
+                               COUNT(id) as count,
+                               maint_type
+                          FROM task_on_date_recategorized
+                         WHERE scope = %(scope_prefix)s
+                               {cutoff_clause}
+                         GROUP BY status, category, maint_type, date, scope)"""
+    query1 = tod_agg_common.format(table='task_on_date_agg', cutoff_clause='')
+    cur.execute(query1, {'scope_prefix': scope_prefix})
 
-    tod_agg_cutoff_insert = """INSERT INTO task_on_date_agg_with_cutoff(
-                               SELECT scope,
-                                      date,
-                                      category,
-                                      status,
-                                      SUM(points) as points,
-                                      COUNT(id) as count,
-                                      maint_type
-                                 FROM task_on_date_recategorized
-                                WHERE scope = %(scope_prefix)s"""
     if backlog_resolved_cutoff:
-        tod_agg_cutoff_insert += """ AND id NOT IN (SELECT id
-                                     FROM task_on_date th
-                                    WHERE date = %(backlog_resolved_cutoff)s
-                                      AND scope = %(scope_prefix)s
-                                      AND status = 'resolved') """
-
-    tod_agg_cutoff_insert += """GROUP BY status, category, maint_type, date, scope)"""
-
-    cur.execute(tod_agg_cutoff_insert,
-                {'scope_prefix': scope_prefix,
-                 'backlog_resolved_cutoff': backlog_resolved_cutoff})
+        tod_cutoff_clause = """AND id NOT IN (SELECT id
+                                            FROM task_on_date th
+                                           WHERE date = %(backlog_resolved_cutoff)s
+                                             AND scope = %(scope_prefix)s
+                                             AND status = 'resolved') """
+        query2 = tod_agg_common.format(
+            table='task_on_date_agg_with_cutoff',
+            cutoff_clause=tod_cutoff_clause)
+        cur.execute(query2,
+                    {'scope_prefix': scope_prefix,
+                     'backlog_resolved_cutoff': backlog_resolved_cutoff})
+    else:
+        query2 = tod_agg_common.format('task_on_date_agg_with_cutoff', '')
+        cur.execute(query2,
+                    {'scope_prefix': scope_prefix})
 
 
 def check_for_empty_task_on_date(conn, scope_prefix):
