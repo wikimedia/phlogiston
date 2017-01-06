@@ -331,12 +331,11 @@ ORDER BY sort_order
 ) TO '/tmp/phlog/forecast_done.csv' DELIMITER ',' CSV HEADER;
 
 COPY (
-SELECT MAX(v.date) AS date,
+SELECT v.week AS date,
        z.sort_order,
        MAX(v.category) AS category,
        SUM(v.delta_points_resolved) AS points,
-       SUM(v.delta_count_resolved) AS count,
-       v.week
+       SUM(v.delta_count_resolved) AS count
   FROM velocity v
   LEFT OUTER JOIN category z ON v.scope = z.scope AND v.category = z.title
  WHERE v.scope = :'scope_prefix'
@@ -346,12 +345,11 @@ SELECT MAX(v.date) AS date,
 ) to '/tmp/phlog/recently_closed_week.csv' DELIMITER ',' CSV HEADER;
 
 COPY (
-SELECT MAX(v.date) AS date,
+SELECT v.month AS date,
        z.sort_order,
        MAX(v.category) AS category,
        SUM(v.delta_points_resolved) AS points,
-       SUM(v.delta_count_resolved) AS count,
-       v.month
+       SUM(v.delta_count_resolved) AS count
   FROM velocity v
   LEFT OUTER JOIN category z ON v.scope = z.scope AND v.category = z.title
  WHERE v.scope = :'scope_prefix'
@@ -360,12 +358,11 @@ SELECT MAX(v.date) AS date,
 ) to '/tmp/phlog/recently_closed_month.csv' DELIMITER ',' CSV HEADER;
 
 COPY (
-SELECT MAX(v.date) AS date,
+SELECT v.quarter AS date,
        z.sort_order,
        MAX(v.category) AS category,
        SUM(v.delta_points_resolved) AS points,
-       SUM(v.delta_count_resolved) AS count,
-       v.quarter
+       SUM(v.delta_count_resolved) AS count
   FROM velocity v
   LEFT OUTER JOIN category z ON v.scope = z.scope AND v.category = z.title
  WHERE v.scope = :'scope_prefix'

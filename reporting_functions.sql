@@ -74,9 +74,9 @@ BEGIN
     SELECT scope,
            category,
            date,
-           EXTRACT(YEAR FROM date)::text || 'W' || EXTRACT(WEEK FROM date)::text AS week,
-           EXTRACT(YEAR FROM date)::text || 'M' || lpad(EXTRACT(MONTH FROM date)::text, 2, '0') AS month,
-           EXTRACT(YEAR FROM date)::text || 'Q' || EXTRACT(QUARTER FROM date)::text AS quarter,
+           date_trunc('week', date) as week,
+           date_trunc('month', date) as month,
+           date_trunc('quarter', date) as quarter,
            SUM(points) AS points_total,
            SUM(count) AS count_total
       FROM task_on_date_agg
@@ -784,9 +784,9 @@ BEGIN
         INSERT INTO recently_closed (
              SELECT scope_prefix as scope,
                     date,
-                    EXTRACT(YEAR FROM date)::text || 'W' ||  EXTRACT(WEEK FROM date)::text AS week,
-                    EXTRACT(YEAR FROM date)::text || 'M' || lpad(EXTRACT(MONTH FROM date)::text, 2, '0') AS month,
-                    EXTRACT(YEAR FROM date)::text || 'Q' || EXTRACT(QUARTER FROM date)::text AS quarter,
+                    date_trunc('week', date) as week,
+                    date_trunc('month', date) as month,
+                    date_trunc('quarter', date) as quarter,
                     category,
                     SUM(points) AS points,
                     COUNT(id) AS count

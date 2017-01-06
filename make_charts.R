@@ -328,7 +328,7 @@ ggplot(done_w, aes(x=date, y=points, fill=factor(category))) +
   theme_fivethirtynine() +
   theme(axis.title.x=element_blank()) +
   theme(legend.direction='vertical', axis.title.x=element_blank()) +
-  labs(title=sprintf("%s Velocity by points", args$scope_title), y="Points", x="Month", aesthetic="Category")
+  labs(title=sprintf("%s Velocity by weekly points", args$scope_title), y="Points", x="Month", aesthetic="Category")
 dev.off()
 
 png(filename = sprintf("~/html/%s_done_count.png", args$scope_prefix), width=2000, height=1125, units="px", pointsize=30)
@@ -337,7 +337,7 @@ ggplot(done_w, aes(x=date, y=count, fill=factor(category))) +
   scale_fill_manual(values=getPalette(colorCount), name="Category") +
   theme_fivethirtynine() +
   theme(legend.direction='vertical', axis.title.x=element_blank()) +
-  labs(title=sprintf("%s Velocity by count", args$scope_title), y="Count", x="Month", aesthetic="Category")
+  labs(title=sprintf("%s Velocity by weekly count", args$scope_title), y="Count", x="Month", aesthetic="Category")
 dev.off()
 
 done_m <- read.csv(sprintf("/tmp/%s/recently_closed_month.csv", args$scope_prefix))
@@ -350,12 +350,12 @@ getPalette = colorRampPalette(brewer.pal(9, "YlGn"))
 
 png(filename = sprintf("~/html/%s_done_m_points.png", args$scope_prefix), width=2000, height=1125, units="px", pointsize=30)
 ggplot(done_m, aes(x=date, y=points, fill=factor(category))) +
-  geom_bar(stat="identity")+ 
+  geom_bar(stat="identity") +
   scale_fill_manual(values=getPalette(colorCount), name="Category") +
   theme_fivethirtynine() +
   theme(axis.title.x=element_blank()) +
   theme(legend.direction='vertical', axis.title.x=element_blank()) +
-  labs(title=sprintf("%s Velocity by points", args$scope_title), y="Points", x="Month", aesthetic="Category")
+  labs(title=sprintf("%s Velocity by monthly points", args$scope_title), y="Points", x="Month", aesthetic="Category")
 dev.off()
 
 png(filename = sprintf("~/html/%s_done_m_count.png", args$scope_prefix), width=2000, height=1125, units="px", pointsize=30)
@@ -364,7 +364,7 @@ ggplot(done_m, aes(x=date, y=count, fill=factor(category))) +
   scale_fill_manual(values=getPalette(colorCount), name="Category") +
   theme_fivethirtynine() +
   theme(legend.direction='vertical', axis.title.x=element_blank()) +
-  labs(title=sprintf("%s Velocity by count", args$scope_title), y="Count", x="Month", aesthetic="Category")
+  labs(title=sprintf("%s Velocity by monthly count", args$scope_title), y="Count", x="Month", aesthetic="Category")
 dev.off()
 
 done_q <- read.csv(sprintf("/tmp/%s/recently_closed_quarter.csv", args$scope_prefix))
@@ -377,12 +377,12 @@ getPalette = colorRampPalette(brewer.pal(9, "YlGn"))
 
 png(filename = sprintf("~/html/%s_done_q_points.png", args$scope_prefix), width=2000, height=1125, units="px", pointsize=30)
 ggplot(done_q, aes(x=date, y=points, fill=factor(category))) +
-  geom_bar(stat="identity")+ 
+  geom_bar(stat="identity") +
   scale_fill_manual(values=getPalette(colorCount), name="Category") +
   theme_fivethirtynine() +
   theme(axis.title.x=element_blank()) +
   theme(legend.direction='vertical', axis.title.x=element_blank()) +
-  labs(title=sprintf("%s Velocity by points", args$scope_title), y="Points", x="Month", aesthetic="Category")
+  labs(title=sprintf("%s Velocity by quarterly points", args$scope_title), y="Points", x="Month", aesthetic="Category")
 dev.off()
 
 png(filename = sprintf("~/html/%s_done_q_count.png", args$scope_prefix), width=2000, height=1125, units="px", pointsize=30)
@@ -391,7 +391,7 @@ ggplot(done_q, aes(x=date, y=count, fill=factor(category))) +
   scale_fill_manual(values=getPalette(colorCount), name="Category") +
   theme_fivethirtynine() +
   theme(legend.direction='vertical', axis.title.x=element_blank()) +
-  labs(title=sprintf("%s Velocity by count", args$scope_title), y="Count", x="Month", aesthetic="Category")
+  labs(title=sprintf("%s Velocity by quarterly count", args$scope_title), y="Count", x="Month", aesthetic="Category")
 dev.off()
 
 ######################################################################
