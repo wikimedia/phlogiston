@@ -481,7 +481,7 @@ def report(conn, dbname, scope_prefix,
     next_quarter_start = current_quarter_start + rd.relativedelta(months=+3)
     previous_quarter_start = current_quarter_start + rd.relativedelta(months=-3)
     month_before_current_q_start = current_quarter_start + rd.relativedelta(months=-1)
-    chart_end = current_quarter_start + rd.relativedelta(months=+4)
+    month_after_current_q_end = current_quarter_start + rd.relativedelta(months=+4)
     three_months_ago = report_date + rd.relativedelta(months=-3)
 
     # This config file is loaded during reconstruction.  Reload it here to
@@ -534,7 +534,7 @@ def report(conn, dbname, scope_prefix,
                         'category': category,
                         'report_date': report_date,
                         'chart_start': previous_quarter_start,
-                        'chart_end': chart_end,
+                        'chart_end': month_after_current_q_end,
                         'current_quarter_start': current_quarter_start,
                         'next_quarter_start': next_quarter_start}
 
@@ -633,18 +633,21 @@ def report(conn, dbname, scope_prefix,
         {6} {7} {8} {9}""".format(scope_prefix, scope_title, False,
                                   report_date, current_quarter_start, next_quarter_start,
                                   previous_quarter_start, month_before_current_q_start,
-                                  chart_end, three_months_ago))
+                                  month_after_current_q_end, three_months_ago))
 
     for i in [True, False]:
         if i:
-            adjusted_chart_start = start_date
+            # show hidden is true.  make a much bigger chart.
+            chart_start = start_date
         else:
-            adjusted_chart_start = month_before_current_q_start
+            # show hidden is false.  Set up smaller chart.
+            chart_start = month_before_current_q_start
         subprocess.call("""Rscript make_charts.R {0} {1} {2} {3} {4} {5}\
         {6} {7} {8} {9}""".format(scope_prefix, scope_title, i,
                                   report_date, current_quarter_start, next_quarter_start,
-                                  previous_quarter_start, adjusted_chart_start, chart_end,
-                                  three_months_ago), shell=True)
+                                  previous_quarter_start, chart_start,
+                                  month_after_current_q_end, three_months_ago),
+                        shell=True)
 
     ######################################################################
     # Update dates

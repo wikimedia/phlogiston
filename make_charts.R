@@ -38,12 +38,18 @@ now <- as.Date(args$report_date)
 now_plus <- now + 4  # Apply 1/2-week fudge factor to make charts show current week
 chart_start <- as.Date(args$chart_start)
 chart_end   <- as.Date(args$chart_end)
-chart_end_plus <- chart_end + 7
+chart_end_plus <- chart_end + 7  # cosmetic room
 previous_quarter_start  <- as.Date(args$previous_quarter_start)
 quarter_start  <- as.Date(args$current_quarter_start)
 next_quarter_start    <- as.Date(args$next_quarter_start)
 three_months_ago <- as.Date(args$three_months_ago)
-burn_done_chart_end <- now + 30  # add room for labels
+if (args$showhidden == 'True') {
+  burn_done_chart_end <- now + 120  # add extra room for labels due to chart zoom out
+} else {
+  burn_done_chart_end <- now + 30  # add room for labels
+}
+
+
 
 # common theme from https://github.com/Ironholds/wmf/blob/master/R/dataviz.R
 theme_fivethirtynine <- function(base_size = 12, base_family = "sans"){
