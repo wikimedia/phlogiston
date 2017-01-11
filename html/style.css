@@ -159,8 +159,10 @@ span.Open:before {
     content: "⏳";
 }
 
+/* Status, for row */ 
+
 tr.Done td {
-    background-color: #ECEFF1;
+    background-color: #FFFFFF;
 }
 
 tr.Cut td {
@@ -168,14 +170,19 @@ tr.Cut td {
 }
 
 tr.Open td {
-    background-color: #B0BEc5;
+    background-color: #ECEFF1;
 }
 
-tr.Elaborated td {
-    background-color: #B0BEc5;
+/* Scope, for cell */
+
+td.Elaborated {
+    background-color: #EDE7F6!important;
 }
 
-tr.Screep td {
-    background-color: #90A4AE;
+td.Screep {
+    background-color: #FFEBEE!important;
 }
 
+td.In-Scope {
+    background-color: #E3F2FD!important;
+}

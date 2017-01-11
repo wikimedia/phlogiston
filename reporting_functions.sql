@@ -615,6 +615,7 @@ CREATE OR REPLACE FUNCTION get_status_report(
     id int,
     title text,
     category text,
+    scope text,
     status text,
     points text)
 AS $$
@@ -624,18 +625,19 @@ BEGIN
     SELECT q2.id,
            q2.title,
            q2.category,
-	   CASE WHEN q2.cut_status = True                                                   THEN 'Cut'
-                WHEN q2.previous_status IS NULL      AND q2.status = 'open'
-                                                     AND q2.parent_previous_status = 'open' THEN 'Elaborated'
-                WHEN q2.previous_status IS NULL      AND q2.status = 'resolved'
-                                                     AND q2.parent_previous_status = 'open' THEN 'Elaborated Done'
-                WHEN q2.previous_status IS NULL      AND q2.status = 'open'                 THEN 'Screep'
-                WHEN q2.previous_status IS NULL      AND q2.status = 'resolved'             THEN 'Screep Done'
-                WHEN q2.previous_status = 'open'     AND q2.status = 'open'                 THEN 'Open'
-		WHEN q2.previous_status = 'open'     AND q2.status = 'resolved'             THEN 'Done'
-                WHEN q2.previous_status = 'resolved' AND q2.status = 'resolved'             THEN 'Still Done'
-                WHEN q2.previous_status = 'resolved' AND q2.status = 'open'                 THEN 'Reopened'
+	   CASE WHEN q2.previous_status IS NULL
+                 AND q2.parent_previous_status = 'open'  THEN 'Elaborated'
+                WHEN q2.previous_status IS NULL          THEN 'Screep'
+                WHEN q2.previous_status = 'open'
+                  OR q2.previous_status = 'resolved'     THEN 'In-Scope'
                 ELSE 'Unknown'
+           END as scope,
+           CASE WHEN q2.cut_status = True            THEN 'Cut'
+                WHEN q2.previous_status = 'resolved'
+                 AND q2.status = 'open'              THEN 'Reopened'
+                WHEN q2.status = 'resolved'          THEN 'Done'
+                WHEN q2.status = 'open'              THEN 'Open'
+                ELSE q2.status
            END as status,
            q2.points
       FROM (

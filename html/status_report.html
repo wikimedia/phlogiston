@@ -16,23 +16,23 @@
 	<th><button class="sort" data-sort="name">Task Title</button></th>
 	<th><button class="sort" data-sort="category">Category</button>
 	    <input class="search" placeholder="Filter" /></th>
-	<th><button class="sort" data-sort="points">Points</button></th>
+	<th><button class="sort" data-sort="scope">Scope</button></th>
 	<th><button class="sort" data-sort="status">Status</button></th>
+	<th><button class="sort" data-sort="points">Points</button></th>
       </tr>
       <tbody class="list">
       {% for row in status_report_rows %}
-      <tr class="{{row.3}}">
+      <tr class="{{row.4}}">
         <td class="id"><a href="https://phabricator.wikimedia.org/T{{row.0}}">{{row.0}}</a></td>
 	<td class="name">
-	  {% if 'Done' in row.3 %}<s class='Done'>{% endif %}
-	    <span class="{{row.3 }}">
-	      {{row.1|escape}}
-	    </span>
-	    {% if 'Done' in row.3 %}</s>{% endif %}
+	  {% if 'Done' in row.4 %}<s class='Done'>{% endif %}
+            {{row.1|escape}}
+          {% if 'Done' in row.4 %}</s>{% endif %}
 	</td>
 	<td class="category">{{row.2|escape}}</td>
-	<td class="points">{{row.4|escape}}</td>
-	<td class="status">{{row.3}}</td>
+	<td class="scope {{ row.3|escape }}">{{row.3|escape}}</td>
+	<td class="status">{{row.4}}</td>
+	<td class="points">{{row.5|escape}}</td>
       </tr>
       {% endfor %}
       </tbody>
