@@ -617,7 +617,8 @@ CREATE OR REPLACE FUNCTION get_status_report(
     category text,
     scope text,
     status text,
-    points text)
+    points text,
+    sort_order int)
 AS $$
 BEGIN
 
@@ -639,7 +640,8 @@ BEGIN
                 WHEN q2.status = 'open'              THEN 'Open'
                 ELSE q2.status
            END as status,
-           q2.points
+           q2.points,
+           c.sort_order
       FROM (
 	    SELECT q1.id,
 	           q1.title,
@@ -698,8 +700,9 @@ BEGIN
                                                AND project = status_report_project)
                    ) as q1
            ) as q2
+      LEFT OUTER JOIN category c ON (q2.category = c.title AND c.scope = scope_prefix)
      WHERE q2.previous_status != 'resolved' OR q2.previous_status IS NULL
-     ORDER BY category, status;
+     ORDER BY sort_order, status;
 
 END;
 $$ LANGUAGE plpgsql;

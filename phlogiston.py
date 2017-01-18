@@ -486,7 +486,7 @@ def report(conn, dbname, scope_prefix,
 
     # This config file is loaded during reconstruction.  Reload it here to
     # make it possible to run reporting without reconstruction
-    import_recategorization_file(conn, scope_prefix)
+    # import_recategorization_file(conn, scope_prefix)
 
     check_for_empty_task_on_date(conn, scope_prefix)
     reset_reporting_tables(conn, scope_prefix)
@@ -609,7 +609,20 @@ def report(conn, dbname, scope_prefix,
                      'status_report_project': status_report_project,
                      'initial_date': initial_status_date,
                      'final_date': final_status_date})
-        status_report_rows = cur.fetchall()
+        query_rows = cur.fetchall()
+        statuses = set(tuple([(row[2], row[6]) for row in query_rows]))
+        status_count = len(statuses)
+        status_list = sorted(statuses, key=lambda item: item[1], reverse=True)
+        status_style_dict = {}
+        for i, status in enumerate(status_list):
+            value = int((i/status_count) * 30)
+            status_style_dict[status[0]] = value
+        status_report_rows = []
+        for row in query_rows:
+            new_row = list(row)
+            new_row.append(status_style_dict[row[2]])
+            status_report_rows.append(new_row)
+
         status_report_html = Template(open('html/status_report.html').read())
         file_path = '../html/{0}_status_report.html'.format(scope_prefix)
         script_dir = os.path.dirname(__file__)

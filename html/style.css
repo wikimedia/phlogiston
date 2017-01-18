@@ -159,30 +159,148 @@ span.Open:before {
     content: "⏳";
 }
 
-/* Status, for row */ 
-
-tr.Done td {
+td[status*="Done"] {
     background-color: #FFFFFF;
 }
 
-tr.Cut td {
+td[status*="Cut"] {
     background-color: #CFD8DC;
 }
 
-tr.Open td {
+td[status*="Open"] {
     background-color: #ECEFF1;
 }
 
-/* Scope, for cell */
-
-td.Elaborated {
+td[scope*="Elaborated"] {
     background-color: #EDE7F6!important;
 }
 
-td.Screep {
+td[scope*="Screep"] {
     background-color: #FFEBEE!important;
 }
 
-td.In-Scope {
+td[scope*="In-Scope"] {
     background-color: #E3F2FD!important;
+}
+
+/* Color Palette for categories */
+
+[shade*="0"] {
+  background-color: #FFFFE5;
+}
+
+[shade*="1"] {
+  background-color: #FCFED8;
+}
+
+[shade*="2"] {
+  background-color: #FAFDCC;
+}
+
+[shade*="3"] {
+  background-color: #F8FCC0;
+}
+
+[shade*="4"] {
+  background-color: #F3FAB6;
+}
+
+[shade*="5"] {
+  background-color: #EBF7B0;
+}
+
+[shade*="6"] {
+  background-color: #E3F4AA;
+}
+
+[shade*="7"] {
+  background-color: #DBF0A4;
+}
+
+[shade*="8"] {
+  background-color: #CFEC9E;
+}
+
+[shade*="9"] {
+  background-color: #C3E698;
+}
+
+[shade*="10"] {
+  background-color: #B7E193;
+}
+
+[shade*="11"] {
+  background-color: #ABDC8D;
+}
+
+[shade*="12"] {
+  background-color: #9CD587;
+}
+
+[shade*="13"] {
+  background-color: #8DCF81;
+}
+
+[shade*="14"] {
+  background-color: #7FC97B;
+}
+
+[shade*="15"] {
+  background-color: #70C275;
+}
+
+[shade*="16"] {
+  background-color: #61BA6D;
+}
+
+[shade*="17"] {
+  background-color: #52B365;
+}
+
+[shade*="18"] {
+  background-color: #42AB5D;
+}
+
+[shade*="19"] {
+  background-color: #39A156;
+}
+
+[shade*="20"] {
+  background-color: #31964F;
+}
+
+[shade*="21"] {
+  background-color: #298C48;
+}
+
+[shade*="22"] {
+  background-color: #208242;
+}
+
+[shade*="23"] {
+  background-color: #167A3E;
+}
+
+[shade*="24"] {
+  background-color: #0D723B;
+}
+
+[shade*="25"] {
+  background-color: #036A38;
+}
+
+[shade*="26"] {
+  background-color: #006134;
+}
+
+[shade*="27"] {
+  background-color: #005830;
+}
+
+[shade*="28"] {
+  background-color: #004E2C;
+}
+
+[shade*="29"] {
+  background-color: #004529;
 }
