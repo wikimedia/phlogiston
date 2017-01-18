@@ -70,7 +70,12 @@ esac
 
 cd ${PHLOGDIR}
 for scope in ${scope_list[@]}; do
+    start_datetime=`date '+%s'`
     echo "$(date): Starting ${action} for ${scope}"
     python3 -u phlogiston.py ${reconstruct_flag} --report --verbose --scope_prefix ${scope} 2>&1
-    echo "$(date): Done with ${action} for ${scope}"
+    end_datetime=`date '+%s'`
+    let duration=start_datetime-end_datetime
+    minutes=$((duration/60))
+
+    echo "$(date) : Done with ${action} for ${scope}.  ${minutes} minutes total."
 done
