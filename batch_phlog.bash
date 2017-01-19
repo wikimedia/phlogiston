@@ -74,7 +74,7 @@ for scope in ${scope_list[@]}; do
     echo "$(date): Starting ${action} for ${scope}"
     python3 -u phlogiston.py ${reconstruct_flag} --report --verbose --scope_prefix ${scope} 2>&1
     end_datetime=`date '+%s'`
-    let duration=start_datetime-end_datetime
+    let duration=end_datetime-start_datetime
     minutes=$((duration/60))
 
     echo "$(date) : Done with ${action} for ${scope}.  ${minutes} minutes total."
