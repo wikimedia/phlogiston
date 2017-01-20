@@ -16,8 +16,6 @@
 	<th><button class="sort" data-sort="category">Category</button></th>
 	<th><button class="sort" data-sort="points">Points</button></th>
 	<th><button class="sort" data-sort="dateclosed">Date Closed</button></th>
-	<th><button class="sort" data-sort="dateadded">Date Added</button></th>
-	<th><button class="sort" data-sort="datechanged">Date Last Changed</button></th>
       </tr>
       <tbody class="list">
       {% for row in recently_closed_tasks_rows %}
@@ -27,8 +25,6 @@
 	<td class="category">{{row.3|escape}}</td>
 	<td class="points">{{row.4|escape}}</td>
 	<td class="dateclosed">{{row.2}}</td>
-	<td class="dateadded">{{ row.5.strftime('%Y-%m-%d') }}</td>
-	<td class="datechanged">{{ row.6.strftime('%Y-%m-%d') }}</td>
       </tr>
       {% endfor %}
       </tbody>

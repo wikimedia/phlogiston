@@ -15,6 +15,8 @@
 	    <input class="search" placeholder="Filter by Title" /></th>
 	<th><button class="sort" data-sort="category">Category</button></th>
 	<th><button class="sort" data-sort="status">Status</button></th>
+	<th><button class="sort" data-sort="dateadded">Date Added</button></th>
+	<th><button class="sort" data-sort="datechanged">Date Last Changed</button></th>
       </tr>
       <tbody class="list">
       {% for row in unpointed_tasks_rows %}
@@ -23,6 +25,8 @@
 	<td class="name">{{ row.1|e }}</td>
         <td class="category">{{ row.2|e }}</td>
         <td class="status">{{ row.3|e }}</td>
+	<td class="dateadded">{{ row.4.strftime('%Y-%m-%d') }}</td>
+	<td class="datechanged">{{ row.5.strftime('%Y-%m-%d') }}</td>
       </tr>
       {% endfor %}
       </tbody>
@@ -31,7 +35,7 @@
     <script src="//cdnjs.cloudflare.com/ajax/libs/list.js/1.2.0/list.min.js"></script>
     <script>
       var options = {
-        valueNames: [ 'name', 'id', 'category', 'status' ]
+        valueNames: [ 'name', 'id', 'category', 'status', 'dateadded', 'datechanged' ]
       };
 
       var userList = new List('sorttable', options);

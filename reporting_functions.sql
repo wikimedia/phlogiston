@@ -590,9 +590,7 @@ CREATE OR REPLACE FUNCTION get_recently_closed_tasks(
     title text,
     date date, 
     category text,
-    points int,
-    date_added timestamp,
-    date_last_changed timestamp with time zone)
+    points int)
 AS $$
 BEGIN
     RETURN QUERY
@@ -600,12 +598,7 @@ BEGIN
            mt.title,
            rct.date,
            rct.category,
-	   rct.points,
-	   date_trunc('day', (SELECT MIN(thr1.date) FROM task_on_date_recategorized thr1 WHERE thr1.id = rct.id)) AS date_added,
-	   date_trunc('day', (SELECT MAX(mt1.date_modified)
-                                FROM maniphest_transaction mt1
-                               WHERE mt1.task_id = rct.id
-                                 AND mt1.transaction_type IN ('core:columns', 'status', 'core:edge'))) AS date_last_changed
+	   rct.points
       FROM recently_closed_task rct LEFT OUTER JOIN maniphest_task mt USING (id)
      WHERE rct.scope = scope_prefix
   ORDER BY rct.category, rct.date, rct.id;
@@ -715,23 +708,31 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-
+DROP FUNCTION IF EXISTS get_unpointed_tasks(varchar(6));
 CREATE OR REPLACE FUNCTION get_unpointed_tasks(
     scope_prefix varchar(6)
     ) RETURNS TABLE (
     id int,
     title text,
     category text,
-    status text)
+    status text,
+    date_added timestamp,
+    date_last_changed timestamp with time zone)
 AS $$
 BEGIN
     RETURN QUERY
     SELECT thr.id,
            mt.title,
            thr.category,
-           thr.status
-      FROM task_on_date_recategorized thr LEFT OUTER JOIN maniphest_task mt USING (id)
-                                  LEFT OUTER JOIN category z ON (z.title = thr.category)
+           thr.status,
+	   date_trunc('day', (SELECT MIN(thr1.date) FROM task_on_date_recategorized thr1 WHERE thr1.id = thr.id)) AS date_added,
+	   date_trunc('day', (SELECT MAX(mt1.date_modified)
+                                FROM maniphest_transaction mt1
+                               WHERE mt1.task_id = thr.id
+                                 AND mt1.transaction_type IN ('core:columns', 'status', 'core:edge'))) AS date_last_changed
+      FROM task_on_date_recategorized thr 
+           LEFT OUTER JOIN maniphest_task mt USING (id)
+           LEFT OUTER JOIN category z ON (z.title = thr.category)
      WHERE thr.scope = scope_prefix
        AND thr.date = (SELECT MAX(date)
                          FROM task_on_date_recategorized
