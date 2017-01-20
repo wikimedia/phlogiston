@@ -20,7 +20,7 @@
 	    <li>in project <a href="https://phabricator.wikimedia.org/project/view/{{ rule[1][0] }}/" class="phui-project">{{ rule[2][0] }}</a></li>
         {% if rule[0] == 'ProjectByID' %}
         {% elif rule[0] == 'Intersection' %}
-	    <li>and project <a href="https://phabricator.wikimedia.org/project/view/{{ rule[1][1] }}/" class="phui-project">{{ rule[2][1] }}</span></li>
+	    <li>and project <a href="https://phabricator.wikimedia.org/project/view/{{ rule[1][1] }}/" class="phui-project">{{ rule[2][1] }}</a></li>
         {% elif rule[0] == 'ProjectColumn' %}
 	    <li>and in a column whose title includes the text <code>{{ rule[3] }}</code></li>
         {% elif rule[0] == 'ParentTask' %}

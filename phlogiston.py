@@ -1080,11 +1080,13 @@ def reconstruct_task_on_date(cur, task_id, working_date, scope_prefix,
                              project_name_to_phid_dict, column_dict):
 
     # ----------------------------------------------------------------------
-    # Data from as-is task record.  Points data prior to Feb 2016 was not
-    # recorded transactionally and is only available at the task record, so
-    # we need both sources to cover all scenarios.
+    # Maniphest_task provides as-is information about tasks.  It's used here
+    # to provide points and title.
+    # Points data prior to Feb 2016 was not recorded transactionally and is
+    # only available here, so we use this to supplement transactional points
+    # data.
     # Title could be tracked through transactions but this code doesn't
-    # make that effort.
+    # make that effort, instead using the as-is title retroactively.
     # ----------------------------------------------------------------------
     task_info_query = """SELECT title, story_points
     FROM maniphest_task
@@ -1099,7 +1101,8 @@ def reconstruct_task_on_date(cur, task_id, working_date, scope_prefix,
     except:
         points_from_info = None
 
-    # for each relevant variable of the task, use the most
+    # For all other fields, use transactional data:
+    # For each relevant variable of the task, use the most
     # recent value that is no later than that day.  (So, if
     # that variable didn't change that day, use the last time
     # it was changed.  If it changed multiple times, use the
