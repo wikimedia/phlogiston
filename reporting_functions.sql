@@ -660,7 +660,7 @@ BEGIN
                        AND thr2par.scope = scope_prefix) AS parent_previous_status,
  	           q1.points,
 		   q1.cut_status
-              FROM (SELECT thr1.id,
+              FROM (SELECT DISTINCT ON (thr1.id) thr1.id,
 		           mt1.title,
 		           thr1.category,
 		           thr1.status,
@@ -679,7 +679,7 @@ BEGIN
                                         WHERE edge_date = final_date
                                           AND project = status_report_project)
                     UNION
-                    SELECT thr1a.id,
+                    SELECT DISTINCT ON (thr1a.id) thr1a.id,
 		           mt1a.title,
 		           thr1a.category,
 		           thr1a.status,
