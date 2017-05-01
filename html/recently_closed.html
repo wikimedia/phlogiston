@@ -37,6 +37,10 @@
       };
 
       var userList = new List('sorttable', options);
+
+      userList.sort("dateclosed", {
+        order: "desc"
+      })
     </script>
   </body>
 </html>
