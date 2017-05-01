@@ -762,7 +762,8 @@ def aggregate_task_on_date(conn, scope_prefix, backlog_resolved_cutoff):
                     {'scope_prefix': scope_prefix,
                      'backlog_resolved_cutoff': backlog_resolved_cutoff})
     else:
-        query2 = tod_agg_common.format('task_on_date_agg_with_cutoff', '')
+        query2 = tod_agg_common.format(table='task_on_date_agg_with_cutoff',
+                                       cutoff_clause='')
         cur.execute(query2,
                     {'scope_prefix': scope_prefix})
 
