@@ -58,14 +58,14 @@
 	<tr>
           {% if show_points %}
 	  <td>
-	    <a href="{{ scope_prefix }}_backlog_burnup_points.png"><img src="{{ scope_prefix }}_backlog_burnup_points.png"/></a><br/>
-            <a href="{{ scope_prefix }}_backlog_burnup_points_showhidden.png">Show hidden.</a><br/>
+	    <br><a href="{{ scope_prefix }}_backlog_burnup_points.png"><img src="{{ scope_prefix }}_backlog_burnup_points.png"/></a><br/>
+            <br><a href="{{ scope_prefix }}_backlog_burnup_points_showhidden.png">Show hidden</a> | <a href="{{ scope_prefix }}_backlog_burnup_points_lastq.png">Last quarter</a> | <a href="{{ scope_prefix }}_backlog_burnup_points_lastq_showhidden.png">Last quarter with hidden</a>.<br/>
 	  </td>
           {% endif %}
           {% if show_count %}
 	  <td>
 	    <a href="{{ scope_prefix }}_backlog_burnup_count.png"><img src="{{ scope_prefix }}_backlog_burnup_count.png"/></a><br/>
-            <a href="{{ scope_prefix }}_backlog_burnup_count_showhidden.png">Show hidden.</a>
+            <br><a href="{{ scope_prefix }}_backlog_burnup_count_showhidden.png">Show hidden</a> | <a href="{{ scope_prefix }}_backlog_burnup_count_lastq.png">Last quarter</a> | <a href="{{ scope_prefix }}_backlog_burnup_count_lastq_showhidden.png">Last quarter with hidden</a>.<br/>
 	  </td>
           {% endif %}
 	</tr>
@@ -79,7 +79,7 @@
 	<tr>
           {% if show_points %}
 	  <td>
-	    <a href="{{ scope_prefix }}_forecast_points.png"><img src="{{ scope_prefix }}_forecast_points.png"/></a><br/><a href="{{ scope_prefix }}_forecast_points_showhidden.png">Show hidden.</a>
+	    <a href="{{ scope_prefix }}_forecast_points.png"><img src="{{ scope_prefix }}_forecast_points.png"/></a><br/><a href="{{ scope_prefix }}_forecast_points_showhidden.png">Show hidden</a>.
 	  </td>
           {% endif %}
           <td>

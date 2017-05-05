@@ -733,9 +733,15 @@ def report(conn, dbname, scope_prefix,
 
 
 def aggregate_task_on_date(conn, scope_prefix, backlog_resolved_cutoff):
+    """ Create three different datasets, all stuffed into the same table and
+    differentiated by scope and range.  The datasets aggregating the daily data
+    three ways: with no cutoff, with the specified cutoff, and with a cutoff
+    three months before specified.
+    """
     cur = conn.cursor()
-    tod_agg_common = """INSERT INTO {table} (
+    tod_agg_common = """INSERT INTO task_on_date_agg (
                         SELECT scope,
+                               %(range)s,
                                date,
                                category,
                                status,
@@ -746,26 +752,47 @@ def aggregate_task_on_date(conn, scope_prefix, backlog_resolved_cutoff):
                          WHERE scope = %(scope_prefix)s
                                {cutoff_clause}
                          GROUP BY status, category, maint_type, date, scope)"""
-    query1 = tod_agg_common.format(table='task_on_date_agg', cutoff_clause='')
-    cur.execute(query1, {'scope_prefix': scope_prefix})
+    cur.execute(tod_agg_common.format(cutoff_clause=''), {
+        'scope_prefix': scope_prefix,
+        'range': 'normal'
+    })
 
     if backlog_resolved_cutoff:
         tod_cutoff_clause = """AND id NOT IN (SELECT id
-                                            FROM task_on_date th
-                                           WHERE date = %(backlog_resolved_cutoff)s
-                                             AND scope = %(scope_prefix)s
-                                             AND status = 'resolved') """
-        query2 = tod_agg_common.format(
-            table='task_on_date_agg_with_cutoff',
-            cutoff_clause=tod_cutoff_clause)
-        cur.execute(query2,
-                    {'scope_prefix': scope_prefix,
-                     'backlog_resolved_cutoff': backlog_resolved_cutoff})
+                                                FROM task_on_date th
+                                               WHERE date = %(backlog_resolved_cutoff)s
+                                                 AND scope = %(scope_prefix)s
+                                                 AND status = 'resolved') """
+
+        tod_agg_common_cutoff = tod_agg_common.format(cutoff_clause=tod_cutoff_clause)
+        backlog_resolved_cutoff_lastq = datetime.datetime.strptime(
+            backlog_resolved_cutoff, '%Y-%m-%d') - datetime.timedelta(days=91)
+        cur.execute(tod_agg_common_cutoff,
+                    {
+                        'scope_prefix': scope_prefix,
+                        'range': 'cutoff',
+                        'backlog_resolved_cutoff': backlog_resolved_cutoff,
+                    })
+
+        cur.execute(tod_agg_common_cutoff,
+                    {
+                        'scope_prefix': scope_prefix,
+                        'range': 'lastq',
+                        'backlog_resolved_cutoff': backlog_resolved_cutoff_lastq,
+                    })
+
     else:
-        query2 = tod_agg_common.format(table='task_on_date_agg_with_cutoff',
-                                       cutoff_clause='')
-        cur.execute(query2,
-                    {'scope_prefix': scope_prefix})
+        # If there's no cutoff, stuff data into the table anyway
+        # so that retrieval doesn't have to change
+        cur.execute(tod_agg_common.format(cutoff_clause=''), {
+            'scope_prefix': scope_prefix,
+            'range': 'cutoff'
+        })
+
+        cur.execute(tod_agg_common.format(cutoff_clause=''), {
+            'scope_prefix': scope_prefix,
+            'range': 'lastq'
+        })
 
 
 def check_for_empty_task_on_date(conn, scope_prefix):

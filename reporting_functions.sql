@@ -49,6 +49,7 @@ BEGIN
                   (SELECT MIN(date) AS min_data_date
                     FROM task_on_date_agg
                    WHERE scope = scope_prefix
+                     AND range = 'normal'
                      AND count > 0) AS sub1) AS sub2;
 
     SELECT ARRAY(
@@ -80,11 +81,12 @@ BEGIN
            SUM(points) AS points_total,
            SUM(count) AS count_total
       FROM task_on_date_agg
-     WHERE date = ANY (past_dates)
+     WHERE range = 'normal'
+       AND date = ANY (past_dates)
        AND scope = scope_prefix
      GROUP BY date, scope, category);
 
-    -- load more historical data into velocity
+    -- load resolved data velocity
     UPDATE velocity v
        SET points_resolved = sum_points_resolved,
            count_resolved = sum_count_resolved
@@ -94,7 +96,8 @@ BEGIN
                    SUM(points) AS sum_points_resolved,
                    SUM(count) AS sum_count_resolved
               FROM task_on_date_agg
-             WHERE status = 'resolved'
+             WHERE range = 'normal'
+               AND status = 'resolved'
                AND scope = scope_prefix
              GROUP BY scope, date, category) as t
      WHERE t.date = v.date
@@ -130,7 +133,8 @@ BEGIN
     LOOP
         FOR tranche IN SELECT DISTINCT category
                          FROM task_on_date_agg
-                        WHERE date = weekday
+                        WHERE range = 'normal'
+                          AND date = weekday
                           AND scope = scope_prefix
                         ORDER BY category
         LOOP
@@ -405,6 +409,7 @@ BEGIN
     FOR tranche IN SELECT DISTINCT category
                      FROM task_on_date_agg
                     WHERE scope = scope_prefix
+                      AND range = 'normal'
                     ORDER BY category
     LOOP
 
@@ -443,10 +448,14 @@ END;
 $$ LANGUAGE plpgsql;
 
 
+DROP FUNCTION IF EXISTS get_backlog(varchar(6), text, varchar(6), boolean);
+
 CREATE OR REPLACE FUNCTION get_backlog (
        scope_prefix varchar(6),
        status_input text,
+       cutoff_range agg_range,
        show_hidden boolean
+
 ) RETURNS TABLE(date timestamp, category text, sort_order int, points numeric, count numeric) AS $$
 BEGIN
     RETURN QUERY
@@ -457,31 +466,7 @@ BEGIN
            SUM(t.count)::numeric as count
       FROM task_on_date_agg t, category z
      WHERE t.scope = scope_prefix
-       AND z.scope = scope_prefix
-       AND t.scope = z.scope
-       AND t.category = z.title
-       AND t.status = status_input
-       AND (show_hidden = True OR z.display = True)
-     GROUP BY t.date, t.category
-     ORDER BY t.date, sort_order;
-END;
-$$ LANGUAGE plpgsql;
-
-
-CREATE OR REPLACE FUNCTION get_backlog_with_cutoff (
-       scope_prefix varchar(6),
-       status_input text,
-       show_hidden boolean
-) RETURNS TABLE(date timestamp, category text, sort_order int, points numeric, count numeric) AS $$
-BEGIN
-    RETURN QUERY
-    SELECT t.date,
-           t.category,
-           MAX(z.sort_order) as sort_order,
-           SUM(t.points)::numeric as points,
-           SUM(t.count)::numeric as count
-      FROM task_on_date_agg_with_cutoff t, category z
-     WHERE t.scope = scope_prefix
+       AND t.range = cutoff_range
        AND z.scope = scope_prefix
        AND t.scope = z.scope
        AND t.category = z.title
@@ -509,6 +494,7 @@ BEGIN
                    sum(t.count) as xcount
               FROM category z, task_on_date_agg t
              WHERE z.scope = scope_prefix
+               AND t.range = 'normal'
                AND z.scope = t.scope
                AND z.title = t.category
              GROUP BY z.title) as foo
@@ -1017,9 +1003,6 @@ BEGIN
      WHERE scope = scope_prefix;
 
     DELETE FROM task_on_date_agg
-     WHERE scope = scope_prefix;
-
-    DELETE FROM task_on_date_agg_with_cutoff
      WHERE scope = scope_prefix;
 
     DELETE FROM recently_closed

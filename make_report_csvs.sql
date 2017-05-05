@@ -22,7 +22,7 @@ SELECT date,
        count,
        SUM(points) OVER (PARTITION BY date ORDER BY sort_order, category) AS label_points,
        SUM(count) OVER (PARTITION BY date ORDER BY sort_order, category) AS label_count
-  FROM get_backlog(:'scope_prefix', 'open', False)
+  FROM get_backlog(:'scope_prefix', 'open', 'normal', False)
 ) TO '/tmp/phlog/burn_open.csv' DELIMITER ',' CSV HEADER;
 
 COPY (
@@ -33,7 +33,7 @@ SELECT date,
        count,
        SUM(points) OVER (PARTITION BY date ORDER BY sort_order, category) AS label_points,
        SUM(count) OVER (PARTITION BY date ORDER BY sort_order, category) AS label_count
-  FROM get_backlog_with_cutoff(:'scope_prefix', 'resolved', False)
+  FROM get_backlog(:'scope_prefix', 'resolved', 'cutoff', False)
 ) TO '/tmp/phlog/burn_done.csv' DELIMITER ',' CSV HEADER;
 
 COPY (
@@ -44,7 +44,18 @@ SELECT date,
        count,
        SUM(points) OVER (PARTITION BY date ORDER BY sort_order, category) AS label_points,
        SUM(count) OVER (PARTITION BY date ORDER BY sort_order, category) AS label_count
-  FROM get_backlog(:'scope_prefix', 'open', True)
+  FROM get_backlog(:'scope_prefix', 'resolved', 'lastq', False)
+) TO '/tmp/phlog/burn_done_lastq.csv' DELIMITER ',' CSV HEADER;
+
+COPY (
+SELECT date,
+       category,
+       sort_order,
+       points,
+       count,
+       SUM(points) OVER (PARTITION BY date ORDER BY sort_order, category) AS label_points,
+       SUM(count) OVER (PARTITION BY date ORDER BY sort_order, category) AS label_count
+  FROM get_backlog(:'scope_prefix', 'open', 'normal', True)
 ) TO '/tmp/phlog/burn_open_showhidden.csv' DELIMITER ',' CSV HEADER;
 
 COPY (
@@ -55,8 +66,19 @@ SELECT date,
        count,
        SUM(points) OVER (PARTITION BY date ORDER BY sort_order, category) AS label_points,
        SUM(count) OVER (PARTITION BY date ORDER BY sort_order, category) AS label_count
-  FROM get_backlog(:'scope_prefix', 'resolved', True)
+  FROM get_backlog(:'scope_prefix', 'resolved', 'cutoff', True)
 ) TO '/tmp/phlog/burn_done_showhidden.csv' DELIMITER ',' CSV HEADER;
+
+COPY (
+SELECT date,
+       category,
+       sort_order,
+       points,
+       count,
+       SUM(points) OVER (PARTITION BY date ORDER BY sort_order, category) AS label_points,
+       SUM(count) OVER (PARTITION BY date ORDER BY sort_order, category) AS label_count
+  FROM get_backlog(:'scope_prefix', 'resolved', 'lastq', True)
+) TO '/tmp/phlog/burn_done_showhidden_lastq.csv' DELIMITER ',' CSV HEADER;
 
 COPY (
 SELECT date,

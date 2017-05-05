@@ -1,19 +1,11 @@
+DROP TYPE IF EXISTS agg_range CASCADE;
+CREATE TYPE agg_range AS ENUM ('normal', 'cutoff', 'lastq');
+
 DROP TABLE IF EXISTS task_on_date_agg;
 
 CREATE TABLE task_on_date_agg (
        scope varchar(6),
-       date timestamp,
-       category text,
-       status text,
-       points int,
-       count int,
-       maint_type text
-);
-
-DROP TABLE IF EXISTS task_on_date_agg_with_cutoff;
-
-CREATE TABLE task_on_date_agg_with_cutoff (
-       scope varchar(6),
+       range agg_range,
        date timestamp,
        category text,
        status text,
