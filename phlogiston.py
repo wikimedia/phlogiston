@@ -487,7 +487,6 @@ def report(conn, dbname, scope_prefix,
     # This config file is loaded during reconstruction.  Reload it here to
     # make it possible to run reporting without reconstruction
     # import_recategorization_file(conn, scope_prefix)
-
     check_for_empty_task_on_date(conn, scope_prefix)
     reset_reporting_tables(conn, scope_prefix)
     log('Recategorization Starting', scope_prefix)
@@ -765,8 +764,7 @@ def aggregate_task_on_date(conn, scope_prefix, backlog_resolved_cutoff):
                                                  AND status = 'resolved') """
 
         tod_agg_common_cutoff = tod_agg_common.format(cutoff_clause=tod_cutoff_clause)
-        backlog_resolved_cutoff_lastq = datetime.datetime.strptime(
-            backlog_resolved_cutoff, '%Y-%m-%d') - datetime.timedelta(days=91)
+        backlog_resolved_cutoff_lastq = backlog_resolved_cutoff - datetime.timedelta(days=91)
         cur.execute(tod_agg_common_cutoff,
                     {
                         'scope_prefix': scope_prefix,
