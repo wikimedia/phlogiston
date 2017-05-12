@@ -45,13 +45,11 @@ next_quarter_start    <- as.Date(args$next_quarter_start)
 three_months_ago <- as.Date(args$three_months_ago)
 if (args$showhidden == 'True') {
   burn_done_chart_end <- now + 120  # add extra room for labels due to chart zoom out
-  burn_done_chart_end_lastq <- current_quarter_start + 120
+  burn_done_chart_end_lastq <- current_quarter_start + 45
 } else {
   burn_done_chart_end <- now + 30  # add room for labels
   burn_done_chart_end_lastq <- current_quarter_start + 30
 }
-
-
 
 # common theme from https://github.com/Ironholds/wmf/blob/master/R/dataviz.R
 theme_fivethirtynine <- function(base_size = 12, base_family = "sans"){
