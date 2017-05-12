@@ -7,7 +7,7 @@
   <body>
     <div id="sorttable">
     <h1>{{ title }} Status Report</h1>
-    <h2>Project {{ status_report_project_name }} from {{ initial_status_date }} to {{ final_status_date }}</h2>
+    <h2>Project {{ status_report_project_name }} from {{ start_date }} to {{ end_date }}</h2>
     <p><a href="https://www.mediawiki.org/wiki/Phlogiston/Guide_to_Phlogiston_Reports#Status_Report">Help</a></p>
 
     <table class="bord">
@@ -26,9 +26,9 @@
 	<td class="category" shade="{{ row.7 }}">{{row.2|escape}}</td>
         <td class="id"><a href="https://phabricator.wikimedia.org/T{{row.0}}">{{row.0}}</a></td>
 	<td class="name">
-	  {% if 'Done' in row.4 %}<s class='Done'>{% endif %}
+	  {% if 'Done' in row.4 or 'Cut' in row.4 %}<s class='Done'>{% endif %}
             {{row.1|escape}}
-          {% if 'Done' in row.4 %}</s>{% endif %}
+          {% if 'Done' in row.4 or 'Cut' in row.4 %}</s>{% endif %}
 	</td>
 	<td class="scope" scope="{{ row.3 }}">{{row.3 }}</td>
 	<td class="status" status="{{ row.4 }}">{{row.4}}</td>

@@ -486,7 +486,6 @@ def report(conn, dbname, scope_prefix,
 
     # This config file is loaded during reconstruction.  Reload it here to
     # make it possible to run reporting without reconstruction
-    # import_recategorization_file(conn, scope_prefix)
     check_for_empty_task_on_date(conn, scope_prefix)
     reset_reporting_tables(conn, scope_prefix)
     log('Recategorization Starting', scope_prefix)
@@ -598,41 +597,46 @@ def report(conn, dbname, scope_prefix,
     if status_report_project:
         final_status_date = get_max_date(conn, scope_prefix)
         initial_status_date = status_report_start
+        initial_status_date_lastq = previous_quarter_start
+        final_status_date_lastq = current_quarter_start
         status_report_project_name = get_project_name(conn, status_report_project)
-        cur.execute('SELECT * FROM get_status_report(\
-                         %(scope_prefix)s,\
-                         %(status_report_project)s,\
-                         %(initial_date)s,\
-                         %(final_date)s)',
-                    {'scope_prefix': scope_prefix,
-                     'status_report_project': status_report_project,
-                     'initial_date': initial_status_date,
-                     'final_date': final_status_date})
-        query_rows = cur.fetchall()
-        statuses = set(tuple([(row[2], row[6]) for row in query_rows]))
-        status_count = len(statuses)
-        status_list = sorted(statuses, key=lambda item: item[1], reverse=True)
-        status_style_dict = {}
-        for i, status in enumerate(status_list):
-            value = int((i/status_count) * 30)
-            status_style_dict[status[0]] = value
-        status_report_rows = []
-        for row in query_rows:
-            new_row = list(row)
-            new_row.append(status_style_dict[row[2]])
-            status_report_rows.append(new_row)
+        date_list = [(initial_status_date, final_status_date, ''),
+                     (initial_status_date_lastq, final_status_date_lastq, '_lastq')]
+        for start_date, end_date, lastq in date_list:
+            cur.execute('SELECT * FROM get_status_report(\
+                             %(scope_prefix)s,\
+                             %(status_report_project)s,\
+                             %(start)s,\
+                             %(end)s)',
+                        {'scope_prefix': scope_prefix,
+                         'status_report_project': status_report_project,
+                         'start_date': start_date,
+                         'end_date': end_date})
+            query_rows = cur.fetchall()
+            statuses = set(tuple([(row[2], row[6]) for row in query_rows]))
+            status_count = len(statuses)
+            status_list = sorted(statuses, key=lambda item: item[1], reverse=True)
+            status_style_dict = {}
+            for i, status in enumerate(status_list):
+                value = int((i/status_count) * 30)
+                status_style_dict[status[0]] = value
+            status_report_rows = []
+            for row in query_rows:
+                new_row = list(row)
+                new_row.append(status_style_dict[row[2]])
+                status_report_rows.append(new_row)
 
-        status_report_html = Template(open('html/status_report.html').read())
-        file_path = '../html/{0}_status_report.html'.format(scope_prefix)
-        script_dir = os.path.dirname(__file__)
-        status_report_output = open(os.path.join(script_dir, file_path), 'w')
-        status_report_output.write(status_report_html.render(
-            {'status_report_rows': status_report_rows,
-             'title': scope_title,
-             'status_report_project_name': status_report_project_name,
-             'initial_status_date': initial_status_date,
-             'final_status_date': final_status_date}))
-        status_report_output.close()
+            status_report_html = Template(open('html/status_report.html').read())
+            file_path = '../html/{0}_status_report{1}.html'.format(scope_prefix, lastq)
+            script_dir = os.path.dirname(__file__)
+            status_report_output = open(os.path.join(script_dir, file_path), 'w')
+            status_report_output.write(status_report_html.render(
+                {'status_report_rows': status_report_rows,
+                 'title': scope_title,
+                 'status_report_project_name': status_report_project_name,
+                 'start_date': start_date,
+                 'end_date': end_date}))
+            status_report_output.close()
 
     ######################################################################
     # Make the summary charts
