@@ -117,7 +117,7 @@ def main(argv):
         if config.has_option('vars', 'backlog_resolved_cutoff'):
             input_brc = config['vars']['backlog_resolved_cutoff']
             if isinstance(read_date(input_brc), datetime.date):
-                backlog_resolved_cutoff = input_brc
+                backlog_resolved_cutoff = read_date(input_brc)
             if input_brc.lower() in ['default', 'true', 't', 'yes', '1']:
                 backlog_resolved_cutoff = start_of_quarter(today)
 
@@ -606,8 +606,8 @@ def report(conn, dbname, scope_prefix,
             cur.execute('SELECT * FROM get_status_report(\
                              %(scope_prefix)s,\
                              %(status_report_project)s,\
-                             %(start)s,\
-                             %(end)s)',
+                             %(start_date)s,\
+                             %(end_date)s)',
                         {'scope_prefix': scope_prefix,
                          'status_report_project': status_report_project,
                          'start_date': start_date,
@@ -768,7 +768,8 @@ def aggregate_task_on_date(conn, scope_prefix, backlog_resolved_cutoff):
                                                  AND status = 'resolved') """
 
         tod_agg_common_cutoff = tod_agg_common.format(cutoff_clause=tod_cutoff_clause)
-        backlog_resolved_cutoff_lastq = backlog_resolved_cutoff - datetime.timedelta(days=91)
+        backlog_resolved_cutoff_lastq = backlog_resolved_cutoff\
+            - datetime.timedelta(days=91)
         cur.execute(tod_agg_common_cutoff,
                     {
                         'scope_prefix': scope_prefix,
