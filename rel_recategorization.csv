@@ -1,4 +1,4 @@
 rule,title,display,id,matchstring
-ProjectsByWildcard,,True,,RelEng
 ProjectsByWildcard,,True,,Release-Engineering
+ProjectsByWildcard,,True,,RelEng
 
