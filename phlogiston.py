@@ -48,7 +48,8 @@ def main(argv):
     PHAB_TAGS = dict(epic=942,
                      new=1453,
                      maint=1454,
-                     category=1656)
+                     category=1656,
+                     goal=2169)
 
     end_date = datetime.datetime.now().date()
     for opt, arg in opts:
@@ -454,11 +455,28 @@ def reconstruct(conn, default_points,
                         {'scope_prefix': scope_prefix,
                          'category_id': category_id,
                          'working_date': working_date})
+        # hack to test out including goal tag as well as category tag
+        # See https://phabricator.wikimedia.org/T167838
+        # TODO: merge with above by allowing two IDs to be passed in for category_tag_id
+        cur.execute('SELECT * from get_phab_parent_categories_by_day(%(scope_prefix)s, %(working_date)s, %(category_tag_id)s)',  # noqa
+                    {'scope_prefix': scope_prefix,
+                     'working_date': working_date,
+                     'category_tag_id': PHAB_TAGS['goal']})
+        for row in cur.fetchall():
+            category_id = row[0]
+            cur.execute('SELECT create_phab_parent_category_edges(%(scope_prefix)s, %(working_date)s, %(category_id)s)',  # noqa
+                        {'scope_prefix': scope_prefix,
+                         'category_id': category_id,
+                         'working_date': working_date})
 
-    log('Phab parent category titles updating', scope_prefix)
+    log('Phab parent category and goal titles updating', scope_prefix)
     cur.execute("SELECT update_phab_parent_category_titles(%s, %s)", (scope_prefix, start_date))  # noqa
+
     cur.execute("SELECT put_category_tasks_in_own_category(%s, %s)",
                 (scope_prefix, PHAB_TAGS['category']))
+
+    cur.execute("SELECT put_category_tasks_in_own_category(%s, %s)",
+                (scope_prefix, PHAB_TAGS['goal']))
 
     log('Corrupted task status info correcting', scope_prefix)
 
