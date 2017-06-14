@@ -538,7 +538,7 @@ def report(conn, dbname, scope_prefix,
 
         tranche_command = "Rscript make_tranche_chart.R {scope_prefix} {i} {color} \"{category}\" {report_date} {chart_start} {chart_end} {current_quarter_start} {next_quarter_start}"  # noqa
         if DEBUG:
-            print(tranche_command.format(**tranche_args))
+            print("DEBUG: {0}".format(tranche_command.format(**tranche_args)))
         subprocess.call(tranche_command.format(**tranche_args), shell=True)
 
         i += 1
@@ -644,13 +644,6 @@ def report(conn, dbname, scope_prefix,
 
     log('Summary charts starting', scope_prefix)
 
-    if DEBUG:
-        print("""Rscript make_charts.R {0} {1} {2} {3} {4} {5}\
-        {6} {7} {8} {9}""".format(scope_prefix, scope_title, False,
-                                  report_date, current_quarter_start, next_quarter_start,
-                                  previous_quarter_start, month_before_current_q_start,
-                                  month_after_current_q_end, three_months_ago))
-
     for i in [True, False]:
         if i:
             # show hidden is true.  make a much bigger chart.
@@ -658,12 +651,16 @@ def report(conn, dbname, scope_prefix,
         else:
             # show hidden is false.  Set up smaller chart.
             chart_start = month_before_current_q_start
-        subprocess.call("""Rscript make_charts.R {0} {1} {2} {3} {4} {5}\
+        # TODO: rewrite to use **kwargs?  see previous rscript invocation
+        command = """Rscript make_charts.R {0} "{1}" {2} {3} {4} {5}\
         {6} {7} {8} {9}""".format(scope_prefix, scope_title, i,
                                   report_date, current_quarter_start, next_quarter_start,
                                   previous_quarter_start, chart_start,
                                   month_after_current_q_end, three_months_ago),
-                        shell=True)
+        if DEBUG:
+            print("DEBUG: {0}".format(command))
+
+        subprocess.call(command, shell=True)
 
     ######################################################################
     # Update dates
