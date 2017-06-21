@@ -5,13 +5,13 @@ import configparser
 import csv
 import datetime
 from dateutil import relativedelta as rd
+import getopt
 import json
 import os.path
 import psycopg2
-import sys
 import pytz
-import getopt
 import subprocess
+import sys
 import time
 
 from jinja2 import Template
@@ -366,14 +366,11 @@ def reconstruct(conn, default_points,
                   WHERE id IN %(project_id_list)s""",
                 {'project_id_list': tuple(project_id_list)})
     lookups['project_name_to_phid_dict'] = dict(cur.fetchall())
-    cur.execute("""SELECT name, id
+    cur.execute("""SELECT id, name
                      FROM phabricator_project
                     WHERE id IN %(project_id_list)s""",
                 {'project_id_list': tuple(project_id_list)})
-    project_name_to_id_dict = dict(cur.fetchall())
-    lookups['project_id_to_name_dict'] = {
-        value: key for key, value in project_name_to_id_dict.items()}
-
+    lookups['project_id_to_name_dict'] = dict(cur.fetchall())
     cur.execute("""SELECT pc.phid, pc.name
                      FROM phabricator_column pc,
                           phabricator_project pp
@@ -553,10 +550,10 @@ def report(conn, dbname, scope_prefix,
                         'chart_end': month_after_current_q_end,
                         'current_quarter_start': current_quarter_start,
                         'next_quarter_start': next_quarter_start}
-
         tranche_command = "Rscript make_tranche_chart.R {scope_prefix} {i} {color} \"{category}\" {report_date} {chart_start} {chart_end} {current_quarter_start} {next_quarter_start}"  # noqa
         if DEBUG:
             print("DEBUG: {0}".format(tranche_command.format(**tranche_args)))
+
         subprocess.call(tranche_command.format(**tranche_args), shell=True)
 
         i += 1
@@ -670,11 +667,15 @@ def report(conn, dbname, scope_prefix,
             # show hidden is false.  Set up smaller chart.
             chart_start = month_before_current_q_start
         # TODO: rewrite to use **kwargs?  see previous rscript invocation
-        command = """Rscript make_charts.R {0} "{1}" {2} {3} {4} {5}\
-        {6} {7} {8} {9}""".format(scope_prefix, scope_title, i,
+
+        # had errors passing scope_titles that contain spaces into shell command
+        # shlex.quote didn't fix it; doing cheap and non-portable instead
+        scope_title_escaped = scope_title.replace(" ", "\ ")
+        command = """Rscript make_charts.R {0} {1} {2} {3} {4} {5}\
+        {6} {7} {8} {9}""".format(scope_prefix, scope_title_escaped, i,
                                   report_date, current_quarter_start, next_quarter_start,
                                   previous_quarter_start, chart_start,
-                                  month_after_current_q_end, three_months_ago),
+                                  month_after_current_q_end, three_months_ago)
         if DEBUG:
             print("DEBUG: {0}".format(command))
 
