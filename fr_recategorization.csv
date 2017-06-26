@@ -1,3 +1,6 @@
 rule,title,display,id,matchstring
-ProjectsByWildcard,,True,,Fundraising
+ProjectsByWildcard,,False,"WMDE-Fundraising"
+ProjectsByWildcard,,False,"TCB-TEam-Fundraising"
+ProjectsById,"Fundraising-Backlog",True,41,
+ProjectsByWildcard,,True,,"Fundraising-Sprint"
 
