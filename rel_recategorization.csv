@@ -1,4 +1,7 @@
 rule,title,display,id,matchstring
-ProjectsByWildcard,,True,,Release-Engineering
-ProjectsByWildcard,,True,,RelEng
+ProjectByID,In Progress,True,2769,
+ProjectByID,Backlog,True,2766,
+ProjectColumn,Epics,True,20,Epics
+ProjectColumn,Triage,True,20,Triage
+ProjectByID,Other,True,20,
 

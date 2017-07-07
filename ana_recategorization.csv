@@ -1,2 +1,3 @@
 rule,title,display,id,matchstring
-ProjectsByWildcard,,true,,Analytics
+ProjectByID,In Progress,True,11,
+ProjectByID,Backlog,True,1030,
