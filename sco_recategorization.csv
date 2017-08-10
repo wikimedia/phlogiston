@@ -1,0 +1,14 @@
+rule,title,display,id,matchstring
+ProjectColumn,"Community Engagement",True,1901,"Community engagement"
+ProjectColumn,"Maintenance/Cleanup",True,1901,"Maintenance/cleanup"
+ProjectColumn,"User Experience",True,1901,"User experience"
+ProjectColumn,"New Development",True,1901,"New development"
+ProjectColumn,"Research & Analysis",True,1901,"Research & analysis"
+ProjectColumn,"Ideas",True,1901,"Ideas"
+ProjectByID,"Other Backlog",True,1901,
+ProjectByID,"Workboard",True,1306,
+
+
+
+
+

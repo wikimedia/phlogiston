@@ -1,0 +1,9 @@
+rule,title,display,id,matchstring
+ProjectByID,"Network Operations",True,950,
+ProjectByID,"Traffic",True,1201,
+ProjectByID,"DBA",True,1060,
+ProjectByID,"Software Development",True,1828,
+ProjectByID,"Hardware Requests",True,1014,
+ProjectByID,"Other Operations",True,1025,
+
+
