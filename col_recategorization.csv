@@ -1,4 +1,5 @@
 rule,title,display,id,matchstring
+Intersection,Q1 ERI RC Integrated Filters,True,2828 2721,
 Intersection,Q1 ERI RC Page,True,2828 2201,
 Intersection,Q1 ReviewStream,True,2828 2180,
 Intersection,Q1 ERI Other,True,2828 2040,
