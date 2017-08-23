@@ -1,4 +1,5 @@
 rule,title,display,id,matchstring
-ProjectByID,Hovercards (2016-17-Q2-Goal),true,2202,
-ProjectByID,Technical-Debt (RW-Tech-Debt),true,2296,
-Intersection,New Readers (RW Backlog),True,67 2140,
+ProjectByID,Technical-Debt (RW-Tech-Debt),false,2296,
+Intersection,New Readers (RW Backlog),false,67 2140,
+Intersection,Readers-Web-Kanban-Board (Page-Previews),true,2739 765
+ProjectByID,Kanban Board Other,true,2739
