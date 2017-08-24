@@ -10,7 +10,7 @@ Intersection,Readers-Web-Kanban-Board (RW-Design-Debt),true,2739 2297,
 Intersection,Readers-Web-Kanban-Board (#Design),true,2739 157,
 Intersection,Readers-Web-Kanban-Board (MinervaNeue),true,2739 2799,
 Intersection,Readers-Web-Kanban-Board (MFE),true,2739 1157,
-ParentTask,Readers-Web-Kanban-Board (Code Hygiene Ketchup Task),false,2739,"Code hygiene ketchup (tracking)",
+ParentTask,Readers-Web-Kanban-Board (Code Hygiene Ketchup Task),false,2739,"Code hygiene ketchup (tracking)"
 ProjectByID,Page-Previews,false,765,
 ProjectByID,RelatedArticles,false,688,
 ProjectByID,ElectronPDFs,false,2162,
