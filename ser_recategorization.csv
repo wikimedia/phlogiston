@@ -1,3 +1,11 @@
 rule,title,display,id,matchstring
+ProjectByID,"Watching",True,2308,
+ProjectByID,"Later",True,2309,
+ProjectByID,"Next",True,2310,
+ProjectByID,"Doing",True,2311,
+ProjectByID,"Blocked",True,2312,
+ProjectByID,"Done",True,2313,
+ProjectByID,"Designing",True,2529,
+ProjectByID,"Attic",True,2890,
 ProjectByID,"Services",True,69,
 
