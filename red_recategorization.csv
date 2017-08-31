@@ -41,4 +41,5 @@ ProjectByID,Marvin,false,2878,
 ProjectByID,RW-Design-Debt,false,2297,
 ProjectByID,#Design,false,157,
 ProjectByID,MFE,false,1157,
+ProjectColumn,Kanban Board (Upcoming),false,2739,Upcoming
 ProjectByID,Kanban Board (Other),true,2739,
