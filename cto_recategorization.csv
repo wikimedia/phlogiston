@@ -1,4 +1,17 @@
 rule,title,display,id,matchstring
+ProjectColumn,Prepare Sep 2017 Board Presentation on Tech,true,2987,Prepare Sep 2017 Board Presentation on Tech
+ProjectColumn,Manage Montréal 2017 Offsite,true,2987,Manage Montréal 2017 Offsite
+ProjectColumn,Manage Q2 Quarterly Review,true,2987,"Manage ""Q2"" Quarterly Review (FY2017–18 Q2"
+ProjectColumn,Clarify partnership planning,true,2987,Clarify partnership planning
+ProjectColumn,Answer questions about legal steps in hiring,true,2987,Answer questions about legal steps in hiring
+ProjectColumn,Plan Oct 2018 F2F Meeting,true,2987,Plan Oct 2018 F2F Meeting
+ProjectColumn,Improve Engagement,true,2987,Improve Engagement
+ProjectColumn,Sunsetting Products,true,2987,Sunsetting Products
+ProjectColumn,Movement Strategy,true,2987,Movement Strategy
+ProjectColumn,Annual Planning process improvement,true,2987,Annual Planning process improvement
+ProjectColumn,Quantitative reporting,true,2987,Quantitative reporting
+ProjectColumn,Create Tech Onboarding process,true,2987,Create Tech Onboarding process
+ProjectColumn,Propose Personal Development process,true,2987,Propose Personal Development process
+ProjectColumn,Department reality checks,true,2987,Department reality checks
 ProjectColumn,Uncategorized,true,2987,Uncategorized
-ProjectColumn,,true,2987,x
-ProjectByID,Other,true,,1212
+ProjectByID,Other CTO Backlog,true,2987,
