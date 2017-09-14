@@ -1,7 +1,6 @@
 rule,title,display,id,matchstring
-ProjectByID,In Progress,True,2769,
-ProjectByID,Backlog,True,2766,
-ProjectColumn,Epics,True,20,Epics
 ProjectColumn,Triage,True,20,Triage
-ProjectByID,Other,True,20,
+ProjectByID,Backlog,True,2766,
+ProjectByID,Next,True,2767,
+ProjectByID,Other,False,20,
 

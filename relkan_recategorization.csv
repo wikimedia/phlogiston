@@ -1,0 +1,6 @@
+rule,title,display,id,matchstring
+ProjectColumn,Backlog,True,2769,Backlog
+ProjectColumn,In Progress,True,2769,In-progress
+ProjectColumn,Blocked,True,2769,Blocked
+ProjectByID,Other,True,2769,
+
