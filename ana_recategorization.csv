@@ -1,3 +1,3 @@
 rule,title,display,id,matchstring
-ProjectByID,In Progress,True,11,
-ProjectByID,Backlog,True,1030,
+ProjectByID,In Progress,show,11,
+ProjectByID,Backlog,show,1030,
