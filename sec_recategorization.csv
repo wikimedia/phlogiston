@@ -1,5 +1,5 @@
 rule,title,display,id,matchstring
-ProjectColumn,"In Progress",True,1179,"In Progress"
-ProjectColumn,"Done",True,1179,"Done"
-ProjectByID,"Security Other",True,1179,
+ProjectColumn,"In Progress",show,1179,"In Progress"
+ProjectColumn,"Done",show,1179,"Done"
+ProjectByID,"Security Other",show,1179,
 
