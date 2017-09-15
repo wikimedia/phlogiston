@@ -627,6 +627,8 @@ def report(conn, dbname, scope_prefix,
                          'status_report_project': status_report_project,
                          'start_date': start_date,
                          'end_date': end_date})
+            # start_date and end_date are hacked one day
+            # see: https://phabricator.wikimedia.org/T174409
             query_rows = cur.fetchall()
             statuses = set(tuple([(row[2], row[6]) for row in query_rows]))
             status_count = len(statuses)
