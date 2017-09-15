@@ -1,26 +1,26 @@
 rule,title,display,id,matchstring
-ProjectColumn,Interrupt,TRUE,483,TR0
-ProjectColumn,External,FALSE,483,External
-ParentTask,NWE-beta1,FALSE,483,Provide a Beta Feature of a modern wikitext editor integrated into the visual editor
-ParentTask,NWE-beta2,TRUE,483,Provide a second version of a beta modern wikitext editor integrated into the visual editor
-ProjectByID,NWE,TRUE,2301,Make wikitext edit mode good enough to give to all users
-ParentTask,Enwiki IP A/B test,TRUE,483,experiment defaulting anonymous editors to the visual editor on
-ParentTask,Enwiki on for IPs,TRUE,483,Re-enable VisualEditor by default for all logged-out users of the English Wikipedia
-ProjectColumn,Wikimedia wikis on for all,TRUE,483,TR1
-ParentTask,jQueryIME,FALSE,483,Make ULS input methods work in content editable divs of VisualEditor
-ParentTask,Japanese,FALSE,483,Make VisualEditor good enough to use with all common IMEs for Japanese
-ParentTask,Korean,FALSE,483,Make VisualEditor good enough to use with all common IMEs for Korean
-ParentTask,Arabic,FALSE,483,Make VisualEditor good enough to use with all common IMEs for Arabic script wikis
-ParentTask,Indic,FALSE,483,Make VisualEditor good enough to use with all common IMEs for Indic script wikis
-ParentTask,Han,FALSE,483,Make VisualEditor good enough to use with all common IMEs for Han script wikis
-ProjectColumn,Language support,TRUE,483,TR3
-ProjectColumn,Links,FALSE,483,TR4
-ParentTask,Formulae,FALSE,483,Improve support for math editing by improving the UX of the Math extension and researching its usability
-ParentTask,Charts,TRUE,483,easier to create and edit charts from within VisualEditor
-ProjectColumn,Rich media,TRUE,483,TR5
-ParentTask,Rich diffs in VE,TRUE,483,Let users choose a visual or wikitext diff in the review-your-changes tab  
-ProjectColumn,Rich diffs,TRUE,483,TR6
-ProjectColumn,Mobile,FALSE,483,TR2
-ParentTask,Wikivoyages on for all,FALSE,483,Enable VisualEditor by default for all users of all Wikivoyages
-ProjectByID,VisualEditor Other,FALSE,483,
+ProjectColumn,Interrupt,SHOW,483,TR0
+ProjectColumn,External,HIDE,483,External
+ParentTask,NWE-beta1,HIDE,483,Provide a Beta Feature of a modern wikitext editor integrated into the visual editor
+ParentTask,NWE-beta2,SHOW,483,Provide a second version of a beta modern wikitext editor integrated into the visual editor
+ProjectByID,NWE,SHOW,2301,Make wikitext edit mode good enough to give to all users
+ParentTask,Enwiki IP A/B test,SHOW,483,experiment defaulting anonymous editors to the visual editor on
+ParentTask,Enwiki on for IPs,SHOW,483,Re-enable VisualEditor by default for all logged-out users of the English Wikipedia
+ProjectColumn,Wikimedia wikis on for all,SHOW,483,TR1
+ParentTask,jQueryIME,HIDE,483,Make ULS input methods work in content editable divs of VisualEditor
+ParentTask,Japanese,HIDE,483,Make VisualEditor good enough to use with all common IMEs for Japanese
+ParentTask,Korean,HIDE,483,Make VisualEditor good enough to use with all common IMEs for Korean
+ParentTask,Arabic,HIDE,483,Make VisualEditor good enough to use with all common IMEs for Arabic script wikis
+ParentTask,Indic,HIDE,483,Make VisualEditor good enough to use with all common IMEs for Indic script wikis
+ParentTask,Han,HIDE,483,Make VisualEditor good enough to use with all common IMEs for Han script wikis
+ProjectColumn,Language support,SHOW,483,TR3
+ProjectColumn,Links,HIDE,483,TR4
+ParentTask,Formulae,HIDE,483,Improve support for math editing by improving the UX of the Math extension and researching its usability
+ParentTask,Charts,SHOW,483,easier to create and edit charts from within VisualEditor
+ProjectColumn,Rich media,SHOW,483,TR5
+ParentTask,Rich diffs in VE,SHOW,483,Let users choose a visual or wikitext diff in the review-your-changes tab  
+ProjectColumn,Rich diffs,SHOW,483,TR6
+ProjectColumn,Mobile,HIDE,483,TR2
+ParentTask,Wikivoyages on for all,HIDE,483,Enable VisualEditor by default for all users of all Wikivoyages
+ProjectByID,VisualEditor Other,HIDE,483,
 
