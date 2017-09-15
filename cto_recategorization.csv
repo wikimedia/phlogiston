@@ -1,5 +1,5 @@
 rule,title,display,id,matchstring
-ProjectColumn,Prepare Sep 2017 Board Presentation on Tech,hide,2987,Prepare Sep 2017 Board Presentation on Tech
+ProjectColumn,Prepare Sep 2017 Board Presentation on Tech,show,2987,Prepare Sep 2017 Board Presentation on Tech
 ProjectColumn,Manage Montréal 2017 Offsite,show,2987,Manage Montréal 2017 Offsite
 ProjectColumn,Manage Q2 Quarterly Review,show,2987,"Manage ""Q2"" Quarterly Review (FY2017–18 Q2"
 ProjectColumn,Clarify partnership planning,show,2987,Clarify partnership planning
@@ -13,5 +13,5 @@ ProjectColumn,Quantitative reporting,show,2987,Quantitative reporting
 ProjectColumn,Create Tech Onboarding process,show,2987,Create Tech Onboarding process
 ProjectColumn,Propose Personal Development process,show,2987,Propose Personal Development process
 ProjectColumn,Department reality checks,show,2987,Department reality checks
-ProjectColumn,Uncategorized,omit,2987,Uncategorized
+ProjectColumn,Uncategorized,show,2987,Uncategorized
 ProjectByID,Other CTO Backlog,show,2987,
