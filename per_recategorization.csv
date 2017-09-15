@@ -1,4 +1,4 @@
 rule,title,display,id,matchstring
-ProjectColumn,Doing,true,1212,Doing
-ProjectColumn,Inbox,true,1212,Inbox
-ProjectByID,Other,true,,1212
+ProjectColumn,Doing,show,1212,Doing
+ProjectColumn,Inbox,show,1212,Inbox
+ProjectByID,Other,show,,1212
