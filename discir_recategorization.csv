@@ -1,2 +1,2 @@
 rule,title,display,id,matchstring
-ProjectsByWildcard,,true,,Discover-Cirrus
+ProjectsByWildcard,,show,,Discover-Cirrus
