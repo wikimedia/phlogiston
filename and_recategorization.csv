@@ -1,5 +1,5 @@
 rule,title,display,id,matchstring
-ProjectsByWildcard,,true,,Android-app-feature
-ProjectsByWildcard,,true,,Android-app-goals
-ProjectByID,Bugs,true,2302,
-Intersection,Android Tech Debt (Tech Debt + Backlog),True,609 489,
+ProjectsByWildcard,,show,,Android-app-feature
+ProjectsByWildcard,,show,,Android-app-goals
+ProjectByID,Bugs,show,2302,
+Intersection,Android Tech Debt (Tech Debt + Backlog),show,609 489,
