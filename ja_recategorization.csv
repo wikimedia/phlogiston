@@ -1,11 +1,11 @@
 rule,title,display,id,matchstring
-ParentTask,"VE SLUs Round 2",t,2389,"Conduct second round of VE SLU"
-ProjectColumn,"VE Embedded",t,2389,"VE Team"
-ProjectColumn,"Editing Dep't",t,2389,"Editing"
+ParentTask,"VE SLUs Round 2",show,2389,"Conduct second round of VE SLU"
+ProjectColumn,"VE Embedded",show,2389,"VE Team"
+ProjectColumn,"Editing Dep't",show,2389,"Editing"
 ParentTask,"Q2 Goal: LE Metrics",f,2389,"Establish metrics for Light Engagements"
-ProjectColumn,"TPG Other",t,2389,"TPG"
-ProjectColumn,"Phlogiston Dev",t,2389,"Phlogiston Development"
-ProjectColumn,"Phlogiston Support",t,2389,"Team requests for Phlogiston"
-ProjectByID,"Other This Week",t,2335,
-ProjectByID,"Uncategorized",t,2389,
-ProjectByID,"Uncategorized",t,1613,
+ProjectColumn,"TPG Other",show,2389,"TPG"
+ProjectColumn,"Phlogiston Dev",show,2389,"Phlogiston Development"
+ProjectColumn,"Phlogiston Support",show,2389,"Team requests for Phlogiston"
+ProjectByID,"Other This Week",show,2335,
+ProjectByID,"Uncategorized",show,2389,
+ProjectByID,"Uncategorized",show,1613,
