@@ -47,7 +47,6 @@ ProjectByID,RelatedSites - wikivoyage,false,595,
 ProjectByID,Wikidata Page Banner - wikivoyage,false,1158,
 ProjectByID,Regression,false,914,
 ProjectByID,MFE,false,1157,
-ProjectColumn,Kanban Board (Upcoming),false,2739,Upcoming
 ProjectByID,Kanban Board (Other),true,2739,
 Intersection,Kanban Board (Marvin Placeholder Task and Code Ketchup Task - Category),omit,2739 1656,
 ProjectColumn,Kanban Board (Upcoming Column),omit,2739,Upcoming
