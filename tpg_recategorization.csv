@@ -1,8 +1,8 @@
 rule,title,display,id,matchstring
-ProjectsByWildcard,,True,,TPG-FY2016-17-Q2
+ProjectsByWildcard,,show,,TPG-FY2016-17-Q2
 ProjectsByWildcard,,False,,TPG-FY2016-17-Q1
-ProjectByName,Essential Functions,true,,TPG-Essential-Functions
-ProjectByName,Uncategorized Epics,true,,TPG-Epics
+ProjectByName,Essential Functions,show,,TPG-Essential-Functions
+ProjectByName,Uncategorized Epics,show,,TPG-Epics
 ProjectsByWildcard,,false,,TPG-
-ProjectByID,Uncategorized from This Week,true,1105
-ProjectByName,Uncategorized,true,,Team-Practices
+ProjectByID,Uncategorized from This Week,show,1105,
+ProjectByName,Uncategorized,show,,Team-Practices
