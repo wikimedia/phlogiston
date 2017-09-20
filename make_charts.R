@@ -318,8 +318,8 @@ chart_start = current_quarter_start - 30
 chart_end <- input_chart_end
 
 if (args$showhidden == 'False') {
-  forecast_done <- forecast_done[forecast_done$display == 't',]
-  forecast <- forecast[forecast$display == 't',]
+  forecast_done <- forecast_done[forecast_done$display == 'show',]
+  forecast <- forecast[forecast$display == 'show',]
 }
 
 

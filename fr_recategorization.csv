@@ -1,6 +1,6 @@
 rule,title,display,id,matchstring
 ProjectsByWildcard,,omit,,"WMDE-Fundraising"
 ProjectsByWildcard,,omit,,"TCB-Team-Fundraising"
-ProjectByID,"Ingencio Integration",True,2894,
+ProjectByID,"Ingencio Integration",show,2894,
 
 

@@ -1,4 +1,4 @@
 rule,title,display,id,matchstring
-ProjectColumn,"In Progress",t,45,"In Progress"
-ProjectColumn,"Done",t,45,"Done"
-ProjectByID,"Other",t,45,
+ProjectColumn,"In Progress",show,45,"In Progress"
+ProjectColumn,"Done",show,45,"Done"
+ProjectByID,"Other",show,45,

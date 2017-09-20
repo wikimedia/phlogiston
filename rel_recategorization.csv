@@ -1,6 +1,6 @@
 rule,title,display,id,matchstring
-ProjectColumn,Triage,True,20,Triage
-ProjectByID,Backlog,True,2766,
-ProjectByID,Next,True,2767,
-ProjectByID,Other,False,20,
+ProjectColumn,Triage,show,20,Triage
+ProjectByID,Backlog,show,2766,
+ProjectByID,Next,show,2767,
+ProjectByID,Other,hide,20,
 

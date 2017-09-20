@@ -1,14 +1,14 @@
 rule,title,display,id,matchstring
-ProjectsByWildcard,,False,,iOS-app-v5.0
-ProjectsByWildcard,,False,,iOS-app-v5.1
-ProjectsByWildcard,,False,,iOS-app-v5.2
-ProjectsByWildcard,,true,,iOS-app-feature
-ProjectsByWildcard,,True,,iOS-app-Bugs
-ProjectsByWildcard,,True,,iOS-app-v5
-ProjectByID,Accessibility Sprint Oct 2016,True,2282,
-ProjectColumn,Navigation,False,782,Enable a/b testing of navigation options
-ProjectColumn,Explore Refactor,False,782,Explore feed fixes
-ProjectColumn,5.0 Text Changes,True,782,"EPIC: Text Changes"
-ProjectColumn,Settings,True,782,"As a user I want to manage my language, log-in, and privacy settings in an organized and convenient screen"
-ProjectColumn,RTL,False,782,"As a user, I can interact with the app in a way that matches the writing direction of my language."
-ProjectColumn,Visual Polish,False,782,Visual design improvements to the Explore feed
+ProjectsByWildcard,,hide,,iOS-app-v5.0
+ProjectsByWildcard,,hide,,iOS-app-v5.1
+ProjectsByWildcard,,hide,,iOS-app-v5.2
+ProjectsByWildcard,,show,,iOS-app-feature
+ProjectsByWildcard,,show,,iOS-app-Bugs
+ProjectsByWildcard,,show,,iOS-app-v5
+ProjectByID,Accessibility Sprint Oct 2016,show,2282,
+ProjectColumn,Navigation,hide,782,Enable a/b testing of navigation options
+ProjectColumn,Explore Refactor,hide,782,Explore feed fixes
+ProjectColumn,5.0 Text Changes,show,782,"EPIC: Text Changes"
+ProjectColumn,Settings,show,782,"As a user I want to manage my language, log-in, and privacy settings in an organized and convenient screen"
+ProjectColumn,RTL,hide,782,"As a user, I can interact with the app in a way that matches the writing direction of my language."
+ProjectColumn,Visual Polish,hide,782,Visual design improvements to the Explore feed

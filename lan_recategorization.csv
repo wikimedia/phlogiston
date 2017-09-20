@@ -1,11 +1,11 @@
 rule,matchstring,display,id,title
-ProjectColumn,CX-tasklist (1st goal),True,2184,CX Tasklist (1st goal)
-ProjectColumn,CX-templates (2nd goal),True,2184,CX Template handling
-ProjectColumn,CX-Infrastructure/Deployments,True,2184,CX Infrastructure maintenance
-ProjectColumn,Translate-goal,True,2184,Translate subtitles (goal)
-ProjectColumn,CX-Maintenance,True,2184,CX general maintenance
-ProjectColumn,Translate-Maintenance,True,2184,Translate general maintenance
-ProjectColumn,ULS-maintenance,True,2184,ULS general maintenance
-ProjectColumn,Unplanned,True,2184,All kinds of unplanned work
+ProjectColumn,CX-tasklist (1st goal),show,2184,CX Tasklist (1st goal)
+ProjectColumn,CX-templates (2nd goal),show,2184,CX Template handling
+ProjectColumn,CX-Infrastructure/Deployments,show,2184,CX Infrastructure maintenance
+ProjectColumn,Translate-goal,show,2184,Translate subtitles (goal)
+ProjectColumn,CX-Maintenance,show,2184,CX general maintenance
+ProjectColumn,Translate-Maintenance,show,2184,Translate general maintenance
+ProjectColumn,ULS-maintenance,show,2184,ULS general maintenance
+ProjectColumn,Unplanned,show,2184,All kinds of unplanned work
 
 

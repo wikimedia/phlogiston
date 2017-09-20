@@ -1,21 +1,21 @@
 rule,title,display,id,matchstring
-ParentTask,Archive External Links,true,1274,Migrate dead external links
-ParentTask,Pageview Stats,true,1274,Pageview Stats tool
-ParentTask,Numerical sorting,true,1274,Natural number sorting in category listings
-ParentTask,Cross-wiki watchlists,true,1274,Cross-wiki watchlists
-ParentTask,Improve diffs,true,1274,Improve diff compare screen
-ParentTask,Global repository,true,1274,"Central Global Repository for Templates, Lua modules, and Gadgets"
-ParentTask,Commons translated categories,true,1274,Allow categories in Commons in all languages
-ParentTask,Global user talk,true,1274,Provide global user talk page (header)
-ParentTask,Copy and paste detection,true,1274,copy and paste detection
-ParentTask,User watchlist,true,1274,that lists all recent contributions of a set of users
-ParentTask,Fixes,true,1274,Community-Tech-fixes
-ParentTask,Rev Slider,true,1274,RevSlider
-ParentTask,WikiProject tools,true,1274,WikiProject-tools
-ParentTask,Gadgets 2.0,true,1274,Gadgets-2.0
-ParentTask,CopyVio tools,true,1274,CopyVio-tools
-ProjectColumn,Blocked,false,1274,Blocked
-ProjectColumn,Frozen,false,1274,Frozen
-ProjectByID,Other,false,1274,
+ParentTask,Archive External Links,show,1274,Migrate dead external links
+ParentTask,Pageview Stats,show,1274,Pageview Stats tool
+ParentTask,Numerical sorting,show,1274,Natural number sorting in category listings
+ParentTask,Cross-wiki watchlists,show,1274,Cross-wiki watchlists
+ParentTask,Improve diffs,show,1274,Improve diff compare screen
+ParentTask,Global repository,show,1274,"Central Global Repository for Templates, Lua modules, and Gadgets"
+ParentTask,Commons translated categories,show,1274,Allow categories in Commons in all languages
+ParentTask,Global user talk,show,1274,Provide global user talk page (header)
+ParentTask,Copy and paste detection,show,1274,copy and paste detection
+ParentTask,User watchlist,show,1274,that lists all recent contributions of a set of users
+ParentTask,Fixes,show,1274,Community-Tech-fixes
+ParentTask,Rev Slider,show,1274,RevSlider
+ParentTask,WikiProject tools,show,1274,WikiProject-tools
+ParentTask,Gadgets 2.0,show,1274,Gadgets-2.0
+ParentTask,CopyVio tools,show,1274,CopyVio-tools
+ProjectColumn,Blocked,hide,1274,Blocked
+ProjectColumn,Frozen,hide,1274,Frozen
+ProjectByID,Other,hide,1274,
 
 

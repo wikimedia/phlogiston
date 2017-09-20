@@ -4,7 +4,7 @@ SELECT date,
        MAX(z.sort_order) as sort_order,
        SUM(points) as points,
        SUM(count) as count,
-       BOOL_OR(z.display) as display
+       max(z.display) as display
   FROM task_on_date_agg t, category z
  WHERE t.scope = :'scope_prefix'
    AND z.scope = :'scope_prefix'
@@ -90,7 +90,7 @@ SELECT date,
    AND category IN (SELECT category
                       FROM category
                      WHERE scope = :'scope_prefix'
-                       AND display = True)
+                       AND display = 'show')
  GROUP BY date
  ORDER BY date
 ) TO '/tmp/phlog/burnup.csv' DELIMITER ',' CSV HEADER;

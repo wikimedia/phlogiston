@@ -471,25 +471,27 @@ BEGIN
        AND t.scope = z.scope
        AND t.category = z.title
        AND t.status = status_input
-       AND (show_hidden = True OR z.display = True)
+       AND (show_hidden = True OR z.display = 'show')
      GROUP BY t.date, t.category
      ORDER BY t.date, sort_order;
 END;
 $$ LANGUAGE plpgsql;
 
 
+DROP FUNCTION IF EXISTS get_categories(varchar(6));
+
 CREATE OR REPLACE FUNCTION get_categories(
     scope_prefix varchar(6)
     ) RETURNS TABLE (
     title text,
-    display boolean)
+    display displayrule)
 AS $$
 BEGIN
     RETURN QUERY
     SELECT foo.title,
            foo.display
       FROM (SELECT z.title,
-                   bool_or(z.display) as display,
+                   max(z.display) as display,
                    max(z.sort_order) as sort_order,
                    sum(t.count) as xcount
               FROM category z, task_on_date_agg t
@@ -845,7 +847,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 
-CREATE OR REPLACE FUNCTION purge_leftover_task_on_date(
+CREATE OR REPLACE FUNCTION purge_leftover_and_omitted_task_on_date_rec(
     scope_prefix varchar(6)
     ) RETURNS void as $$
 BEGIN
@@ -853,6 +855,14 @@ BEGIN
     DELETE FROM task_on_date_recategorized
      WHERE scope = scope_prefix
        AND category IS NULL;
+
+
+    DELETE FROM task_on_date_recategorized
+     WHERE category IN
+           (SELECT title
+              FROM category
+             WHERE scope = scope_prefix
+               AND display = 'omit');
 
 END;
 $$ LANGUAGE plpgsql;

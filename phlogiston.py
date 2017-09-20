@@ -932,6 +932,7 @@ def import_recategorization_file(conn, scope_prefix):
         counter = 0
         valid_rule_list = ['ProjectByID', 'ProjectByName', 'ProjectsByWildcard',
                            'Intersection', 'ProjectColumn', 'ParentTask']
+        valid_display_list = ['show', 'hide', 'omit']
         for line in reader:
 
             try:
@@ -956,7 +957,7 @@ def import_recategorization_file(conn, scope_prefix):
             except KeyError:
                 pass
 
-            display = True
+            display = 'show'
             input_display = ''
             try:
                 input_display = line['display']
@@ -964,8 +965,12 @@ def import_recategorization_file(conn, scope_prefix):
                 pass
 
             if input_display:
-                if input_display.lower() in ['false', 'f', 'no', '0']:
-                    display = False
+                input_display = input_display.lower()
+                if input_display in valid_display_list:
+                    display = input_display
+                else:
+                    raise Exception('Error in recat file {0} line {1}: {2} is not a valid rule because input_display is not in {3}'.format(recat_file, counter, rule, valid_display_list))  # noqa
+                    quit()
 
             include_in_status = False
             input_iis = ''
@@ -1119,7 +1124,7 @@ def recategorize(conn, scope_prefix):
             raise Exception("Invalid categorization rule {0}".format(rule))
             sys.exit()
 
-    cur.execute('SELECT purge_leftover_task_on_date(%(scope_prefix)s)',
+    cur.execute('SELECT purge_leftover_and_omitted_task_on_date_rec(%(scope_prefix)s)',
                 {'scope_prefix': scope_prefix})
 
 

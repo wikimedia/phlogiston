@@ -30,8 +30,10 @@ CREATE INDEX ON task_on_date (date,id);
 
 
 DROP TYPE IF EXISTS categoryrule CASCADE;
+DROP TYPE IF EXISTS displayrule CASCADE;
 
 CREATE TYPE categoryrule AS ENUM ('ProjectByID', 'ProjectByName', 'ProjectsByWildcard', 'Intersection', 'ProjectColumn', 'ParentTask');
+CREATE TYPE displayrule AS ENUM ('show', 'hide', 'omit');
 
 CREATE TABLE category (
        scope varchar(6),
@@ -41,7 +43,7 @@ CREATE TABLE category (
        project_name_list text[],
        matchstring text,
        title text,
-       display boolean,
+       display displayrule,
        include_in_status boolean,
        UNIQUE (scope, sort_order),
        UNIQUE (scope, rule, project_id_list, matchstring)
