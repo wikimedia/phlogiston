@@ -156,6 +156,8 @@ CREATE OR REPLACE FUNCTION get_projects_by_name(
 $$ LANGUAGE SQL STABLE;
 
 
+DROP FUNCTION get_category_rules(character varying);
+
 CREATE OR REPLACE FUNCTION get_category_rules(
        scope_prefix varchar(6)
 ) RETURNS TABLE(rule categoryrule, project_id_list int[], project_name_list text[], matchstring text, title text, display displayrule) AS $$
