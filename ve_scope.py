@@ -1,7 +1,7 @@
 [vars]
 scope_title = "VisualEditor"
 default_points = 5
-start_date = 2015-01-01
+start_date = 2017-01-01
 retroactive_categories = True
 retroactive_points = True
 status_report_project = 483
