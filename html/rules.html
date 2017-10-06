@@ -15,7 +15,11 @@
         </ul>
       </li>
       {% for rule in category_rules_list %}
-        <li>Categorize as <b>{{ rule[4] }}</b> all tasks
+      {% if rule[5] == 'omit' %}
+        <li>Delete all tasks
+      {% else %}
+        <li>Categorize as <b>{{ rule[4] }}</b>{% if rule[5] == 'hide' %}, but hide from the burnups,{% endif %} all tasks
+      {% endif %}
 	  <ol>
 	    <li>in project <a href="https://phabricator.wikimedia.org/project/view/{{ rule[1][0] }}/" class="phui-project">{{ rule[2][0] }}</a></li>
         {% if rule[0] == 'ProjectByID' %}
