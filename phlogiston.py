@@ -504,6 +504,7 @@ def report(conn, dbname, scope_prefix,
     check_for_empty_task_on_date(conn, scope_prefix)
     reset_reporting_tables(conn, scope_prefix)
     log('Recategorization Starting', scope_prefix)
+    import_recategorization_file(conn, scope_prefix)
     recategorize(conn, scope_prefix)
     log('Applying Retroactive values, if any', scope_prefix)
     if retroactive_categories:
