@@ -130,6 +130,12 @@ def main(argv):
             elif isinstance(read_date(input_srs), datetime.date):
                 status_report_start = read_date(input_srs)
 
+        status_report_end = None
+        if config.has_option('vars', 'status_report_end'):
+            input_sre = config['vars']['status_report_end']
+            if isinstance(read_date(input_sre), datetime.date):
+                status_report_end = read_date(input_sre)
+
         status_report_project = None
         if config.has_option('vars', 'status_report_project'):
             status_report_project = config['vars']['status_report_project']
@@ -164,7 +170,7 @@ def main(argv):
                    scope_title, default_points,
                    retroactive_categories, retroactive_points,
                    backlog_resolved_cutoff, show_points, show_count, start_date,
-                   status_report_start, status_report_project)
+                   status_report_start, status_report_end, status_report_project)
         else:
             print("Report specified without a scope_prefix.\nPlease specify a scope_prefix with --scope_prefix.")  # noqa
     conn.close()
@@ -487,7 +493,7 @@ def report(conn, dbname, scope_prefix,
            scope_title, default_points,
            retroactive_categories, retroactive_points,
            backlog_resolved_cutoff, show_points, show_count, start_date,
-           status_report_start, status_report_project):
+           status_report_start, status_report_end, status_report_project):
 
     cur = conn.cursor()
     log('Report Starting', scope_prefix)
@@ -611,7 +617,10 @@ def report(conn, dbname, scope_prefix,
     recently_closed_output.close()
 
     if status_report_project:
-        final_status_date = get_max_date(conn, scope_prefix)
+        if status_report_end:
+            final_status_date = status_report_end
+        else:
+            final_status_date = get_max_date(conn, scope_prefix)
         initial_status_date = status_report_start
         initial_status_date_lastq = previous_quarter_start
         final_status_date_lastq = current_quarter_start
