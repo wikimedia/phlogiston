@@ -1,5 +1,5 @@
 [vars]
-scope_title = Reading-Web
+scope_title = Readers-Web
 default_points = 0
 start_date = 2017-10-20
 status_report_project = 2739
