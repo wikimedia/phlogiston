@@ -1,7 +1,8 @@
 [vars]
 scope_title = Readers-Web
 default_points = 0
-start_date = 2017-04-01
+start_date = 2017-04-27
 status_report_project = 2739
-status_report_start = 2017-11-02
+status_report_start = 2017-09-21
+status_report_end = 2017-10-04
 
