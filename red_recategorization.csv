@@ -1,6 +1,6 @@
 rule,title,display,id,matchstring
 Intersection,Kanban Board (Marvin Placeholder Task and Code Ketchup Task - Category),omit,2739 1656,
-ProjectColumn,Kanban Board (Upcoming Column),omit,2739,Sprint+1
+ProjectColumn,Kanban Board (Sprint+1 Column),omit,2739,Sprint+1
 Intersection,Kanban Board (Page-Previews),show,2739 765,
 Intersection,Kanban Board (ElectronPDFs),show,2739 2162,
 Intersection,Kanban Board (OCG Main Project),show,2739 813,
