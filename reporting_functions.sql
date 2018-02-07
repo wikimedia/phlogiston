@@ -604,6 +604,10 @@ CREATE OR REPLACE FUNCTION get_status_report(
     id int,
     title text,
     category text,
+    previous_status text,
+    parent_previous_status text,
+    cut_status boolean,
+    q2status text,
     scope text,
     status text,
     points text,
@@ -615,9 +619,14 @@ BEGIN
     SELECT q2.id,
            q2.title,
            q2.category,
-	   CASE WHEN q2.previous_status IS NULL
+           q2.previous_status,
+           q2.parent_previous_status,
+           q2.cut_status,
+           q2.status as q2status,
+	   CASE WHEN q2.previous_status IS NULL or q2.previous_status = ''
                  AND q2.parent_previous_status = 'open'  THEN 'Elaborated'
-                WHEN q2.previous_status IS NULL          THEN 'Screep'
+                WHEN q2.previous_status IS NULL or q2.previous_status = ''
+                                                         THEN 'Screep'
                 WHEN q2.previous_status = 'open'
                   OR q2.previous_status = 'resolved'     THEN 'In-Scope'
                 ELSE 'Unknown'
