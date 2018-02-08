@@ -604,10 +604,6 @@ CREATE OR REPLACE FUNCTION get_status_report(
     id int,
     title text,
     category text,
-    previous_status text,
-    parent_previous_status text,
-    cut_status boolean,
-    q2status text,
     scope text,
     status text,
     points text,
@@ -615,14 +611,22 @@ CREATE OR REPLACE FUNCTION get_status_report(
 AS $$
 BEGIN
 
+    -- the innermost query, q1, generates a list of all tasks in scope for the report.
+    -- The UNION is to generate a universe of tasks that belong in the report, either
+    -- because they were in scope on the start date, or because they were in scope
+    -- on the end date.
+    -- the next query, q2, provides a place to run subqueries to get the previous status
+    -- and parent previous status
+    -- the outermost query includes the business logic to convert status comparisons
+    -- between start and finish dates into scope determinations.
+    -- The fact of which task is the parent task is determined from maniphest_blocked,
+    -- and note that maniphest_blocked, unlike the other tables, does not have 
+    -- historical data reconstructed from transactions.
+
     RETURN QUERY
     SELECT q2.id,
            q2.title,
            q2.category,
-           q2.previous_status,
-           q2.parent_previous_status,
-           q2.cut_status,
-           q2.status as q2status,
 	   CASE WHEN q2.previous_status IS NULL or q2.previous_status = ''
                  AND q2.parent_previous_status = 'open'  THEN 'Elaborated'
                 WHEN q2.previous_status IS NULL or q2.previous_status = ''
@@ -642,6 +646,7 @@ BEGIN
            c.sort_order
       FROM (
 	    SELECT q1.id,
+                   q1.parent_id,
 	           q1.title,
 	           q1.category,
 	           q1.status,
@@ -668,7 +673,7 @@ BEGIN
                         LEFT OUTER JOIN maniphest_task mt1 USING (id)
                         LEFT OUTER JOIN category z1 ON (z1.title = thr1.category)
                         LEFT OUTER JOIN maniphest_blocked mb ON (
-                          mb.child_id = thr1.id AND mb.blocked_date = final_date)
+                          mb.child_id = thr1.id)
 		     WHERE thr1.scope = scope_prefix
 		       AND thr1.date = final_date
 		       AND thr1.id IN (SELECT task
