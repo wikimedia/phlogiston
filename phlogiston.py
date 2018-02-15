@@ -869,7 +869,10 @@ def get_max_date(conn, scope_prefix):
                           FROM task_on_date_recategorized
                          WHERE scope = %(scope_prefix)s"""
     cur.execute(max_date_query, {'scope_prefix': scope_prefix})
-    max_date = cur.fetchone()[0].date()
+    try:
+        max_date = cur.fetchone()[0].date()
+    except AttributeError:
+        max_date = None
     return max_date
 
 
@@ -1100,7 +1103,6 @@ def recategorize(conn, scope_prefix):
     cur = conn.cursor()
 
     cur.execute('SELECT * FROM get_category_rules(%(scope_prefix)s)', {'scope_prefix': scope_prefix})  # noqa
-
     for row in cur.fetchall():
         rule = row[0]
         project_id_list = row[1]
