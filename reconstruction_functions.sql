@@ -107,6 +107,21 @@ BEGIN
                       AND trans_status <> status_at_load) os
      WHERE th.scope = scope_prefix
        AND th.id = os.task_id;
+
+  -- NOTE: Not sure why the query above is so convoluted; suspect it's 
+  -- corrected incorrect status values in some undocumented situation
+  -- In order to fix T186827 without messing with anything the above query 
+  -- fixes, let's fix blanks in addition to, rather than instead of, the above.
+
+
+     UPDATE task_on_date tod
+        SET status = mta.status_at_load
+       FROM maniphest_task mta
+      WHERE tod.id = mta.id
+        AND status IS NULL OR status = ''
+        AND scope = scope_prefix;
+
+
 END;
 $$ LANGUAGE plpgsql;
 
