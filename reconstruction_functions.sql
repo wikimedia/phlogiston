@@ -171,7 +171,7 @@ CREATE OR REPLACE FUNCTION get_projects_by_name(
 $$ LANGUAGE SQL STABLE;
 
 
-DROP FUNCTION get_category_rules(character varying);
+DROP FUNCTION IF EXISTS get_category_rules(character varying);
 
 CREATE OR REPLACE FUNCTION get_category_rules(
        scope_prefix varchar(6)
