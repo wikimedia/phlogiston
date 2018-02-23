@@ -625,6 +625,8 @@ def report(conn, dbname, scope_prefix,
         initial_status_date_lastq = previous_quarter_start
         final_status_date_lastq = current_quarter_start
         status_report_project_name = get_project_name(conn, status_report_project)
+
+        # create two status reports, one as specified and one for last quarter
         date_list = [(initial_status_date, final_status_date, ''),
                      (initial_status_date_lastq, final_status_date_lastq, '_lastq')]
         for start_date, end_date, lastq in date_list:
@@ -640,6 +642,9 @@ def report(conn, dbname, scope_prefix,
             # start_date and end_date are hacked one day
             # see: https://phabricator.wikimedia.org/T174409
             query_rows = cur.fetchall()
+
+            # set up indexed color coding and sort data by
+            # intended color code (based on status)
             statuses = set(tuple([(row[2], row[6]) for row in query_rows]))
             status_count = len(statuses)
             status_list = sorted(statuses, key=lambda item: item[1], reverse=True)
