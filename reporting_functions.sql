@@ -678,7 +678,7 @@ BEGIN
 		       AND thr1.date = final_date
 		       AND thr1.id IN (SELECT task
 		                         FROM maniphest_edge me
-                                        WHERE edge_date = final_date
+                                        WHERE me.date = final_date
                                           AND project = status_report_project)
                     UNION
                     SELECT DISTINCT ON (thr1a.id) thr1a.id,
@@ -695,11 +695,11 @@ BEGIN
 		       AND thr1a.date = initial_date
 		       AND thr1a.id IN (SELECT task
 		                         FROM maniphest_edge me
-                                        WHERE edge_date = initial_date
+                                        WHERE me.date = initial_date
                                           AND project = status_report_project)
 		       AND thr1a.id NOT IN (SELECT task
    		                              FROM maniphest_edge me
-                                             WHERE edge_date = final_date
+                                             WHERE me.date = final_date
                                                AND project = status_report_project)
                    ) as q1
            ) as q2
@@ -908,7 +908,7 @@ BEGIN
    WHERE todr.scope = scope_prefix
      AND me1.project = project_id_input[1]
      AND me1.task = todr.id
-     AND me1.edge_date = todr.date
+     AND me1.date = todr.date
      AND todr.category IS NULL
      AND todr.projectcolumn LIKE '%' || matchstring || '%';
 END;
@@ -929,7 +929,7 @@ BEGIN
    WHERE todr.scope = scope_prefix
      AND me1.project = project_id_input[1]
      AND me1.task = todr.id
-     AND me1.edge_date = todr.date
+     AND me1.date = todr.date
      AND todr.category IS NULL
      AND todr.phab_category_title LIKE '%' || matchstring || '%';
 END;
@@ -948,7 +948,7 @@ BEGIN
    WHERE todr.scope = scope_prefix
      AND me1.project = project_id_input[1]
      AND me1.task = todr.id
-     AND me1.edge_date = todr.date
+     AND me1.date = todr.date
      AND todr.category IS NULL;
 END;
 $$ LANGUAGE plpgsql;
@@ -966,10 +966,10 @@ CREATE OR REPLACE FUNCTION recategorize_by_intersection(
    WHERE todr.scope = scope_prefix
      AND me1.project = $2[1]
      AND me1.task = todr.id
-     AND me1.edge_date = todr.date
+     AND me1.date = todr.date
      AND me2.project = $2[2]
      AND me2.task = todr.id
-     AND me2.edge_date = todr.date
+     AND me2.date = todr.date
      AND todr.category IS NULL;
 
 $$ LANGUAGE SQL VOLATILE;

@@ -221,8 +221,8 @@ def do_initialize(conn):
 
 def load(conn, end_date):
     cur = conn.cursor()
-    cur.execute(open("loading_tables.sql", "r").read())
 
+    cur.execute(open("loading_tables.sql", "r").read())
     log('Dump file load starting', 'load')
     with open('../phabricator_public.dump') as dump_file:
         data = json.load(dump_file)
@@ -265,8 +265,8 @@ def load(conn, end_date):
     transaction_insert = """
       INSERT INTO maniphest_transaction
       VALUES (%(id)s, %(phid)s, %(task_id)s, %(object_phid)s,
-              %(transaction_type)s, %(new_value)s, %(date_modified)s,
-              %(has_edge_data)s, %(active_projects)s)"""
+              %(transaction_type)s, %(old_value)s, %(new_value)s,
+              %(date_modified)s, %(metadata)s)"""
 
     task_insert = """
       INSERT INTO maniphest_task
@@ -297,7 +297,7 @@ def load(conn, end_date):
                                   'story_points': story_points,
                                   'status_at_load': status_at_load})
 
-        # Load blocked info for this task. When transactional data
+        # Load the blocked info for this task. When transactional data
         # becomes available, this should use that instead
         for edge in task['edge']:
             if edge[1] == 3:
@@ -314,39 +314,35 @@ def load(conn, end_date):
             if transactions[trans_key]:
                 for trans in transactions[trans_key]:
                     trans_type = trans[6]
+                    raw_old_value = trans[7]
                     raw_new_value = trans[8]
+                    metadata = trans[9]
                     if trans_type == 'status':
+                        old_value = raw_old_value.translate(quote_trans_table)
                         new_value = raw_new_value.translate(quote_trans_table)
                     else:
+                        old_value = raw_old_value
                         new_value = raw_new_value
                     date_mod = time.strftime('%m/%d/%Y %H:%M:%S',
                                              time.gmtime(trans[11]))
-                    # If this is an edge transaction, parse out the
-                    # list of transactions
-                    has_edge_data = False
-                    active_proj = list()
-                    if trans_type == 'core:edge':
-                        jblob = json.loads(new_value)
-                        if jblob:
-                            for key in jblob.keys():
-                                if int(jblob[key]['type']) == 41:
-                                    has_edge_data = True
-                                    if key in project_phid_to_id_dict:
-                                        proj_id = project_phid_to_id_dict[key]
-                                        active_proj.append(proj_id)
-                                    else:
-                                        print("Data error for transaction {0}: project {1} doesn't exist. Skipping.".format(trans[1], key))  # noqa
+                try:
                     cur.execute(transaction_insert,
                                 {'id': trans[0],
                                  'phid': trans[1],
                                  'task_id': task_id,
                                  'object_phid': trans[3],
                                  'transaction_type': trans_type,
+                                 'old_value': old_value,
                                  'new_value': new_value,
-                                 'date_modified': date_mod,
-                                 'has_edge_data': has_edge_data,
-                                 'active_projects': active_proj})
+                                 'metadata': metadata,
+                                 'date_modified': date_mod})
+                except psycopg2.DataError:
+                    log('Error importing task {0}\'s transaction {1}'.
+                        format(task_id, trans), 'load')
 
+    log('Preparing edge transactions for use.', 'load')
+    populate_maniphest_edge_transaction(conn, project_phid_to_id_dict)
+    log('Converting Blocked PHIDs to IDs.', 'load')
     cur.execute('SELECT convert_blocked_phid_to_id_sql()')
     cur.close()
     log('Dump file load finished.', 'load')
@@ -419,6 +415,11 @@ def reconstruct(conn, default_points,
 
     while working_date <= end_date:
         log('Maniphest_edge creation for {0}'.format(working_date), scope_prefix)
+        # For every task in scope that doesn't already have
+        # maniphest_edges for the working date, generate fresh
+        # maniphest_edges
+
+        # for all active projects,
 
         cur.execute('SELECT build_edges(%(date)s, %(project_id_list)s)',
                     {'date': working_date,
@@ -472,12 +473,11 @@ def reconstruct(conn, default_points,
                          'category_id': category_id,
                          'working_date': working_date})
 
-    log('Phab parent category and goal titles updating', scope_prefix)
+    log('Phab parent category titles updating', scope_prefix)
     cur.execute("SELECT update_phab_parent_category_titles(%s, %s)", (scope_prefix, start_date))  # noqa
-
+    log('Categorizing category tasks', scope_prefix)
     cur.execute("SELECT put_category_tasks_in_own_category(%s, %s)",
                 (scope_prefix, PHAB_TAGS['category']))
-
     cur.execute("SELECT put_category_tasks_in_own_category(%s, %s)",
                 (scope_prefix, PHAB_TAGS['goal']))
 
@@ -1079,6 +1079,105 @@ def log(message, scope_prefix):
               format(scope_prefix,
                      datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                      message))
+
+
+def populate_maniphest_edge_transaction(conn, project_phid_to_id_dict):
+    # Phabricator has two different edge transaction semantics.  In
+    # Version A, metadata is blank and new_value contains a json blob
+    # for which the ninth field is the list of PHIDs of all project
+    # edges present at the end of the transaction.  In Version B,
+    # which is newer, metadata is for edge transactions begins with
+    # {"edge:type":41}, old_value contains the PHID of any project
+    # edge removed in the transaction, and new_value contains the PHID
+    # of any project edge added in the transaction.
+
+    cur = conn.cursor()
+    get_edge_transactions = """SELECT task_id, date_modified, old_value, new_value, metadata
+                                 FROM maniphest_transaction
+                                WHERE transaction_type = 'core:edge'"""
+
+    cur.execute(get_edge_transactions)
+    for transaction in cur.fetchall():
+        old_value = []
+        new_value = []
+        task_id = transaction[0]
+        date_modified = transaction[1]
+        metadata = transaction[4]
+        if metadata:
+            if '{"edge:type":41' in metadata:
+                try:
+                    old_value_list = json.loads(transaction[2])
+                    new_value_list = json.loads(transaction[3])
+                    for phid in old_value_list:
+                        project_id = project_phid_to_id_dict[phid]
+                        old_value.append(project_id)
+                        for phid in new_value_list:
+                            project_id = project_phid_to_id_dict[phid]
+                            new_value.append(project_id)
+                except Exception as e:
+                    log('Task {0} has bad (new style) transaction data.  Error {1}. trans: {2}.'.  # noqa
+                        format(task_id, e, transaction), 'load')
+        else:
+            jblob = json.loads(transaction[3])
+            if jblob:
+                try:
+                    for key in jblob.keys():
+                        if int(jblob[key]['type']) == 41:
+                            if key in project_phid_to_id_dict:
+                                project_id = project_phid_to_id_dict[key]
+                                new_value.append(project_id)
+                except Exception as e:
+                    log('Task {0} has bad (old style) transaction data.  Error {1}. trans: {2}.'.  # noqa
+                        format(task_id, e, transaction), 'load')
+
+        insert_met_sql = """INSERT INTO maniphest_edge_transaction VALUES (%(task_id)s,\
+                                                                           %(date_modified)s,
+                                                                           %(old_value)s,
+                                                                           %(new_value)s,
+                                                                           %(metadata)s)"""  # noqa
+        cur.execute(insert_met_sql, {'task_id': task_id,
+                                     'date_modified': date_modified,
+                                     'old_value': old_value,
+                                     'new_value': new_value,
+                                     'metadata': metadata})
+
+    # Second pass, to standardize from transactional data to point-in-time data
+    log('Starting second pass on transactional edge data', 'load')
+    get_tasks_sql = """SELECT id FROM maniphest_task ORDER BY id"""
+    update_edges_sql = """UPDATE maniphest_edge_transaction
+                             SET edges = %(edges)s
+                           WHERE task_id = %(task_id)s
+                             AND date_modified = %(date_modified)s"""
+
+    cur.execute(get_tasks_sql)
+    task_ids = cur.fetchall()
+    for task_id in task_ids:
+        get_task_trans_sql = """SELECT date_modified,
+                                  old_value,
+                                  new_value,
+                                  metadata
+                             FROM maniphest_edge_transaction
+                            WHERE task_id = %s
+                            ORDER BY date_modified"""
+        cur.execute(get_task_trans_sql, task_id)
+        task_transactions = cur.fetchall()
+        edges = []
+        for trans in task_transactions:
+            date_modified = trans[0]
+            old_value = trans[1]
+            new_value = trans[2]
+            metadata = trans[3]
+            if metadata:
+                edges = list(set(edges) - set(old_value))
+                if new_value:
+                    edges = list(set(edges + new_value))
+            else:
+                edges = new_value
+        cur.execute(update_edges_sql, {'task_id': task_id,
+                                       'edges': edges,
+                                       'date_modified': date_modified})
+
+    log('Finished second pass on transactional edge data', 'load')
 
 
 def populate_recently_closed(conn, scope_prefix, start_date):

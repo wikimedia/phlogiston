@@ -1,6 +1,8 @@
 CREATE EXTENSION IF NOT EXISTS intarray;
 
 DROP TABLE IF EXISTS maniphest_blocked;
+DROP TABLE IF EXISTS maniphest_edge;
+DROP TABLE IF EXISTS maniphest_edge_transaction;
 DROP TABLE IF EXISTS maniphest_transaction;
 DROP TABLE IF EXISTS maniphest_task;
 DROP TABLE IF EXISTS phabricator_column;
@@ -30,16 +32,36 @@ CREATE TABLE phabricator_column (
 CREATE TABLE maniphest_transaction (
        id int primary key,
        phid text unique,
-       task_id int,
+       task_id int references maniphest_task,
        object_phid text,
        transaction_type text,
+       old_value text,
        new_value text,
        date_modified timestamp with time zone,
-       has_edge_data boolean,
-       active_projects int array
+       metadata text
 );
 
-CREATE INDEX ON maniphest_transaction (task_id, date_modified, has_edge_data);
+CREATE INDEX on maniphest_transaction (date_modified, transaction_type, task_id);
+CREATE INDEX on maniphest_transaction (transaction_type, task_id);
+CREATE INDEX on maniphest_transaction (task_id);
+
+CREATE TABLE maniphest_edge_transaction (
+       task_id int references maniphest_task,
+       date_modified timestamp with time zone,
+       old_value int[],
+       new_value int[],
+       metadata text,
+       edges int[]
+);
+
+CREATE INDEX ON maniphest_edge_transaction (task_id, date_modified);
+
+CREATE TABLE maniphest_edge(
+       task int references maniphest_task,
+       project int references phabricator_project,
+       date date,
+       unique (task, project, date)
+);
 
 -- No RI for this table because otherwise we would have to load all
 -- tasks before any blocks

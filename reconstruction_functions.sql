@@ -12,24 +12,18 @@ BEGIN
                      FROM maniphest_task
                     ORDER BY id
     LOOP
-        FOR projrow IN SELECT active_projects
-                         FROM maniphest_transaction
+        FOR projrow IN SELECT edges
+                         FROM maniphest_edge_transaction
                         WHERE date_modified <= run_date
                           AND task_id = taskrow.id
-                          AND has_edge_data IS TRUE
                      ORDER BY date_modified DESC
-		       LIMIT 1
+                        LIMIT 1
         LOOP
-            FOREACH project_id IN ARRAY projrow.active_projects & project_id_list
+            FOREACH project_id IN ARRAY projrow.edges & project_id_list
             LOOP
-                IF NOT EXISTS (SELECT *
-                                 FROM maniphest_edge
-                                WHERE task = taskrow.id
-                                  AND project = project_id
-                                  AND edge_date = run_date) THEN
-                    INSERT INTO maniphest_edge
-                    VALUES (taskrow.id, project_id, run_date);
-                END IF;
+                INSERT INTO maniphest_edge
+                VALUES (taskrow.id, project_id, run_date)
+                    ON CONFLICT DO NOTHING;
             END LOOP;
         END LOOP;
     END LOOP;     
@@ -135,7 +129,7 @@ CREATE OR REPLACE FUNCTION get_phab_parent_categories_by_day(
   SELECT DISTINCT task
     FROM task_on_date t, maniphest_edge m
    WHERE t.scope = $1
-     AND m.edge_date = $2
+     AND m.date = $2
      AND t.id = m.task
      AND m.project = $3;
 
@@ -148,11 +142,10 @@ CREATE OR REPLACE FUNCTION get_edge_value(
 ) RETURNS int[] AS $$
 BEGIN
   RETURN (
-        SELECT mt.active_projects
-          FROM maniphest_transaction mt
+        SELECT mt.edges
+          FROM maniphest_edge_transaction mt
          WHERE date(mt.date_modified) <= working_date
            AND mt.task_id = input_task_id
-           AND mt.has_edge_data IS TRUE
          ORDER BY date_modified DESC
          LIMIT 1
                );
@@ -192,7 +185,7 @@ CREATE OR REPLACE FUNCTION get_tasks(
 
   SELECT DISTINCT task
     FROM maniphest_edge
-   WHERE edge_date = $1
+   WHERE date = $1
      AND project = ANY($2);
 
 $$ LANGUAGE SQL STABLE;
@@ -202,19 +195,16 @@ CREATE OR REPLACE FUNCTION get_transaction_value(
        working_date date,
        input_transaction_type text,
        input_task_id int
-) RETURNS SETOF text AS $$
-BEGIN
-  RETURN QUERY (
-    SELECT mt.new_value
-      FROM maniphest_transaction mt
-     WHERE date(mt.date_modified) <= working_date
-       AND mt.transaction_type = input_transaction_type
-       AND mt.task_id = input_task_id
-     ORDER BY date_modified DESC
-         );
+) RETURNS table(new_value text) AS $$
 
-END;
-$$ LANGUAGE plpgsql;
+  SELECT mt.new_value
+    FROM maniphest_transaction mt
+   WHERE mt.date_modified <= $1
+     AND mt.transaction_type = $2
+     AND mt.task_id = $3
+   ORDER BY date_modified DESC;
+
+$$ LANGUAGE SQL STABLE;
 
 
 CREATE OR REPLACE FUNCTION put_category_tasks_in_own_category(
