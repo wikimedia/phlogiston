@@ -325,20 +325,20 @@ def load(conn, end_date):
                         new_value = raw_new_value
                     date_mod = time.strftime('%m/%d/%Y %H:%M:%S',
                                              time.gmtime(trans[11]))
-                try:
-                    cur.execute(transaction_insert,
-                                {'id': trans[0],
-                                 'phid': trans[1],
-                                 'task_id': task_id,
-                                 'object_phid': trans[3],
-                                 'transaction_type': trans_type,
-                                 'old_value': old_value,
-                                 'new_value': new_value,
-                                 'metadata': metadata,
-                                 'date_modified': date_mod})
-                except psycopg2.DataError:
-                    log('Error importing task {0}\'s transaction {1}'.
-                        format(task_id, trans), 'load')
+                    try:
+                        cur.execute(transaction_insert,
+                                    {'id': trans[0],
+                                     'phid': trans[1],
+                                     'task_id': task_id,
+                                     'object_phid': trans[3],
+                                     'transaction_type': trans_type,
+                                     'old_value': old_value,
+                                     'new_value': new_value,
+                                     'metadata': metadata,
+                                     'date_modified': date_mod})
+                    except psycopg2.DataError:
+                        log('Error importing task {0}\'s transaction {1}'.
+                            format(task_id, trans), 'load')
 
     log('Preparing edge transactions for use.', 'load')
     populate_maniphest_edge_transaction(conn, project_phid_to_id_dict)
@@ -1111,9 +1111,9 @@ def populate_maniphest_edge_transaction(conn, project_phid_to_id_dict):
                     for phid in old_value_list:
                         project_id = project_phid_to_id_dict[phid]
                         old_value.append(project_id)
-                        for phid in new_value_list:
-                            project_id = project_phid_to_id_dict[phid]
-                            new_value.append(project_id)
+                    for phid in new_value_list:
+                        project_id = project_phid_to_id_dict[phid]
+                        new_value.append(project_id)
                 except Exception as e:
                     log('Task {0} has bad (new style) transaction data.  Error {1}. trans: {2}.'.  # noqa
                         format(task_id, e, transaction), 'load')
@@ -1173,9 +1173,9 @@ def populate_maniphest_edge_transaction(conn, project_phid_to_id_dict):
                     edges = list(set(edges + new_value))
             else:
                 edges = new_value
-        cur.execute(update_edges_sql, {'task_id': task_id,
-                                       'edges': edges,
-                                       'date_modified': date_modified})
+            cur.execute(update_edges_sql, {'task_id': task_id,
+                                           'edges': edges,
+                                           'date_modified': date_modified})
 
     log('Finished second pass on transactional edge data', 'load')
 
