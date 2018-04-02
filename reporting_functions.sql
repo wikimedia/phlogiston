@@ -627,7 +627,7 @@ BEGIN
     SELECT q2.id,
            q2.title,
            q2.category,
-	   CASE WHEN q2.previous_status IS NULL or q2.previous_status = ''
+	   CASE WHEN (q2.previous_status IS NULL or q2.previous_status = '')
                  AND q2.parent_previous_status = 'open'  THEN 'Elaborated'
                 WHEN q2.previous_status IS NULL or q2.previous_status = ''
                                                          THEN 'Screep'
@@ -650,54 +650,62 @@ BEGIN
 	           q1.title,
 	           q1.category,
 	           q1.status,
-                   (SELECT thr2pre.status
-                      FROM task_on_date_recategorized as thr2pre
-                     WHERE thr2pre.id = q1.id
-                       AND thr2pre.date = initial_date
-                       AND thr2pre.scope = scope_prefix) AS previous_status,
-		   (SELECT thr2par.status
-                      FROM task_on_date_recategorized as thr2par
-                     WHERE thr2par.id = q1.parent_id
-                       AND thr2par.date = initial_date
-                       AND thr2par.scope = scope_prefix) AS parent_previous_status,
+                   (SELECT todr2pre.status
+                      FROM task_on_date_recategorized as todr2pre,
+                           maniphest_edge me2pre
+                     WHERE todr2pre.id = q1.id
+                       AND todr2pre.date = initial_date
+                       AND todr2pre.scope = scope_prefix
+                       AND todr2pre.id = me2pre.task
+                       AND me2pre.date = initial_date
+                       AND me2pre.project = status_report_project) AS previous_status,
+		   (SELECT todr2par.status
+                      FROM task_on_date_recategorized as todr2par,
+                           maniphest_edge me2par
+                     WHERE todr2par.id = q1.parent_id
+                       AND todr2par.date = initial_date
+                       AND todr2par.scope = scope_prefix
+                       AND todr2par.id = me2par.task
+                       AND me2par.date = initial_date
+                       AND me2par.project = status_report_project) AS parent_previous_status,
  	           q1.points,
 		   q1.cut_status
-              FROM (SELECT DISTINCT ON (thr1.id) thr1.id,
+              FROM (SELECT DISTINCT ON (todr1.id) todr1.id,
 		           mt1.title,
-		           thr1.category,
-		           thr1.status,
+		           todr1.category,
+		           todr1.status,
 		           mt1.story_points as points,
                            mb.parent_id,
 			   False as cut_status
-		      FROM task_on_date_recategorized thr1
+		      FROM task_on_date_recategorized todr1
                         LEFT OUTER JOIN maniphest_task mt1 USING (id)
-                        LEFT OUTER JOIN category z1 ON (z1.title = thr1.category)
+                        LEFT OUTER JOIN category z1 ON (z1.title = todr1.category)
                         LEFT OUTER JOIN maniphest_blocked mb ON (
-                          mb.child_id = thr1.id)
-		     WHERE thr1.scope = scope_prefix
-		       AND thr1.date = final_date
-		       AND thr1.id IN (SELECT task
+                          mb.child_id = todr1.id)
+		     WHERE todr1.scope = scope_prefix
+		       AND todr1.date = final_date
+		       AND todr1.id IN (SELECT task
 		                         FROM maniphest_edge me
                                         WHERE me.date = final_date
                                           AND project = status_report_project)
                     UNION
-                    SELECT DISTINCT ON (thr1a.id) thr1a.id,
+                    SELECT DISTINCT ON (todr1a.id) todr1a.id,
 		           mt1a.title,
-		           thr1a.category,
-		           thr1a.status,
+		           todr1a.category,
+		           todr1a.status,
 		           mt1a.story_points as points,
 			   Null,
                            True as cut_status
-		      FROM task_on_date_recategorized thr1a
+		      FROM task_on_date_recategorized todr1a
                         LEFT OUTER JOIN maniphest_task mt1a USING (id)
-                        LEFT OUTER JOIN category z1a ON (z1a.title = thr1a.category)
-		     WHERE thr1a.scope = scope_prefix
-		       AND thr1a.date = initial_date
-		       AND thr1a.id IN (SELECT task
+                        LEFT OUTER JOIN category z1a ON (z1a.title = todr1a.category)
+		     WHERE todr1a.scope = scope_prefix
+		       AND todr1a.date = initial_date
+		       AND todr1a.id IN (SELECT task
 		                         FROM maniphest_edge me
                                         WHERE me.date = initial_date
                                           AND project = status_report_project)
-		       AND thr1a.id NOT IN (SELECT task
+		       AND todr1a.id NOT IN (SELECT task
    		                              FROM maniphest_edge me
                                              WHERE me.date = final_date
                                                AND project = status_report_project)
