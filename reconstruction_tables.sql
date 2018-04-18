@@ -1,5 +1,6 @@
 DROP TABLE IF EXISTS phab_parent_category_edge;
 DROP TABLE IF EXISTS category;
+DROP TABLE IF EXISTS maniphest_edge;
 DROP TABLE IF EXISTS task_on_date;
 
 CREATE TABLE task_on_date (
@@ -46,6 +47,14 @@ CREATE TABLE category (
        include_in_status boolean,
        UNIQUE (scope, sort_order),
        UNIQUE (scope, rule, project_id_list, matchstring)
+);
+
+-- no RI for maniphest_edge because it would interfere with reloading from phab dumps
+CREATE TABLE maniphest_edge(
+       task int,
+       project int,
+       date date,
+       unique (task, project, date)
 );
 
 CREATE TABLE phab_parent_category_edge (

@@ -1,7 +1,6 @@
 CREATE EXTENSION IF NOT EXISTS intarray;
 
 DROP TABLE IF EXISTS maniphest_blocked;
-DROP TABLE IF EXISTS maniphest_edge;
 DROP TABLE IF EXISTS maniphest_edge_transaction;
 DROP TABLE IF EXISTS maniphest_transaction;
 DROP TABLE IF EXISTS maniphest_task;
@@ -55,13 +54,6 @@ CREATE TABLE maniphest_edge_transaction (
 );
 
 CREATE INDEX ON maniphest_edge_transaction (task_id, date_modified);
-
-CREATE TABLE maniphest_edge(
-       task int references maniphest_task,
-       project int references phabricator_project,
-       date date,
-       unique (task, project, date)
-);
 
 -- No RI for this table because otherwise we would have to load all
 -- tasks before any blocks
