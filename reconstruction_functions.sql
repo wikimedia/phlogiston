@@ -112,7 +112,7 @@ BEGIN
         SET status = mta.status_at_load
        FROM maniphest_task mta
       WHERE tod.id = mta.id
-        AND status IS NULL OR status = ''
+        AND (status IS NULL OR status = '')
         AND scope = scope_prefix;
 
 
