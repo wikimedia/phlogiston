@@ -1,6 +1,7 @@
 rule,title,display,id,matchstring
 Intersection,Kanban Board (Marvin Placeholder Task and Code Ketchup Task - Category),omit,2739 1656,
 ProjectColumn,Kanban Board (Sprint+1 Column),omit,2739,Sprint+1
+Intersection,Kanban Board (Page-Issue-Warnings),show,2739 3315,
 Intersection,Kanban Board (Page-Previews),show,2739 765,
 Intersection,Kanban Board (ElectronPDFs),show,2739 2162,
 Intersection,Kanban Board (OCG Main Project),show,2739 813,
@@ -30,6 +31,7 @@ Intersection,Kanban Board (Wikidata Page Banner - wikivoyage),show,2739 1158,
 Intersection,Kanban Board (Proton),show,2739 2960,
 Intersection,Kanban Board (Regressions - Uncategorized),show,2739 914,
 Intersection,Kanban Board (MFE),show,2739 1157,
+ProjectByID,Page-Issue-Warnings,hide,3315,
 ProjectByID,Page-Previews,hide,765,
 ProjectByID,ElectronPDFs,hide,2162,
 ProjectByID,OCG Main Project,hide,813,
