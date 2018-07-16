@@ -1,21 +1,10 @@
 rule,title,display,id,matchstring
-ParentTask,Archive External Links,show,1274,Migrate dead external links
-ParentTask,Pageview Stats,show,1274,Pageview Stats tool
-ParentTask,Numerical sorting,show,1274,Natural number sorting in category listings
-ParentTask,Cross-wiki watchlists,show,1274,Cross-wiki watchlists
-ParentTask,Improve diffs,show,1274,Improve diff compare screen
-ParentTask,Global repository,show,1274,"Central Global Repository for Templates, Lua modules, and Gadgets"
-ParentTask,Commons translated categories,show,1274,Allow categories in Commons in all languages
-ParentTask,Global user talk,show,1274,Provide global user talk page (header)
-ParentTask,Copy and paste detection,show,1274,copy and paste detection
-ParentTask,User watchlist,show,1274,that lists all recent contributions of a set of users
-ParentTask,Fixes,show,1274,Community-Tech-fixes
-ParentTask,Rev Slider,show,1274,RevSlider
-ParentTask,WikiProject tools,show,1274,WikiProject-tools
-ParentTask,Gadgets 2.0,show,1274,Gadgets-2.0
-ParentTask,CopyVio tools,show,1274,CopyVio-tools
-ProjectColumn,Blocked,hide,1274,Blocked
-ProjectColumn,Frozen,hide,1274,Frozen
-ProjectByID,Other,hide,1274,
-
-
+ProjectByID,English-Wikipedia-New-Pages-Patrol,show,2604,
+ProjectByID,MediaWiki-extensions-GlobalPreferences,show,763,
+ProjectByID,MediaWiki-extensions-TemplateWizard,show,3284,
+ProjectByID,Grant-Metrics,show,3009,
+ProjectByID,MediaWiki-extensions-RelatedSites,show,595,
+ProjectByID,MediaWiki-extensions-TranslateSvg,show,1272,
+ProjectByID,MediaWiki-extensions-CodeMirror,show,1162,
+ProjectByID,MediaWiki-extensions-LoginNotify,show,2419,
+ProjectByID,MediaWiki-extensions-PageAssessments,show,1936,
