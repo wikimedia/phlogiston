@@ -1,0 +1,4 @@
+rule,title,display,id,matchstring
+Intersection,Product Analytics,show,3313,
+ProjectColumn,Tracking Column,omit,3313,Tracking
+
