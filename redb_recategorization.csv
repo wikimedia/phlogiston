@@ -1,2 +1,4 @@
 rule,title,display,id,matchstring
 ProjectByID,Readers Web Backlog,show,2739,
+ProjectByID,Readers Web Backlog Tracking Column,omit,2857
+
