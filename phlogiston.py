@@ -278,8 +278,8 @@ def load(conn, end_date):
 
     task_count = len(data['task'].keys())
     log('Tasks, transactions, and edges for {0} tasks loading'.format(task_count), 'load')
-
     for task_id in data['task'].keys():
+
         task = data['task'][task_id]
         if task['info']:
             task_phid = task['info'][1]
@@ -430,7 +430,6 @@ def reconstruct(conn, default_points,
     ######################################################################
     # Reconstruct historical state of tasks
     ######################################################################
-
     working_date = start_date
     while working_date <= end_date:
         log('Task reconstruction for {0}'.format(working_date), scope_prefix)
@@ -1350,6 +1349,8 @@ def reconstruct_task_on_date(cur, task_id, working_date, scope_prefix,
         # See https://phabricator.wikimedia.org/T114021.  Skipping
         # these transactions should not affect the data for
         # our purposes.
+        log('Error: No edge match for {0} on {1}'.format(task_id, working_date),
+            scope_prefix)
         return
 
     pretty_project = project_id_to_name_dict[best_edge]
@@ -1362,6 +1363,7 @@ def reconstruct_task_on_date(cur, task_id, working_date, scope_prefix,
     cur.execute("SELECT * FROM get_transaction_value(%s, %s, %s)",
                 (working_date, 'core:columns', task_id))
     pc_trans_list = cur.fetchall()
+
     for pc_trans in pc_trans_list:
         jblob = json.loads(pc_trans[0])[0]
         if project_phid in jblob['boardPHID']:
