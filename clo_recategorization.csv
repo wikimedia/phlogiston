@@ -1,12 +1,7 @@
 rule,title,display,id,matchstring
-ParentTask,"1.4: VPS hosting",show,2795,"Program 1 Outcome 4: VPS hosting"
-ParentTask,"4.1: Improve documentation",show,2795,"Program 4 Outcome 1: improve documentation"
-ParentTask,"7.3: Data services",show,2795,"Program 7 Outcome 3: data services"
-ParentTask,"10.1: PaaS is easy",show,2795,"Program 10 Outcome 1: PaaS is easy to use"
-ParentTask,"10.2: Rebranding",show,2795,"Program 10 Outcome 2: Rebranding"
-ParentTask,"10.3: Outreach",show,2795,"Program 10 Outcome 3: Outreach"
-ParentTask,"10.4: Tech support",show,2795,"Program 10 Outcome 4: first line tech support"
+ParentTask,"deprecation of Trusty",show,2773,"deprecation of Trusty"
+ParentTask,"describing use cases of Cloud Services",2773,"research report for Cloud Services use cases"
+ParentTask,"Toolhub Milestone 2",2773,"Toolhub Milestone 2"
 ProjectByID,"Other (FY 2017-18)",show,2795,
-ProjectByID,"Other (Product Backlog)",show,2773,
 ProjectByID,"Other (Kanban)",show,2774,
-
+ProjectByID,"Other (Product Backlog)",show,2773,
