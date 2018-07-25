@@ -1062,8 +1062,5 @@ BEGIN
     DELETE FROM velocity
      WHERE scope = scope_prefix;
 
-    DELETE FROM open_backlog_size
-     WHERE scope = scope_prefix;
-
 END;
 $$ LANGUAGE plpgsql;

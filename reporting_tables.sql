@@ -137,15 +137,3 @@ CREATE TABLE velocity (
     nom_count_velviz float,
     opt_count_velviz float
 );
-
-DROP TABLE IF EXISTS open_backlog_size;
-
-CREATE TABLE open_backlog_size (
-    scope varchar(6),
-    category text,
-    date timestamp,
-    points int,
-    count int,
-    delta_points int,
-    delta_count int
-);
