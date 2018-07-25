@@ -32,8 +32,10 @@ CREATE INDEX ON task_on_date (date,id);
 DROP TYPE IF EXISTS categoryrule CASCADE;
 DROP TYPE IF EXISTS displayrule CASCADE;
 
+-- These lists should be kept in sync with the import validation logic in import_recategorization_file
 CREATE TYPE categoryrule AS ENUM ('ProjectByID', 'ProjectByName', 'ProjectsByWildcard', 'Intersection', 'ProjectColumn', 'ParentTask');
 CREATE TYPE displayrule AS ENUM ('show', 'hide', 'omit');
+CREATE TYPE force_status_rule AS ENUM ('', 'resolved');
 
 CREATE TABLE category (
        scope varchar(6),
@@ -45,6 +47,7 @@ CREATE TABLE category (
        title text,
        display displayrule,
        include_in_status boolean,
+       force_status force_status_rule,
        UNIQUE (scope, sort_order),
        UNIQUE (scope, rule, project_id_list, matchstring)
 );

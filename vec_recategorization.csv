@@ -1,7 +1,7 @@
-rule,title,display,id,matchstring
+rule,title,display,id,matchstring,force_status
 ProjectColumn,Up next,SHOW,3236,Up next
 ProjectColumn,In Progress,SHOW,3236,In progress
 ProjectColumn,Code review and QA,SHOW,3236,Code review and QA
-ProjectColumn,Done,SHOW,3236,Done
+ProjectColumn,Done,SHOW,3236,Done,resolved
 ProjectByID,VisualEditor Other,Show,3236,
 

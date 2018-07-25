@@ -886,6 +886,16 @@ BEGIN
              WHERE scope = scope_prefix
                AND display = 'omit');
 
+    -- this query is hard-coded for the current contents of force_status_list
+    -- if that list ever grows beyond 1 item, this query must be re-written
+    UPDATE task_on_date_recategorized
+       SET status = 'resolved'
+     WHERE category IN
+           (SELECT title
+              FROM category
+             WHERE scope = scope_prefix
+               AND force_status = 'resolved');
+
 END;
 $$ LANGUAGE plpgsql;
 

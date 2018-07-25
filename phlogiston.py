@@ -939,7 +939,8 @@ def import_recategorization_file(conn, scope_prefix):
                     %(matchstring)s,
                     %(title)s,
                     %(display)s,
-                    %(include_in_status)s)"""
+                    %(include_in_status)s,
+                    %(force_status)s)"""
 
     recat_file = '{0}_recategorization.csv'.format(scope_prefix)
     if not os.path.isfile(recat_file):
@@ -947,9 +948,13 @@ def import_recategorization_file(conn, scope_prefix):
     with open(recat_file, 'rt') as f:
         reader = csv.DictReader(f)
         counter = 0
+
+        # These lists should be kept in sync with the custom ENUMerated types in SQL
         valid_rule_list = ['ProjectByID', 'ProjectByName', 'ProjectsByWildcard',
                            'Intersection', 'ProjectColumn', 'ParentTask']
         valid_display_list = ['show', 'hide', 'omit']
+        valid_force_status_list = ['resolved']
+
         for line in reader:
 
             try:
@@ -986,7 +991,7 @@ def import_recategorization_file(conn, scope_prefix):
                 if input_display in valid_display_list:
                     display = input_display
                 else:
-                    raise Exception('Error in recat file {0} line {1}: {2} is not a valid rule because input_display is not in {3}'.format(recat_file, counter, rule, valid_display_list))  # noqa
+                    raise Exception('Error in recat file {0} line {1}: {2} is not a valid rule because input_display is not in list: {3}'.format(recat_file, counter, rule, valid_display_list))  # noqa
                     quit()
 
             include_in_status = False
@@ -999,6 +1004,19 @@ def import_recategorization_file(conn, scope_prefix):
             if input_iis:
                 if input_iis.lower() in ['true', 't', 'yes', '1']:
                     include_in_status = True
+
+            force_status = ''
+            input_fs = ''
+            try:
+                input_fs = line['force_status']
+            except KeyError:
+                pass
+
+            if input_fs:
+                if input_fs.lower() in valid_force_status_list:
+                    force_status = input_fs.lower()
+                else:
+                    raise Exception('Error in recat file {0} line {1}: {2} is not a valid rule because force_status is not in list: {3}'.format(recat_file, counter, rule, valid_force_status_list))  # noqa
 
             if rule != 'Intersection' and len(id_list) > 1:
                 raise Exception('Error in recat file {0} line {1}: {2} is not a valid rule.  This type of rule should have only one id specified'.format(recat_file, counter, line))  # noqa
@@ -1019,7 +1037,8 @@ def import_recategorization_file(conn, scope_prefix):
                                      'matchstring': '',
                                      'title': name,
                                      'display': display,
-                                     'include_in_status': include_in_status})
+                                     'include_in_status': include_in_status,
+                                     'force_status': force_status})
                         counter += 1
                     except psycopg2.IntegrityError as E:
                         print('Skipping a duplicate category produced by rule {0}: {1}'.
@@ -1042,7 +1061,8 @@ def import_recategorization_file(conn, scope_prefix):
                                  'matchstring': '',
                                  'title': title,
                                  'display': display,
-                                 'include_in_status': include_in_status})
+                                 'include_in_status': include_in_status,
+                                 'force_status': force_status})
                     counter += 1
                 except psycopg2.IntegrityError as E:
                     print('Skipping a duplicate category produced by rule {0}: {1}'.
@@ -1064,7 +1084,8 @@ def import_recategorization_file(conn, scope_prefix):
                                  'matchstring': matchstring,
                                  'title': line['title'],
                                  'display': display,
-                                 'include_in_status': include_in_status})
+                                 'include_in_status': include_in_status,
+                                 'force_status': force_status})
                     counter += 1
                 except psycopg2.IntegrityError as E:
                     print('Skipping a duplicate category produced by rule {0}: {1}'.
