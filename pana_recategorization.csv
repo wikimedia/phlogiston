@@ -1,4 +1,5 @@
-rule,title,display,id,matchstring
-ProjectByID,Product Analytics,show,3313,
-ProjectColumn,Tracking Column,omit,3313,Tracking
+rule,title,display,id,matchstring,force_status
+ProjectByID,Product Analytics,show,3313,,
+ProjectColumn,Doing Test T174183,SHOW,3313,Doing,resolved
+ProjectColumn,Tracking Column,omit,3313,Tracking,
 
