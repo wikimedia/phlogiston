@@ -239,9 +239,7 @@ SELECT ROUND(100 * maint_count::decimal / nullif((maint_count + new_count),0),0)
 /* ####################################################################
 Burnup and Velocity and Forecasts */
 
-COPY (
-SELECT calculate_velocities(:'scope_prefix') AS date
-) TO '/tmp/phlog/velocity_recent_date.csv' DELIMITER ',' CSV HEADER;
+SELECT calculate_velocities(:'scope_prefix');
 
 COPY (
 SELECT date,
