@@ -458,7 +458,6 @@ def reconstruct(conn, default_points,
                         {'scope_prefix': scope_prefix,
                          'category_id': category_id,
                          'working_date': working_date})
-        # hack to test out including goal tag as well as category tag
         # See https://phabricator.wikimedia.org/T167838
         # TODO: merge with above by allowing two IDs to be passed in for category_tag_id
         cur.execute('SELECT * from get_phab_parent_categories_by_day(%(scope_prefix)s, %(working_date)s, %(category_tag_id)s)',  # noqa
@@ -682,7 +681,6 @@ def report(conn, dbname, scope_prefix,
         else:
             # show hidden is false.  Set up smaller chart.
             chart_start = month_before_current_q_start
-        # TODO: rewrite to use **kwargs?  see previous rscript invocation
 
         # had errors passing scope_titles that contain spaces into shell command
         # shlex.quote didn't fix it; doing cheap and non-portable instead
@@ -924,9 +922,7 @@ def get_project_name(conn, project_id):
 
 def import_recategorization_file(conn, scope_prefix):
     """ Reload the recategorization file into the database"""
-
     cur = conn.cursor()
-
     cur.execute('DELETE FROM category WHERE scope = %(scope_prefix)s',
                 {'scope_prefix': scope_prefix})
 
