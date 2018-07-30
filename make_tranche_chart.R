@@ -25,10 +25,6 @@ parser$add_argument("next_quarter_start", nargs=1)
 
 args <- parser$parse_args()
 
-# TODO: confirm this isn't used and remove it from here and upstream
-#velocity_recent_date <- read.csv(sprintf("/tmp/%s/velocity_recent_date.csv", args$scope_prefix))
-#velocity_recent_date$date <- as.Date(velocity_recent_date$date, "%Y-%m-%d")
-
 report_date <- as.Date(args$report_date)
 chart_start <- as.Date(args$chart_start)
 chart_end   <- as.Date(args$chart_end)
