@@ -10,3 +10,4 @@ tramp
 batch_report-test*
 .RData
 .Rhistory
+__pycache__*

@@ -868,7 +868,7 @@ def generate_reporting_files(conn, scope_prefix, dbname):
 def get_max_date(conn, scope_prefix):
     cur = conn.cursor()
     max_date_query = """SELECT MAX(date)
-                          FROM task_on_date_recategorized
+                          FROM task_on_date
                          WHERE scope = %(scope_prefix)s"""
     cur.execute(max_date_query, {'scope_prefix': scope_prefix})
     try:
