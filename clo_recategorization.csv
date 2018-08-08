@@ -1,7 +1,0 @@
-rule,title,display,id,matchstring
-ParentTask,"deprecation of Trusty",show,2773,"deprecation of Trusty"
-ParentTask,"describing use cases of Cloud Services",show,2773,"research report for Cloud Services use cases"
-ParentTask,"Toolhub Milestone 2",show,2773,"Toolhub Milestone 2"
-ProjectByID,"Other (FY 2017-18)",show,2795,
-ProjectByID,"Other (Kanban)",show,2774,
-ProjectByID,"Other (Product Backlog)",show,2773,

@@ -90,7 +90,7 @@ def main(argv):
 
     if scope_prefix:
         config = configparser.ConfigParser()
-        config_filename = '{0}_scope.py'.format(scope_prefix)
+        config_filename = 'config/{0}_scope.py'.format(scope_prefix)
         config.read(config_filename)
 
         try:
@@ -938,7 +938,7 @@ def import_recategorization_file(conn, scope_prefix):
                     %(include_in_status)s,
                     %(force_status)s)"""
 
-    recat_file = '{0}_recategorization.csv'.format(scope_prefix)
+    recat_file = 'config/{0}_recategorization.csv'.format(scope_prefix)
     if not os.path.isfile(recat_file):
         raise Exception('Missing recat file {0}'.recat_file)
     with open(recat_file, 'rt') as f:

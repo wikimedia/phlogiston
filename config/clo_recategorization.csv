@@ -1,0 +1,8 @@
+rule,title,display,id,matchstring
+ParentTask,"timeline for deprecation of Trusty",show,3256,"Develop timeline for deprecation of Trusty"
+ParentTask,"describing use cases of Cloud Services",show,3256,"research report describing use cases of Cloud Services"
+ParentTask,"Toolhub Milestone 2",show,3256,"Toolhub Milestone 2"
+ProjectByID,"Cloud Services Other",show,823,
+ProjectByID,"Cloud-VPS",hide,474,
+ProjectByID,"Toolhub",hide,3224,
+
