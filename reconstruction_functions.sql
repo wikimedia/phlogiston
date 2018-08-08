@@ -168,9 +168,15 @@ DROP FUNCTION IF EXISTS get_category_rules(character varying);
 
 CREATE OR REPLACE FUNCTION get_category_rules(
        scope_prefix varchar(6)
-) RETURNS TABLE(rule categoryrule, project_id_list int[], project_name_list text[], matchstring text, title text, display displayrule) AS $$
+) RETURNS TABLE(rule categoryrule,
+                project_id_list int[],
+                project_name_list text[],
+                matchstring text,
+                title text,
+                display displayrule,
+                force_status force_status_rule) AS $$
 
-  SELECT rule, project_id_list, project_name_list, matchstring, title, display
+  SELECT rule, project_id_list, project_name_list, matchstring, title, display, force_status
     FROM category
    WHERE scope = $1
    ORDER BY sort_order

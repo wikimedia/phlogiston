@@ -6,7 +6,7 @@
   <link href='https://fonts.googleapis.com/css?family=Lato' rel='stylesheet' type='text/css'>
   <body>
     <h1>How this Report is Generated</h1>
-    <ol>
+    <ul>
       <li>Include all tasks in the following Phabricator projects, since {{ start_date }}:
 	<ul>
 	  {% for project in project_name_list %}
@@ -14,12 +14,14 @@
 	  {% endfor %}
         </ul>
       </li>
+    </ul>
+    <ol>
       {% for rule in category_rules_list %}
       {% if rule[5] == 'omit' %}
-        <li>Delete all tasks
+        <li>Delete
       {% else %}
-        <li>Categorize as <b>{{ rule[4] }}</b>{% if rule[5] == 'hide' %}, but hide from the burnups,{% endif %} all tasks
-      {% endif %}
+        <li>Categorize as <b>{{ rule[4] }}</b>{% if rule[5] == 'hide' %}, but hide from the burnups,{% endif %}{% if rule[6] %}, and set status to <b>{{ rule[6] }}</b>,{% endif %}
+      {% endif %} all tasks that are:
 	  <ol>
 	    <li>in project <a href="https://phabricator.wikimedia.org/project/view/{{ rule[1][0] }}/" class="phui-project">{{ rule[2][0] }}</a></li>
         {% if rule[0] == 'ProjectByID' %}
