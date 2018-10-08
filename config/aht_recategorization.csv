@@ -1,3 +1,4 @@
 rule,title,display,id,matchstring
-ProjectsByWildcard,,show,,AHT
+Intersection,AHT Sprint 30,show,3624 2660,
+ProjectByID,Backlog-Other,show,2660,
 
