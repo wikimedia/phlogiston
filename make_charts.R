@@ -54,14 +54,14 @@ if (args$showhidden == 'True') {
 # common theme from https://github.com/Ironholds/wmf/blob/master/R/dataviz.R
 theme_fivethirtynine <- function(base_size = 12, base_family = "sans"){
   (theme_foundation(base_size = base_size, base_family = base_family) +
-     theme(line = element_line(), rect = element_rect(fill = ggthemes::ggthemes_data$fivethirtyeight["ltgray"],
+     theme(line = element_line(), rect = element_rect(fill = "#F0F0F0",
                                                       linetype = 0, colour = NA),
-           text = element_text(size=30, colour = ggthemes::ggthemes_data$fivethirtyeight["dkgray"]),
+           text = element_text(size=30, colour = "#3C3C3C"),
            axis.title.y = element_text(size = rel(1.5), angle = 90, vjust = 1.5), axis.text = element_text(),
            axis.title.x = element_text(size = rel(1.5)),
            axis.ticks = element_blank(), axis.line = element_blank(),
            panel.grid = element_line(colour = NULL),
-           panel.grid.major = element_line(colour = ggthemes_data$fivethirtyeight["medgray"]),
+           panel.grid.major = element_line(colour = "#D2D2D2"),
            panel.grid.minor = element_blank(),
            plot.title = element_text(hjust = 0, size = rel(1.5), face = "bold"),
            strip.background = element_rect()))

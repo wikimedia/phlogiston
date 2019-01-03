@@ -64,7 +64,8 @@ fi
 
 PHLOGDIR=$HOME/phlogiston
 
-echo "$(date): Starting"
+echo "$(date): Entering phlogiston python virtual environment"
+source ~/p_env/bin/activate
 echo "$(date): Git Pull"
 cd ${PHLOGDIR}
 git pull
